@@ -1,0 +1,103 @@
+<svg viewBox="0 0 1440 760" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Texas Smart Power architecture diagram</title>
+  <desc>Two flows meet at Vercel Blob storage: an on-demand flow triggered every time a visitor enters a ZIP code, and a nightly cron flow that refreshes plan data. Both live inside one Vercel project that auto-deploys from GitHub.</desc>
+  <rect x="0" y="0" width="1440" height="760" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8a8a8a"/>
+    </marker>
+    <marker id="arrowAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b45309"/>
+    </marker>
+  </defs>
+
+  <text x="720" y="30" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Texas Smart Power — Architecture</text>
+  <text x="720" y="50" text-anchor="middle" font-size="12.5" fill="#666666">Two flows, one shared datastore: what runs on every visit, and what runs once a night.</text>
+
+  <rect x="1180" y="14" width="20" height="13" rx="3" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="1206" y="25" font-size="10.5" fill="#666666">Runs on Vercel</text>
+  <rect x="1180" y="34" width="20" height="13" rx="3" fill="#f3f3f3" stroke="#b45309" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="1206" y="45" font-size="10.5" fill="#666666">External API (Power to Choose)</text>
+
+  <rect x="760" y="64" width="160" height="42" rx="8" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="840" y="83" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">GitHub</text>
+  <text x="840" y="98" text-anchor="middle" font-size="10" fill="#666666">push → main branch</text>
+  <line x1="840" y1="106" x2="840" y2="138" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="858" y="126" font-size="9" fill="#666666">auto-deploy</text>
+
+  <rect x="260" y="140" width="1160" height="590" rx="18" fill="none" stroke="#8a8a8a" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="282" y="168" font-size="13" font-weight="600" fill="#666666" letter-spacing="0.2">VERCEL — one project (frontend + API routes + cron + storage)</text>
+
+  <text x="420" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#b45309" letter-spacing="0.5">① EVERY VISIT</text>
+  <text x="1020" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#b45309" letter-spacing="0.5">② EVERY NIGHT · ~3AM CT</text>
+
+  <rect x="40" y="210" width="190" height="90" rx="10" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="135" y="245" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a1a">Browser</text>
+  <text x="135" y="263" text-anchor="middle" font-size="10.5" fill="#666666">React SPA (Vite build)</text>
+  <text x="135" y="280" text-anchor="middle" font-size="9" font-style="italic" fill="#666666">on the visitor's device</text>
+
+  <rect x="310" y="210" width="220" height="68" rx="10" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="420" y="238" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a1a1a">ZIP Lookup</text>
+  <text x="420" y="256" text-anchor="middle" font-size="10" fill="#666666">/api/zip-lookup (proxy)</text>
+
+  <rect x="590" y="210" width="210" height="68" rx="10" fill="#f3f3f3" stroke="#b45309" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="695" y="234" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a1a1a">Power to Choose</text>
+  <text x="695" y="250" text-anchor="middle" font-size="9.5" fill="#666666">TduCompaniesByZip</text>
+  <text x="695" y="263" text-anchor="middle" font-size="9" fill="#666666">(no CORS headers)</text>
+
+  <rect x="310" y="330" width="220" height="68" rx="10" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="420" y="358" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a1a1a">Plans Endpoint</text>
+  <text x="420" y="376" text-anchor="middle" font-size="10" fill="#666666">/api/plans/:tdu</text>
+
+  <rect x="910" y="210" width="220" height="68" rx="10" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="1020" y="238" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a1a1a">Cron Scheduler</text>
+  <text x="1020" y="256" text-anchor="middle" font-size="10" fill="#666666">vercel.json · nightly</text>
+
+  <rect x="910" y="330" width="220" height="68" rx="10" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="1020" y="358" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a1a1a">Fetch Plans Job</text>
+  <text x="1020" y="376" text-anchor="middle" font-size="10" fill="#666666">/api/cron/fetch-plans</text>
+
+  <rect x="1190" y="330" width="210" height="68" rx="10" fill="#f3f3f3" stroke="#b45309" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="1295" y="354" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a1a1a">Power to Choose</text>
+  <text x="1295" y="370" text-anchor="middle" font-size="9.5" fill="#666666">plans × 6 TDUs</text>
+
+  <rect x="910" y="450" width="220" height="78" rx="10" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="1.5"/>
+  <text x="1020" y="480" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a1a1a">Pipeline</text>
+  <text x="1020" y="498" text-anchor="middle" font-size="10" fill="#666666">filter → TOU check → rank</text>
+  <text x="1020" y="512" text-anchor="middle" font-size="8.5" fill="#666666">(shared, unit-testable)</text>
+
+  <rect x="470" y="580" width="520" height="90" rx="12" fill="#f3f3f3" stroke="#8a8a8a" stroke-width="2"/>
+  <text x="730" y="615" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a1a">Vercel Blob Storage</text>
+  <text x="730" y="634" text-anchor="middle" font-size="10.5" fill="#666666">6 files: plans/{tdu}.json</text>
+  <text x="730" y="649" text-anchor="middle" font-size="9.5" fill="#666666">public access, no database</text>
+
+  <text x="840" y="705" text-anchor="middle" font-size="10.5" font-style="italic" fill="#666666">Only ZIP Lookup and the nightly job ever call Power to Choose — the browser only ever reads Blob.</text>
+
+  <line x1="230" y1="248" x2="308" y2="238" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="248" y="230" font-size="9" fill="#666666">ZIP submitted</text>
+
+  <line x1="530" y1="228" x2="588" y2="228" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="588" y1="252" x2="530" y2="252" stroke="#b45309" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowAccent)"/>
+  <text x="559" y="220" text-anchor="middle" font-size="8" fill="#666666">calls</text>
+  <text x="559" y="266" text-anchor="middle" font-size="8" fill="#666666">TDU list</text>
+
+  <line x1="420" y1="278" x2="420" y2="328" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="500" y="308" text-anchor="middle" font-size="9" fill="#666666">TDU resolved</text>
+
+  <line x1="1020" y1="278" x2="1020" y2="328" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1085" y="308" text-anchor="middle" font-size="9" fill="#666666">triggers job</text>
+
+  <line x1="1130" y1="352" x2="1188" y2="352" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1188" y1="378" x2="1130" y2="378" stroke="#b45309" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowAccent)"/>
+  <text x="1159" y="345" text-anchor="middle" font-size="8" fill="#666666">calls</text>
+  <text x="1159" y="392" text-anchor="middle" font-size="8" fill="#666666">raw plans</text>
+
+  <line x1="1020" y1="398" x2="1020" y2="448" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <line x1="440" y1="398" x2="600" y2="578" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <line x1="990" y1="528" x2="860" y2="578" stroke="#8a8a8a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <path d="M470,625 C300,660 160,500 137,302" fill="none" stroke="#8a8a8a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="245" y="562" text-anchor="middle" font-size="10" fill="#666666">renders ranked list</text>
+</svg>

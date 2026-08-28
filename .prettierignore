@@ -1,9 +1,6 @@
 node_modules
 dist
 coverage
-
+package-lock.json
 .vercel
-.env*
-
-*.local
-.DS_Store
+*.md

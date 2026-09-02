@@ -1,0 +1,9 @@
+{
+  "_note": "Dev-only fallback for /api/zip-lookup, served ONLY when VERCEL_ENV is unset/development AND the live powertochoose.org call returns nothing (it is Cloudflare-blocked from many networks). Responses are tagged source:\"fixture\". Keys are the documented anchor ZIPs (architecture-blueprint.md §5); codes are the documented COMPANY_ID_TO_TDU values; names are the real TDU company names. Not an observed upstream response.",
+  "75201": [{ "code": "oncor", "name": "Oncor Electric Delivery" }],
+  "77002": [{ "code": "centerpoint", "name": "CenterPoint Energy" }],
+  "78401": [{ "code": "aep-central", "name": "AEP Texas (Central)" }],
+  "79601": [{ "code": "aep-north", "name": "AEP Texas (North)" }],
+  "75067": [{ "code": "tnmp", "name": "Texas-New Mexico Power" }],
+  "79424": [{ "code": "lubbock", "name": "Lubbock Power & Light" }]
+}

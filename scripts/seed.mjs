@@ -22,10 +22,21 @@ if (!match) {
 
 const cronSecret = match[1];
 
+// powertochoose.org is behind Cloudflare and 403s from most environments, so
+// the local seed runs the ingestion job against the synthetic placeholder
+// fixture (pipeline/__fixtures__/). The cron handler only honours this header
+// when VERCEL_ENV is unset or "development" — deployed environments ignore it
+// and always fetch live. Drop `--fixtures` once you have a real fixture wired
+// up or the live fetch works locally.
+const useFixtures = !process.argv.includes("--live");
+
 let response;
 try {
   response = await fetch("http://localhost:3000/api/cron/fetch-plans", {
-    headers: { Authorization: `Bearer ${cronSecret}` },
+    headers: {
+      Authorization: `Bearer ${cronSecret}`,
+      ...(useFixtures ? { "x-seed-fixtures": "1" } : {}),
+    },
   });
 } catch (error) {
   console.error(

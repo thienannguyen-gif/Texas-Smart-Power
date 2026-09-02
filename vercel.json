@@ -1,0 +1,7 @@
+{
+  "installCommand": "npm install && npm install --prefix frontend",
+  "buildCommand": "npm run build --prefix frontend",
+  "devCommand": "npm --prefix frontend run dev",
+  "outputDirectory": "frontend/dist",
+  "crons": [{ "path": "/api/cron/fetch-plans", "schedule": "0 9 * * *" }]
+}

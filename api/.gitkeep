@@ -1,0 +1,5 @@
+Vercel serverless functions live here (file-based routing, no router library).
+Planned routes — see docs/architecture-blueprint.md section 4:
+  zip-lookup.ts        POST /api/zip-lookup
+  plans/[tdu].ts       GET  /api/plans/:tdu
+  cron/fetch-plans.ts  POST /api/cron/fetch-plans   (Vercel Cron)

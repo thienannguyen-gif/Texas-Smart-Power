@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Brand palette from the approved mockup (Texas Power .pdf). */
+@theme {
+  --color-brand-navy: #1f2b3a;
+  --color-brand-navy-600: #2b3a4d;
+  --color-brand-lime: #dcefaa;
+  --color-brand-lime-100: #eef7d2;
+  --color-brand-lime-200: #e4f3bf;
+  --color-brand-green: #5c9e30;
+  --color-brand-green-700: #3f7d2e;
+  --color-brand-green-800: #356b27;
+  --color-brand-gold: #f5b301;
+}
+
+body {
+  background-color: var(--color-brand-lime);
+  color: var(--color-brand-navy);
+}

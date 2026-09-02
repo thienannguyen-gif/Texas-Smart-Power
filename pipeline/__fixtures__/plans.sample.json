@@ -1,0 +1,58 @@
+[
+  {
+    "plan_id": 900001,
+    "company_name": "PLACEHOLDER Power Co",
+    "company_logo": "https://example.invalid/logo.png",
+    "website": "https://example.invalid",
+    "plan_name": "SAMPLE — Fixed 12",
+    "plan_type": 1,
+    "rate_type": "Fixed",
+    "term_value": 12,
+    "price_kwh500": 0.16,
+    "price_kwh1000": 0.15,
+    "price_kwh2000": 0.155,
+    "pricing_details": "SAMPLE DATA — not a real plan. Cancellation fee $150.",
+    "timeofuse": false,
+    "renewable_energy_description": "6% renewable",
+    "fact_sheet": "https://example.invalid/efl.pdf",
+    "terms_of_service": "https://example.invalid/tos.pdf",
+    "go_to_plan": "https://example.invalid/enroll",
+    "enroll_phone": "000-000-0000",
+    "prepaid": false
+  },
+  {
+    "plan_id": 900002,
+    "company_name": "PLACEHOLDER Power Co",
+    "plan_name": "SAMPLE — Teaser Dip 24",
+    "plan_type": 1,
+    "rate_type": "Fixed",
+    "term_value": 24,
+    "price_kwh500": 0.19,
+    "price_kwh1000": 0.09,
+    "price_kwh2000": 0.21,
+    "pricing_details": "SAMPLE DATA — cheap only at 1000 kWh. Cancellation fee $295.",
+    "timeofuse": false,
+    "prepaid": false
+  },
+  {
+    "plan_id": 900003,
+    "company_name": "PLACEHOLDER Grid LLC",
+    "plan_name": "SAMPLE — Free Nights TOU",
+    "plan_type": 1,
+    "rate_type": "Fixed",
+    "term_value": 12,
+    "price_kwh500": 0.22,
+    "price_kwh1000": 0.2,
+    "price_kwh2000": 0.19,
+    "pricing_details": "SAMPLE DATA — time-of-use plan, free 9pm–6am.",
+    "timeofuse": true,
+    "renewable_energy_description": "100% renewable",
+    "prepaid": false
+  },
+  {
+    "plan_id": 900004,
+    "company_name": "PLACEHOLDER Retail Energy",
+    "plan_name": "SAMPLE — Sparse Record",
+    "price_kwh1000": 0.14
+  }
+]

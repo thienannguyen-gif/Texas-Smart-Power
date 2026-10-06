@@ -71,10 +71,6 @@ export function PlanList({
           : `${totalCount} ${totalCount === 1 ? "plan" : "plans"}`}{" "}
         · updated {new Date(generatedAt).toLocaleString("en-US")}
       </p>
-      <p className="mb-4 text-xs text-brand-green-800">
-        Unranked scaffold view — listed in the order the data provides.
-      </p>
-
       {plans.length === 0 ? (
         <p className="text-brand-navy/70">No plans match these filters.</p>
       ) : (

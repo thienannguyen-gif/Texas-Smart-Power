@@ -9,9 +9,8 @@ import {
 } from "../lib/usage";
 
 // The "More Details" modal from the mockup. Every box is filled from `Plan`;
-// "not available" is shown only when the value genuinely can't be produced
-// (missing from the record, or — until BRIEF.md defines interpolation — a usage
-// that isn't 500 / 1,000 / 2,000 kWh).
+// "not available" is shown only when the plan is missing one or more of its
+// required anchor prices.
 
 function Stat({
   label,
@@ -74,9 +73,8 @@ export function PlanDetailsModal({
 
   const rateAtUsage = pricePerKwhAtUsage(plan, usageKwh);
   const bill = estimatedMonthlyBill(plan, usageKwh);
-  const priceWhy = [500, 1000, 2000].includes(usageKwh)
-    ? "The plan data has no price at this usage"
-    : "Prices are only known at 500, 1,000 and 2,000 kWh (no interpolation rule yet)";
+  const priceWhy =
+    "A price cannot be estimated because one or more anchor rates are missing";
   const fee = parseCancellationFee(plan.pricingDetails);
   // Text under the grid: the full details, minus the fee sentence the box shows.
   const detailsNote = fee ? fee.remainder : plan.pricingDetails;

@@ -95,6 +95,7 @@ Finalized UI/UX Category List
 * Data Freshness: Automatic twice-daily updates synchronized with retail market volatility [i].
 * Navigation: A dedicated left-sidebar filter architecture for desktop users and a sticky top-navigation bar for mobile optimization [i].
 * Numeric Input Integration: Traditional horizontal sliders have been replaced with a direct numeric kWh input field. This allows users to test the formula against precise usage levels (e.g., 750 or 800 kWh) where gimmick rates often trigger [i].
+* Price Estimation: Between the 500, 1,000, and 2,000 kWh price anchors, linearly interpolate using the nearest pair. Below 500 kWh, hold the 500 kWh rate flat; above 2,000 kWh, hold the 2,000 kWh rate flat. Require all three anchor rates; if any is missing, do not estimate a rate or bill.
 * Visual Noise Reduction: Explicit removal of Pricing History Charts and the "Price per kWh" titles. These elements are frequently misinterpreted; they are replaced by the "Estimated Total Bill" to focus on the consumer's actual cash outlay [i].
 * Future Features: Evaluation of a support Chatbot for real-time user assistance [i].
 

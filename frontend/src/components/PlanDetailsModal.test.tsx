@@ -80,16 +80,24 @@ describe("PlanDetailsModal", () => {
   it("formats big bills with a comma", () => {
     render(
       <PlanDetailsModal
-        plan={plan({ pricePerKwh: { at500: null, at1000: 1.14, at2000: null } })}
+        plan={plan({
+          pricePerKwh: { at500: 1.14, at1000: 1.14, at2000: 1.14 },
+        })}
         onClose={vi.fn()}
       />,
     );
     expect(screen.getByText("$1,140")).toBeInTheDocument();
   });
 
-  it("says 'not available' only for usage with no price (no interpolation yet)", () => {
+  it("says 'not available' when a required anchor rate is missing", () => {
     render(
-      <PlanDetailsModal plan={plan()} onClose={vi.fn()} usageKwh={850} />,
+      <PlanDetailsModal
+        plan={plan({
+          pricePerKwh: { at500: 0.151, at1000: null, at2000: 0.145 },
+        })}
+        onClose={vi.fn()}
+        usageKwh={850}
+      />,
     );
     // bill + avg price; the fee is still known
     expect(screen.getAllByText("not available")).toHaveLength(2);

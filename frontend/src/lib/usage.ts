@@ -16,31 +16,29 @@ export function clampUsage(value: number): number {
 /**
  * Price per kWh (in dollars) for a plan at a given monthly usage.
  *
- * The upstream data only gives a price at exactly 500 / 1000 / 2000 kWh. How to
- * price a usage *between* those points (interpolation) is a BRIEF.md rule that
- * does not exist yet, so this returns the exact anchor price when usage matches
- * one, and `null` otherwise.
+ * The upstream data gives prices at 500 / 1000 / 2000 kWh. Prices between
+ * anchors are linearly interpolated; outside the anchor range, the nearest
+ * endpoint rate is held flat. Every anchor is required to estimate a price.
  */
 export function pricePerKwhAtUsage(
   plan: Plan,
   usageKwh: number,
 ): number | null {
-  switch (usageKwh) {
-    case 500:
-      return plan.pricePerKwh.at500;
-    case 1000:
-      return plan.pricePerKwh.at1000;
-    case 2000:
-      return plan.pricePerKwh.at2000;
-    default:
-      return null; // TODO(BRIEF.md): interpolation rule
+  const { at500, at1000, at2000 } = plan.pricePerKwh;
+  if (!Number.isFinite(usageKwh)) return null;
+  if (at500 === null || at1000 === null || at2000 === null) return null;
+  if (usageKwh <= 500) return at500;
+  if (usageKwh <= 1000) {
+    return at500 + ((at1000 - at500) * (usageKwh - 500)) / 500;
   }
+  if (usageKwh <= 2000) {
+    return at1000 + ((at2000 - at1000) * (usageKwh - 1000)) / 1000;
+  }
+  return at2000;
 }
 
 /**
- * Estimated monthly bill in dollars: rate (dollars/kWh) x usage. Only defined
- * where `pricePerKwhAtUsage` is — i.e. at 500 / 1000 / 2000 kWh — until
- * BRIEF.md defines interpolation.
+ * Estimated monthly bill in dollars: rate (dollars/kWh) x usage.
  */
 export function estimatedMonthlyBill(
   plan: Plan,

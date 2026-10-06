@@ -31,7 +31,7 @@ describe("PlanCard", () => {
       screen.getByRole("heading", { name: "Steady 12" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Example Energy")).toBeInTheDocument();
-    expect(screen.getByText("13.90¢")).toBeInTheDocument(); // 0.139 * 100, 2dp
+    expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 0.139 * 100, 1dp
     expect(screen.getByText("12 mos")).toBeInTheDocument();
     expect(screen.getByText("6% renewable")).toBeInTheDocument();
   });
@@ -81,10 +81,22 @@ describe("PlanCard", () => {
   it("prices at the given usage: exact anchor value, or — for a non-anchor", () => {
     const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
     expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
-    expect(screen.getByText("15.10¢")).toBeInTheDocument(); // 0.151 -> anchor
+    expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
 
     rerender(<PlanCard plan={plan()} usageKwh={1500} />);
     expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument(); // no interpolation rule
+  });
+
+  it("offers 'Hide this provider' only when a handler is given, and passes the company", () => {
+    const { rerender } = render(<PlanCard plan={plan()} />);
+    expect(
+      screen.queryByRole("button", { name: /hide this provider/i }),
+    ).not.toBeInTheDocument();
+
+    const onHide = vi.fn();
+    rerender(<PlanCard plan={plan()} onHideProvider={onHide} />);
+    fireEvent.click(screen.getByRole("button", { name: /hide this provider/i }));
+    expect(onHide).toHaveBeenCalledWith("Example Energy");
   });
 });

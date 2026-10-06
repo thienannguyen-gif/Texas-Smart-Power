@@ -36,3 +36,16 @@ export function pricePerKwhAtUsage(
       return null; // TODO(BRIEF.md): interpolation rule
   }
 }
+
+/**
+ * Estimated monthly bill in dollars: rate (dollars/kWh) x usage. Only defined
+ * where `pricePerKwhAtUsage` is — i.e. at 500 / 1000 / 2000 kWh — until
+ * BRIEF.md defines interpolation.
+ */
+export function estimatedMonthlyBill(
+  plan: Plan,
+  usageKwh: number,
+): number | null {
+  const rate = pricePerKwhAtUsage(plan, usageKwh);
+  return rate === null ? null : rate * usageKwh;
+}

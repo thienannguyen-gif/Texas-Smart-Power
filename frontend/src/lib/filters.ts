@@ -5,13 +5,16 @@ import type { Plan } from "../types/plan";
 // Each mapping below is the literal reading of an existing `Plan` field; the
 // bucket boundaries marked "confirm" are guesses that BRIEF.md should settle.
 
-export type ProductType = "fixed" | "variable" | "prepaid" | "renewable100";
+export type ProductType = "fixed" | "renewable100";
 export type ContractBucket = "mtm" | "m1_6" | "m7_12" | "m12plus";
 
 export interface PlanFilters {
   productTypes: ProductType[];
   contractBuckets: ContractBucket[];
+  /** Show only these providers (OR). Never overlaps `excludedProviders`. */
   providers: string[];
+  /** Hide these providers. Never overlaps `providers`. */
+  excludedProviders: string[];
   /** From the renewable slider (0 = off). */
   minRenewablePct: number;
 }
@@ -20,8 +23,31 @@ export const EMPTY_FILTERS: PlanFilters = {
   productTypes: [],
   contractBuckets: [],
   providers: [],
+  excludedProviders: [],
   minRenewablePct: 0,
 };
+
+/** Add `name` to the selected list; it leaves the excluded list. */
+export function selectProvider(filters: PlanFilters, name: string): PlanFilters {
+  return {
+    ...filters,
+    providers: filters.providers.includes(name)
+      ? filters.providers
+      : [...filters.providers, name],
+    excludedProviders: filters.excludedProviders.filter((n) => n !== name),
+  };
+}
+
+/** Add `name` to the excluded list; it leaves the selected list. */
+export function excludeProvider(filters: PlanFilters, name: string): PlanFilters {
+  return {
+    ...filters,
+    providers: filters.providers.filter((n) => n !== name),
+    excludedProviders: filters.excludedProviders.includes(name)
+      ? filters.excludedProviders
+      : [...filters.excludedProviders, name],
+  };
+}
 
 /** Leading percentage in `renewableDescription` ("6% renewable" -> 6), or null. */
 export function renewablePct(plan: Plan): number | null {
@@ -34,10 +60,6 @@ function matchesProductType(plan: Plan, type: ProductType): boolean {
   switch (type) {
     case "fixed":
       return rate.includes("fixed");
-    case "variable":
-      return rate.includes("variable") || rate.includes("indexed");
-    case "prepaid":
-      return plan.prepaid;
     case "renewable100":
       return renewablePct(plan) === 100;
   }
@@ -76,6 +98,7 @@ export function filterPlans(plans: Plan[], filters: PlanFilters): Plan[] {
     ) {
       return false;
     }
+    if (filters.excludedProviders.includes(plan.companyName)) return false;
     if (
       filters.providers.length > 0 &&
       !filters.providers.includes(plan.companyName)
@@ -95,6 +118,7 @@ export function isFiltering(filters: PlanFilters): boolean {
     filters.productTypes.length > 0 ||
     filters.contractBuckets.length > 0 ||
     filters.providers.length > 0 ||
+    filters.excludedProviders.length > 0 ||
     filters.minRenewablePct > 0
   );
 }

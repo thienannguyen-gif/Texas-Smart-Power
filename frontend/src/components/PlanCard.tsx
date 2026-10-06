@@ -1,16 +1,9 @@
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH, pricePerKwhAtUsage } from "../lib/usage";
+import { formatKwh, formatRate } from "../lib/money";
 
 // Display-only. Every value shown is a field that already exists on `Plan`.
 // No ranking, no scoring, no bill estimate — those need BRIEF.md.
-//
-// Prices are shown in ¢/kWh (dollars × 100) — the universal Texas retail unit,
-// used on Power to Choose itself. A display unit, not a product rule.
-export function centsPerKwh(dollarsPerKwh: number | null, digits = 1): string {
-  return dollarsPerKwh === null
-    ? "—"
-    : `${(dollarsPerKwh * 100).toFixed(digits)}¢`;
-}
 
 // The mockup puts a star rating here. Its source (upstream rating? a derived
 // score?) and scale are a BRIEF.md decision, so this is an inert placeholder —
@@ -30,10 +23,13 @@ function RatingPlaceholder() {
 export function PlanCard({
   plan,
   onMoreDetails,
+  onHideProvider,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
   plan: Plan;
   onMoreDetails?: () => void;
+  /** Called with the provider's name; the parent adds it to the excluded list. */
+  onHideProvider?: (companyName: string) => void;
   usageKwh?: number;
 }) {
   return (
@@ -75,10 +71,10 @@ export function PlanCard({
             Price per kWh
           </dt>
           <p className="text-xs text-brand-navy/50">
-            at {usageKwh.toLocaleString()} kWh
+            at {formatKwh(usageKwh)} kWh
           </p>
           <dd className="mt-1 text-2xl font-extrabold">
-            {centsPerKwh(pricePerKwhAtUsage(plan, usageKwh), 2)}
+            {formatRate(pricePerKwhAtUsage(plan, usageKwh))}
           </dd>
         </div>
         <div>
@@ -98,6 +94,19 @@ export function PlanCard({
           </dd>
         </div>
       </dl>
+
+      {onHideProvider && (
+        <div className="mt-3 text-right">
+          <button
+            type="button"
+            onClick={() => onHideProvider(plan.companyName)}
+            aria-label={`Hide this provider: ${plan.companyName}`}
+            className="text-xs text-brand-navy/60 underline hover:text-brand-navy"
+          >
+            Hide this provider
+          </button>
+        </div>
+      )}
     </article>
   );
 }

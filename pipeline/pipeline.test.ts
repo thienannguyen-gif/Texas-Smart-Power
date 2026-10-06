@@ -17,7 +17,7 @@ describe("ingestion path over the sample fixture", () => {
     expect(normalized).toHaveLength(4);
   });
 
-  it("carries the three price tiers through untouched", () => {
+  it("converts the three upstream cent prices to dollars", () => {
     const teaser = normalized.find((p) => p.id === 900002);
     expect(teaser?.pricePerKwh).toEqual({
       at500: 0.19,

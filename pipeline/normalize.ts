@@ -13,6 +13,14 @@ function num(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+// The ONE place the upstream price unit is converted. Power to Choose reports
+// `price_kwh*` in CENTS per kWh (observed: the UI showed "$11.90/kWh" for a
+// stored 11.9). `Plan` stores dollars; every display helper takes dollars.
+// toFixed(6) strips float noise (15.1 / 100 -> 0.151, not 0.15100000000000002).
+function centsToDollars(cents: number | null): number | null {
+  return cents === null ? null : Number((cents / 100).toFixed(6));
+}
+
 /**
  * Returns the normalized plan, or `null` when the record lacks the identity
  * fields the app can't do anything without (id, plan name, company name).
@@ -32,9 +40,9 @@ export function normalizePlan(raw: RawPlan): Plan | null {
     termMonths: num(raw.term_value),
     rateType: str(raw.rate_type),
     pricePerKwh: {
-      at500: num(raw.price_kwh500),
-      at1000: num(raw.price_kwh1000),
-      at2000: num(raw.price_kwh2000),
+      at500: centsToDollars(num(raw.price_kwh500)),
+      at1000: centsToDollars(num(raw.price_kwh1000)),
+      at2000: centsToDollars(num(raw.price_kwh2000)),
     },
     pricingDetails: str(raw.pricing_details),
     isTimeOfUse: raw.timeofuse === true,

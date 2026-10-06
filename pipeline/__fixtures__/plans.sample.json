@@ -8,9 +8,9 @@
     "plan_type": 1,
     "rate_type": "Fixed",
     "term_value": 12,
-    "price_kwh500": 0.16,
-    "price_kwh1000": 0.15,
-    "price_kwh2000": 0.155,
+    "price_kwh500": 16,
+    "price_kwh1000": 15,
+    "price_kwh2000": 15.5,
     "pricing_details": "SAMPLE DATA — not a real plan. Cancellation fee $150.",
     "timeofuse": false,
     "renewable_energy_description": "6% renewable",
@@ -27,9 +27,9 @@
     "plan_type": 1,
     "rate_type": "Fixed",
     "term_value": 24,
-    "price_kwh500": 0.19,
-    "price_kwh1000": 0.09,
-    "price_kwh2000": 0.21,
+    "price_kwh500": 19,
+    "price_kwh1000": 9,
+    "price_kwh2000": 21,
     "pricing_details": "SAMPLE DATA — cheap only at 1000 kWh. Cancellation fee $295.",
     "timeofuse": false,
     "prepaid": false
@@ -41,9 +41,9 @@
     "plan_type": 1,
     "rate_type": "Fixed",
     "term_value": 12,
-    "price_kwh500": 0.22,
-    "price_kwh1000": 0.2,
-    "price_kwh2000": 0.19,
+    "price_kwh500": 22,
+    "price_kwh1000": 20,
+    "price_kwh2000": 19,
     "pricing_details": "SAMPLE DATA — time-of-use plan, free 9pm–6am.",
     "timeofuse": true,
     "renewable_energy_description": "100% renewable",
@@ -53,6 +53,6 @@
     "plan_id": 900004,
     "company_name": "PLACEHOLDER Retail Energy",
     "plan_name": "SAMPLE — Sparse Record",
-    "price_kwh1000": 0.14
+    "price_kwh1000": 14
   }
 ]

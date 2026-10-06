@@ -32,11 +32,13 @@ describe("PlanDetailsModal", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows all three price tiers in ¢/kWh", () => {
+  it("shows all three price tiers in ¢/kWh, never with a $ sign", () => {
     render(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
-    expect(screen.getByText("15.1¢")).toBeInTheDocument();
-    expect(screen.getByText("13.9¢")).toBeInTheDocument();
-    expect(screen.getByText("14.5¢")).toBeInTheDocument();
+    expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument();
+    // 13.9¢ is both the 1,000 kWh tier and the AVG PRICE at the default usage
+    expect(screen.getAllByText("13.9¢/kWh")).toHaveLength(2);
+    expect(screen.getByText("14.5¢/kWh")).toBeInTheDocument();
+    expect(screen.queryByText(/\$\d+\.\d+\/kWh/)).not.toBeInTheDocument();
   });
 
   it("shows real plan length / type / renewable", () => {
@@ -53,22 +55,70 @@ describe("PlanDetailsModal", () => {
     expect(screen.getByText("100%")).toBeInTheDocument();
   });
 
-  it("marks the rule-dependent fields as not available yet", () => {
+  it("shows the bill, avg price and fee at the default 1,000 kWh", () => {
     render(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
-    // MONTHLY, AVG PRICE, CANCELLATION FEE — three placeholders
-    expect(screen.getAllByText(/not available yet/i)).toHaveLength(3);
+    expect(screen.getByText("ESTIMATED MONTHLY BILL")).toBeInTheDocument();
+    expect(screen.getByText("$139")).toBeInTheDocument(); // 0.139 x 1000
+    expect(screen.getByText("at 1,000 kWh")).toBeInTheDocument();
+    expect(screen.getByText("AVG PRICE PER kWh")).toBeInTheDocument();
+    expect(screen.getByText("$150")).toBeInTheDocument(); // fee from pricingDetails
+    expect(screen.queryByText(/not available/i)).not.toBeInTheDocument();
   });
 
-  it("labels the monthly-cost row with the current usage", () => {
+  it("updates the bill and the 'at X kWh' line with the usage", () => {
     const { rerender } = render(
       <PlanDetailsModal plan={plan()} onClose={vi.fn()} />,
     );
-    expect(screen.getByText(/monthly for 1,000 kWh/i)).toBeInTheDocument();
-
     rerender(
-      <PlanDetailsModal plan={plan()} onClose={vi.fn()} usageKwh={1500} />,
+      <PlanDetailsModal plan={plan()} onClose={vi.fn()} usageKwh={2000} />,
     );
-    expect(screen.getByText(/monthly for 1,500 kWh/i)).toBeInTheDocument();
+    expect(screen.getByText("$290")).toBeInTheDocument(); // 0.145 x 2000
+    expect(screen.getByText("at 2,000 kWh")).toBeInTheDocument();
+    expect(screen.getAllByText("14.5¢/kWh")).toHaveLength(2);
+  });
+
+  it("formats big bills with a comma", () => {
+    render(
+      <PlanDetailsModal
+        plan={plan({ pricePerKwh: { at500: null, at1000: 1.14, at2000: null } })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("$1,140")).toBeInTheDocument();
+  });
+
+  it("says 'not available' only for usage with no price (no interpolation yet)", () => {
+    render(
+      <PlanDetailsModal plan={plan()} onClose={vi.fn()} usageKwh={850} />,
+    );
+    // bill + avg price; the fee is still known
+    expect(screen.getAllByText("not available")).toHaveLength(2);
+    expect(screen.getByText("$150")).toBeInTheDocument();
+  });
+
+  it("wires the cancellation fee into its box and drops the duplicate line", () => {
+    render(
+      <PlanDetailsModal
+        plan={plan({
+          pricingDetails: "Cancellation Fee: $300.00",
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("CANCELLATION FEE")).toBeInTheDocument();
+    expect(screen.getByText("$300")).toBeInTheDocument();
+    expect(screen.queryByText(/cancellation fee:/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the rest of the pricing text and says 'not available' when no fee is stated", () => {
+    render(
+      <PlanDetailsModal
+        plan={plan({ pricingDetails: "Free nights 9pm–6am." })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Free nights 9pm–6am.")).toBeInTheDocument();
+    expect(screen.getAllByText("not available")).toHaveLength(1);
   });
 
   it("links the EFL and Terms documents", () => {

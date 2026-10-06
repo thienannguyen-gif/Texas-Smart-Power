@@ -7,7 +7,12 @@ import {
   MAX_USAGE_KWH,
   MIN_USAGE_KWH,
 } from "../lib/usage";
-import { EMPTY_FILTERS, filterPlans } from "../lib/filters";
+import {
+  EMPTY_FILTERS,
+  excludeProvider,
+  filterPlans,
+  type PlanFilters,
+} from "../lib/filters";
 import { PlanList } from "./PlanList";
 import { FilterSidebar } from "./FilterSidebar";
 
@@ -31,6 +36,15 @@ export function PlansView({
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
+  // Current page (1-based) of the filtered list. A filter change goes back to
+  // page 1; a usage change leaves it alone, so after any re-ranking the user
+  // stays on the same page number.
+  const [page, setPage] = useState(1);
+
+  function changeFilters(next: PlanFilters) {
+    setFilters(next);
+    setPage(1);
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -69,7 +83,7 @@ export function PlansView({
         <FilterSidebar
           providers={providers}
           value={filters}
-          onChange={setFilters}
+          onChange={changeFilters}
         />
 
         <main>
@@ -102,6 +116,11 @@ export function PlansView({
               plans={filterPlans(state.data.plans, filters)}
               totalCount={state.data.plans.length}
               generatedAt={state.data.generatedAt}
+              page={page}
+              onPageChange={setPage}
+              onHideProvider={(name) =>
+                changeFilters(excludeProvider(filters, name))
+              }
               usageKwh={usageKwh}
             />
           )}

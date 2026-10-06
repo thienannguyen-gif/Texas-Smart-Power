@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_FILTERS,
+  excludeProvider,
   filterPlans,
   isFiltering,
   renewablePct,
+  selectProvider,
   type PlanFilters,
 } from "./filters";
 import type { Plan } from "../types/plan";
@@ -65,11 +67,22 @@ describe("filterPlans", () => {
   });
 
   it("filters by product type (OR within the group)", () => {
-    const ids = filterPlans(
-      plans,
-      withFilters({ productTypes: ["prepaid", "variable"] }),
-    ).map((p) => p.id);
-    expect(ids).toEqual([2, 3]);
+    expect(
+      filterPlans(plans, withFilters({ productTypes: ["fixed"] })).map(
+        (p) => p.id,
+      ),
+    ).toEqual([1, 3, 4]);
+    expect(
+      filterPlans(
+        plans,
+        withFilters({ productTypes: ["fixed", "renewable100"] }),
+      ).map((p) => p.id),
+    ).toEqual([1, 3, 4]);
+    expect(
+      filterPlans(plans, withFilters({ productTypes: ["renewable100"] })).map(
+        (p) => p.id,
+      ),
+    ).toEqual([4]);
   });
 
   it("filters by contract bucket", () => {
@@ -95,9 +108,25 @@ describe("filterPlans", () => {
     expect(
       filterPlans(
         plans,
-        withFilters({ providers: ["Gexa"], productTypes: ["prepaid"] }),
+        withFilters({ providers: ["Gexa"], contractBuckets: ["m12plus"] }),
       ).map((p) => p.id),
     ).toEqual([3]);
+  });
+
+  it("shows plans from ANY selected provider (OR)", () => {
+    expect(
+      filterPlans(plans, withFilters({ providers: ["APGE", "Rhythm"] })).map(
+        (p) => p.id,
+      ),
+    ).toEqual([2, 4]);
+  });
+
+  it("filters out excluded providers", () => {
+    expect(
+      filterPlans(plans, withFilters({ excludedProviders: ["Gexa"] })).map(
+        (p) => p.id,
+      ),
+    ).toEqual([2, 4]);
   });
 
   it("drops plans below the renewable slider, and those with no % info", () => {
@@ -107,10 +136,53 @@ describe("filterPlans", () => {
   });
 });
 
+describe("selectProvider / excludeProvider", () => {
+  it("selecting a provider removes it from the excluded list", () => {
+    const f = selectProvider(
+      withFilters({ excludedProviders: ["Gexa", "APGE"] }),
+      "Gexa",
+    );
+    expect(f.providers).toEqual(["Gexa"]);
+    expect(f.excludedProviders).toEqual(["APGE"]);
+  });
+
+  it("excluding a provider removes it from the selected list", () => {
+    const f = excludeProvider(
+      withFilters({ providers: ["Gexa", "APGE"] }),
+      "Gexa",
+    );
+    expect(f.excludedProviders).toEqual(["Gexa"]);
+    expect(f.providers).toEqual(["APGE"]);
+  });
+
+  it("never puts a provider in both lists, and never duplicates", () => {
+    let f = EMPTY_FILTERS;
+    for (const step of [
+      (x: PlanFilters) => selectProvider(x, "Gexa"),
+      (x: PlanFilters) => excludeProvider(x, "Gexa"),
+      (x: PlanFilters) => excludeProvider(x, "Gexa"),
+      (x: PlanFilters) => selectProvider(x, "Gexa"),
+      (x: PlanFilters) => selectProvider(x, "Gexa"),
+    ]) {
+      f = step(f);
+      expect(
+        f.providers.filter((n) => f.excludedProviders.includes(n)),
+      ).toEqual([]);
+      expect(new Set(f.providers).size).toBe(f.providers.length);
+      expect(new Set(f.excludedProviders).size).toBe(
+        f.excludedProviders.length,
+      );
+    }
+  });
+});
+
 describe("isFiltering", () => {
   it("is false only for the empty filter set", () => {
     expect(isFiltering(EMPTY_FILTERS)).toBe(false);
     expect(isFiltering(withFilters({ providers: ["Gexa"] }))).toBe(true);
+    expect(isFiltering(withFilters({ excludedProviders: ["Gexa"] }))).toBe(
+      true,
+    );
     expect(isFiltering(withFilters({ minRenewablePct: 10 }))).toBe(true);
   });
 });

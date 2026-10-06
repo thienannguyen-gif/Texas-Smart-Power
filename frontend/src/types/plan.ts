@@ -50,6 +50,7 @@ export interface RawPlan {
   plan_type?: number;
   rate_type?: string;
   term_value?: number;
+  /** CENTS per kWh at 500 / 1000 / 2000 kWh (normalize.ts converts to dollars). */
   price_kwh500?: number;
   price_kwh1000?: number;
   price_kwh2000?: number;

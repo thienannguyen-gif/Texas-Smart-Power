@@ -8,9 +8,9 @@ const validRaw: RawPlan = {
   company_name: "Example Energy",
   term_value: 12,
   rate_type: "Fixed",
-  price_kwh500: 0.151,
-  price_kwh1000: 0.139,
-  price_kwh2000: 0.145,
+  price_kwh500: 15.1,
+  price_kwh1000: 13.9,
+  price_kwh2000: 14.5,
   pricing_details: "Cancellation fee $150",
   timeofuse: false,
   renewable_energy_description: "6% renewable",
@@ -66,6 +66,22 @@ describe("normalizePlan", () => {
     expect(
       normalizePlan({ plan_id: 3, plan_name: "  ", company_name: "Co" }),
     ).toBeNull();
+  });
+
+  it("converts upstream cents/kWh to dollars/kWh exactly once", () => {
+    const plan = normalizePlan({
+      plan_id: 5,
+      plan_name: "Cents",
+      company_name: "Co",
+      price_kwh500: 11.9,
+      price_kwh1000: 11.4,
+      price_kwh2000: 11.2,
+    });
+    expect(plan?.pricePerKwh).toEqual({
+      at500: 0.119,
+      at1000: 0.114,
+      at2000: 0.112,
+    });
   });
 
   it("rejects non-finite numeric prices", () => {

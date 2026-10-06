@@ -3,7 +3,9 @@ import {
   type ContractBucket,
   type PlanFilters,
   type ProductType,
+  selectProvider,
 } from "../lib/filters";
+import { ProviderPicker } from "./ProviderPicker";
 
 // The filter panel from the mockup. Controls are live and change the plan list,
 // but the field mappings + bucket boundaries are PROVISIONAL — BRIEF.md should
@@ -12,8 +14,6 @@ import {
 
 const PRODUCT_TYPES: { key: ProductType; label: string }[] = [
   { key: "fixed", label: "Fixed / Secured Rate" },
-  { key: "variable", label: "Variable / No Contract" },
-  { key: "prepaid", label: "Prepaid / No Deposit" },
   { key: "renewable100", label: "100% Renewable" },
 ];
 
@@ -47,10 +47,6 @@ export function FilterSidebar({
 }) {
   return (
     <aside className="rounded-2xl bg-brand-lime-200 p-5" aria-label="Filters">
-      <p className="mb-4 rounded-lg bg-white/60 px-3 py-2 text-xs text-brand-navy/70">
-        Provisional filters — field mappings pending BRIEF.md.
-      </p>
-
       <div className="space-y-6">
         <div className="space-y-2">
           <GroupHeading>PRODUCT TYPE</GroupHeading>
@@ -130,25 +126,26 @@ export function FilterSidebar({
         {providers.length > 0 && (
           <div className="space-y-2">
             <GroupHeading>PROVIDER</GroupHeading>
-            {providers.map((name) => (
-              <label
-                key={name}
-                className="flex items-center gap-2 text-sm text-brand-navy/80"
-              >
-                <input
-                  type="checkbox"
-                  checked={value.providers.includes(name)}
-                  onChange={() =>
-                    onChange({
-                      ...value,
-                      providers: toggle(value.providers, name),
-                    })
-                  }
-                  className="h-4 w-4 rounded border-brand-navy/40 accent-brand-green"
-                />
-                {name}
-              </label>
-            ))}
+            <ProviderPicker
+              providers={providers}
+              selected={value.providers}
+              excluded={value.excludedProviders}
+              onSelect={(name) => onChange(selectProvider(value, name))}
+              onUnselect={(name) =>
+                onChange({
+                  ...value,
+                  providers: value.providers.filter((n) => n !== name),
+                })
+              }
+              onUnexclude={(name) =>
+                onChange({
+                  ...value,
+                  excludedProviders: value.excludedProviders.filter(
+                    (n) => n !== name,
+                  ),
+                })
+              }
+            />
           </div>
         )}
       </div>

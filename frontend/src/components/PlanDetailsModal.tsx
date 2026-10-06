@@ -1,35 +1,46 @@
 import { useEffect, useRef } from "react";
 import type { Plan } from "../types/plan";
-import { centsPerKwh } from "./PlanCard";
-import { DEFAULT_USAGE_KWH } from "../lib/usage";
+import { formatAmount, formatKwh, formatRate } from "../lib/money";
+import { parseCancellationFee } from "../lib/cancellationFee";
+import {
+  DEFAULT_USAGE_KWH,
+  estimatedMonthlyBill,
+  pricePerKwhAtUsage,
+} from "../lib/usage";
 
-// The "More Details" modal from the mockup. Real fields are filled from `Plan`;
-// the three that need BRIEF.md rules are shown as explicit placeholders:
-//   - "Monthly for N kWh" / "Avg price per kWh"  -> bill simulator
-//   - "Cancellation fee"                         -> parse from pricingDetails
+// The "More Details" modal from the mockup. Every box is filled from `Plan`;
+// "not available" is shown only when the value genuinely can't be produced
+// (missing from the record, or — until BRIEF.md defines interpolation — a usage
+// that isn't 500 / 1,000 / 2,000 kWh).
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+}) {
   return (
     <div>
       <p className="rounded-full bg-brand-lime-200 px-4 py-1 text-center text-sm font-bold tracking-wide text-brand-green-800">
         {label}
       </p>
       <p className="mt-1 text-center text-xl font-extrabold">{value}</p>
+      {note && <p className="text-center text-xs text-brand-navy/60">{note}</p>}
     </div>
   );
 }
 
-function Pending({ label }: { label: string }) {
+function Unavailable({ label, why }: { label: string; why: string }) {
   return (
     <div>
       <p className="rounded-full bg-brand-lime-200 px-4 py-1 text-center text-sm font-bold tracking-wide text-brand-green-800">
         {label}
       </p>
-      <p
-        className="mt-1 text-center text-sm text-brand-navy/50"
-        title="Needs a BRIEF.md rule"
-      >
-        not available yet
+      <p className="mt-1 text-center text-sm text-brand-navy/50" title={why}>
+        not available
       </p>
     </div>
   );
@@ -60,6 +71,15 @@ export function PlanDetailsModal({
     { label: "1,000 kWh", value: plan.pricePerKwh.at1000 },
     { label: "2,000 kWh", value: plan.pricePerKwh.at2000 },
   ];
+
+  const rateAtUsage = pricePerKwhAtUsage(plan, usageKwh);
+  const bill = estimatedMonthlyBill(plan, usageKwh);
+  const priceWhy = [500, 1000, 2000].includes(usageKwh)
+    ? "The plan data has no price at this usage"
+    : "Prices are only known at 500, 1,000 and 2,000 kWh (no interpolation rule yet)";
+  const fee = parseCancellationFee(plan.pricingDetails);
+  // Text under the grid: the full details, minus the fee sentence the box shows.
+  const detailsNote = fee ? fee.remainder : plan.pricingDetails;
 
   const planType =
     [
@@ -111,16 +131,30 @@ export function PlanDetailsModal({
             <div key={tier.label} className="text-center">
               <p className="text-xs text-brand-navy/60">{tier.label}</p>
               <p className="rounded-full bg-brand-lime-200 px-2 py-1 text-sm font-extrabold">
-                {centsPerKwh(tier.value)}
-                <span className="font-normal">/kWh</span>
+                {formatRate(tier.value)}
               </p>
             </div>
           ))}
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <Pending label={`MONTHLY FOR ${usageKwh.toLocaleString()} kWh`} />
-          <Pending label="AVG PRICE PER kWh" />
+          {bill === null ? (
+            <Unavailable label="ESTIMATED MONTHLY BILL" why={priceWhy} />
+          ) : (
+            <Stat
+              label="ESTIMATED MONTHLY BILL"
+              value={formatAmount(bill)}
+              note={`at ${formatKwh(usageKwh)} kWh`}
+            />
+          )}
+          {rateAtUsage === null ? (
+            <Unavailable label="AVG PRICE PER kWh" why={priceWhy} />
+          ) : (
+            <Stat
+              label="AVG PRICE PER kWh"
+              value={formatRate(rateAtUsage)}
+            />
+          )}
           <Stat
             label="PLAN LENGTH"
             value={
@@ -130,7 +164,14 @@ export function PlanDetailsModal({
             }
           />
           <Stat label="PLAN TYPE" value={planType} />
-          <Pending label="CANCELLATION FEE" />
+          {fee ? (
+            <Stat label="CANCELLATION FEE" value={formatAmount(fee.amount)} />
+          ) : (
+            <Unavailable
+              label="CANCELLATION FEE"
+              why="No single flat fee found in the plan's pricing details"
+            />
+          )}
           <Stat
             label="PERCENTAGE OF RENEWABLE"
             value={plan.renewableDescription ?? "not stated"}
@@ -171,10 +212,8 @@ export function PlanDetailsModal({
           </>
         )}
 
-        {plan.pricingDetails && (
-          <p className="mt-4 text-xs text-brand-navy/50">
-            {plan.pricingDetails}
-          </p>
+        {detailsNote && (
+          <p className="mt-4 text-xs text-brand-navy/50">{detailsNote}</p>
         )}
       </div>
     </div>

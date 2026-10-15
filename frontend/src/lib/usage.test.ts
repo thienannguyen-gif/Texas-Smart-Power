@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  clampUsage,
-  estimatedMonthlyBill,
-  pricePerKwhAtUsage,
-} from "./usage";
+import { clampUsage, estimatedMonthlyBill, pricePerKwhAtUsage } from "./usage";
 import { formatAmount } from "./money";
 import type { Plan } from "../types/plan";
 
@@ -59,13 +55,21 @@ describe("estimatedMonthlyBill", () => {
     expect(formatAmount(estimatedMonthlyBill(p, 2000))).toBe("$224");
   });
 
+  it("prices 850 kWh at 12.22 cents and about $104 for 12.5/12.1/11.9", () => {
+    const p850 = {
+      pricePerKwh: { at500: 0.125, at1000: 0.121, at2000: 0.119 },
+    } as Plan;
+    expect(pricePerKwhAtUsage(p850, 850)).toBeCloseTo(0.1222, 10);
+    expect(formatAmount(estimatedMonthlyBill(p850, 850))).toBe("$104");
+  });
+
   it("calculates a bill using the interpolated rate", () => {
     expect(estimatedMonthlyBill(plan, 850)).toBeCloseTo(105.57, 10);
   });
 
   it("displays 0.130 dollars/kWh at 1000 kWh as $130", () => {
     const planAt130 = {
-      pricePerKwh: { at500: 0.130, at1000: 0.130, at2000: 0.130 },
+      pricePerKwh: { at500: 0.13, at1000: 0.13, at2000: 0.13 },
     } as Plan;
     expect(formatAmount(estimatedMonthlyBill(planAt130, 1000))).toBe("$130");
   });

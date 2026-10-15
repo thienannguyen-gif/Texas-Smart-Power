@@ -31,8 +31,8 @@ describe("ingestion path over the sample fixture", () => {
     expect(normalized.find((p) => p.id === 900001)?.isTimeOfUse).toBe(false);
   });
 
-  it("applyPipeline is currently an identity pass (no BRIEF.md rules yet)", () => {
-    expect(applyPipeline(normalized)).toEqual(normalized);
+  it("ranks plans with complete inputs and excludes incomplete plans", () => {
+    expect(applyPipeline(normalized).map((plan) => plan.id)).toEqual([900001]);
   });
 });
 
@@ -63,7 +63,7 @@ describe("Blob data-file shape", () => {
 
   it("keeps planCount in sync with the array", () => {
     expect(written.planCount).toBe(written.plans.length);
-    expect(written.planCount).toBe(4);
+    expect(written.planCount).toBe(1);
   });
 
   it("round-trips through JSON without loss", () => {

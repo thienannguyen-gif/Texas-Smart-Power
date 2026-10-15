@@ -26,7 +26,7 @@ export function ZipForm({
         if (valid) onSubmit(value);
       }}
     >
-      <div className="flex flex-wrap items-stretch gap-3">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row">
         <label htmlFor="zip" className="sr-only">
           ZIP code
         </label>
@@ -42,12 +42,12 @@ export function ZipForm({
           onBlur={() => setTouched(true)}
           aria-invalid={showError}
           aria-describedby={showError ? errorId : undefined}
-          className="min-w-0 flex-1 rounded-2xl bg-brand-navy-600/80 px-6 py-4 text-lg text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-brand-green"
+          className="min-w-0 flex-1 rounded-2xl bg-brand-navy-600/80 px-5 py-4 text-base text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-brand-green sm:px-6 sm:text-lg"
         />
         <button
           type="submit"
           disabled={busy}
-          className="rounded-2xl bg-brand-green px-8 py-4 text-lg font-bold text-white shadow hover:bg-brand-green-800 disabled:opacity-50"
+          className="rounded-2xl bg-brand-green px-8 py-4 text-base font-bold text-white shadow hover:bg-brand-green-800 disabled:opacity-50 sm:text-lg"
         >
           {busy ? "…" : "GO"}
         </button>

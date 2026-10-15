@@ -36,9 +36,8 @@ export function PlansView({
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
-  // Current page (1-based) of the filtered list. A filter change goes back to
-  // page 1; a usage change leaves it alone, so after any re-ranking the user
-  // stays on the same page number.
+  // Current page (1-based) of the filtered, rank-ordered list. A filter
+  // change goes back to page 1; a usage change leaves it alone.
   const [page, setPage] = useState(1);
 
   function changeFilters(next: PlanFilters) {
@@ -48,7 +47,7 @@ export function PlansView({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <span className="rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
             ZIPCODE: {zip}
@@ -62,7 +61,7 @@ export function PlansView({
           </button>
         </div>
 
-        <label className="flex items-center gap-2 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
+        <label className="flex items-center justify-between gap-2 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold sm:justify-start">
           Electricity usage
           <input
             type="number"
@@ -73,7 +72,7 @@ export function PlansView({
             onChange={(e) => setUsageKwh(Number(e.target.value))}
             onBlur={(e) => setUsageKwh(clampUsage(Number(e.target.value)))}
             aria-label="Monthly usage in kWh"
-            className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right font-normal"
+            className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-2 text-right font-normal"
           />
           kWh
         </label>

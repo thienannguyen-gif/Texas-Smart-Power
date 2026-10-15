@@ -9,9 +9,8 @@ export const PLANS_PER_PAGE = 6;
 const PAGE_BUTTON =
   "rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold text-brand-navy hover:bg-brand-lime-100 disabled:opacity-40 disabled:hover:bg-brand-lime-200";
 
-// Plans render in the order delivered — no scoring. Ranking and the stability
-// filter come later, once BRIEF.md defines them. The sidebar's preference
-// filters have already been applied to `plans` by the time they reach here.
+// Plans arrive in rank order; the sidebar's preference filters have already
+// been applied by the time they reach this component.
 //
 // Display-only pagination over the in-memory list. The current page lives in
 // the parent (`page`, 1-based) so it is the parent that resets it on a filter
@@ -71,10 +70,6 @@ export function PlanList({
           : `${totalCount} ${totalCount === 1 ? "plan" : "plans"}`}{" "}
         · updated {new Date(generatedAt).toLocaleString("en-US")}
       </p>
-      <p className="mb-4 text-xs text-brand-green-800">
-        Unranked scaffold view — listed in the order the data provides.
-      </p>
-
       {plans.length === 0 ? (
         <p className="text-brand-navy/70">No plans match these filters.</p>
       ) : (

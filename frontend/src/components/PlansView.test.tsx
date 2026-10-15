@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { PlansView } from "./PlansView";
 import type { Plan, TduDataFile } from "../types/plan";
@@ -56,24 +56,58 @@ const many: TduDataFile = {
   ),
 };
 
-test("starts at 1,000 kWh and re-prices cards when the usage box changes", async () => {
-  mockPlans();
+test("updates card and bill/average prices immediately when usage changes", async () => {
+  mockPlans({
+    ...file,
+    planCount: 1,
+    plans: [
+      mk({
+        id: 1,
+        planName: "Interpolated Plan",
+        companyName: "Example Co",
+        pricePerKwh: { at500: 0.127, at1000: 0.123, at2000: 0.121 },
+      }),
+    ],
+  });
   render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
 
-  expect(await screen.findAllByText("at 1,000 kWh")).toHaveLength(2);
+  expect(await screen.findByText("at 1,000 kWh")).toBeInTheDocument();
+  const card = screen.getByRole("article");
+  expect(within(card).getByText("12.3¢/kWh")).toBeInTheDocument();
   const box = screen.getByLabelText(/monthly usage in kWh/i);
   expect(box).toHaveValue(1000);
   expect(
     screen.queryByRole("button", { name: /your usage/i }),
   ).not.toBeInTheDocument();
 
-  fireEvent.change(box, { target: { value: "500" } });
-  expect(await screen.findAllByText("at 500 kWh")).toHaveLength(2);
-  expect(screen.getAllByText("16.0¢/kWh")).toHaveLength(2); // 0.16 anchor
+  fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+  const dialog = screen.getByRole("dialog", { name: /interpolated plan/i });
+  expect(within(dialog).getByText("$123")).toBeInTheDocument();
+  expect(within(dialog).getAllByText("12.3¢/kWh")).toHaveLength(2);
 
+  fireEvent.click(within(dialog).getByRole("button", { name: /close/i }));
+  fireEvent.change(box, { target: { value: "850" } });
+  expect(within(card).getByText("at 850 kWh")).toBeInTheDocument();
+  expect(within(card).getByText("12.4¢/kWh")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+  const updatedDialog = screen.getByRole("dialog", {
+    name: /interpolated plan/i,
+  });
+  expect(within(updatedDialog).getByText("at 850 kWh")).toBeInTheDocument();
+  expect(within(updatedDialog).getByText("$106")).toBeInTheDocument();
+  expect(within(updatedDialog).getByText("12.4¢/kWh")).toBeInTheDocument();
+
+  fireEvent.click(within(updatedDialog).getByRole("button", { name: /close/i }));
   fireEvent.change(box, { target: { value: "9999" } });
   fireEvent.blur(box);
   expect(box).toHaveValue(4000); // clamped
+  expect(within(card).getByText("12.1¢/kWh")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+  const cappedDialog = screen.getByRole("dialog", {
+    name: /interpolated plan/i,
+  });
+  expect(within(cappedDialog).getByText("$484")).toBeInTheDocument();
+  expect(within(cappedDialog).getAllByText("12.1¢/kWh")).toHaveLength(2);
 });
 
 // Type into the provider box, then click the matching suggestion.

@@ -17,3 +17,14 @@ body {
   background-color: var(--color-brand-lime);
   color: var(--color-brand-navy);
 }
+
+@media (min-width: 768px) {
+  .filter-panel > details > summary {
+    display: none;
+  }
+
+  .filter-panel-content {
+    display: block;
+    margin-top: 0;
+  }
+}

@@ -16,12 +16,12 @@ export function HeroLanding({
 }) {
   return (
     <section className="relative overflow-hidden">
-      <Skyline className="pointer-events-none absolute inset-x-0 bottom-0 h-64 w-full opacity-90" />
-      <div className="relative mx-auto max-w-3xl px-4 pt-16 pb-40 text-center sm:px-6">
-        <h1 className="text-5xl font-extrabold tracking-tight text-brand-navy sm:text-7xl">
+      <Skyline className="pointer-events-none absolute inset-x-0 bottom-0 h-44 w-full opacity-90 sm:h-64" />
+      <div className="relative mx-auto max-w-3xl px-4 pt-12 pb-32 text-center sm:px-6 sm:pt-16 sm:pb-40">
+        <h1 className="text-4xl font-extrabold tracking-tight text-brand-navy sm:text-7xl">
           Texas Smart Power
         </h1>
-        <div className="mx-auto mt-10 max-w-2xl">
+        <div className="mx-auto mt-8 max-w-2xl sm:mt-10">
           <ZipForm onSubmit={onSubmitZip} busy={busy} />
         </div>
         <p className="mt-6 text-lg font-bold text-white drop-shadow sm:text-xl">

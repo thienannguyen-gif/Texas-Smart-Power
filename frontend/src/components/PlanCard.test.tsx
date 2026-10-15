@@ -78,14 +78,14 @@ describe("PlanCard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("prices at the given usage: exact anchor value, or — for a non-anchor", () => {
+  it("prices at the given usage using an anchor or interpolated value", () => {
     const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
     expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
     expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
 
     rerender(<PlanCard plan={plan()} usageKwh={1500} />);
     expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
-    expect(screen.getByText("—")).toBeInTheDocument(); // no interpolation rule
+    expect(screen.getByText("14.2¢/kWh")).toBeInTheDocument();
   });
 
   it("offers 'Hide this provider' only when a handler is given, and passes the company", () => {

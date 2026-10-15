@@ -3,10 +3,9 @@
 // lives here under frontend/src/ and the API side imports it directly rather
 // than keeping a second copy.
 //
-// SCOPE: this file describes only the *normalized upstream* shape. Computed
-// fields — the stability verdict + reason code, the ranking score, the parsed
-// cancellation fee, the TOU classification — are defined by BRIEF.md and get
-// added here once that file exists. Nothing in this repo computes them yet.
+// SCOPE: this file describes only the *normalized upstream* shape. Ranking
+// scores and parsed fees are derived by the ingestion pipeline without changing
+// this stored plan shape; other computed fields remain separate.
 
 /** The six Texas utility areas this app supports (blueprint §5). */
 export const TDU_IDS = [

@@ -2,8 +2,8 @@ import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH, pricePerKwhAtUsage } from "../lib/usage";
 import { formatKwh, formatRate } from "../lib/money";
 
-// Display-only. Every value shown is a field that already exists on `Plan`.
-// No ranking, no scoring, no bill estimate — those need BRIEF.md.
+// Display-only. Ranking is computed by the ingestion pipeline; this card
+// renders plan details without showing the internal score.
 
 // The mockup puts a star rating here. Its source (upstream rating? a derived
 // score?) and scale are a BRIEF.md decision, so this is an inert placeholder —
@@ -33,7 +33,7 @@ export function PlanCard({
   usageKwh?: number;
 }) {
   return (
-    <article className="rounded-2xl border-2 border-brand-navy bg-white p-5">
+    <article className="rounded-2xl border-2 border-brand-navy bg-white p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-brand-green-700">
@@ -58,15 +58,15 @@ export function PlanCard({
           <button
             type="button"
             onClick={onMoreDetails}
-            className="shrink-0 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold text-brand-navy hover:bg-brand-lime-100"
+            className="shrink-0 rounded-full bg-brand-lime-200 px-3 py-2 text-xs font-bold text-brand-navy hover:bg-brand-lime-100 sm:px-4 sm:text-sm"
           >
             MORE DETAILS
           </button>
         )}
       </div>
 
-      <dl className="mt-4 grid grid-cols-3 gap-4 text-center">
-        <div>
+      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-center sm:grid-cols-3 sm:gap-4">
+        <div className="col-span-2 rounded-xl bg-brand-lime-100 px-2 py-3 sm:col-span-1 sm:bg-transparent sm:px-0 sm:py-0">
           <dt className="text-sm font-semibold text-brand-navy/80">
             Price per kWh
           </dt>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCancellationFee } from "./cancellationFee";
+import { parseCancellationFee, parseExitFee } from "./cancellationFee";
 
 describe("parseCancellationFee", () => {
   it("reads 'Cancellation Fee: $300.00'", () => {
@@ -11,7 +11,9 @@ describe("parseCancellationFee", () => {
 
   it("reads 'Cancellation fee $150.' and keeps the other text", () => {
     expect(
-      parseCancellationFee("SAMPLE DATA — not a real plan. Cancellation fee $150."),
+      parseCancellationFee(
+        "SAMPLE DATA — not a real plan. Cancellation fee $150.",
+      ),
     ).toEqual({ amount: 150, remainder: "SAMPLE DATA — not a real plan." });
   });
 
@@ -43,5 +45,26 @@ describe("parseCancellationFee", () => {
       parseCancellationFee("Cancellation fee $15 per remaining month"),
     ).toBeNull();
     expect(parseCancellationFee("Cancellation fee $15/month")).toBeNull();
+  });
+
+  it("converts a per-remaining-month fee to its maximum term exposure", () => {
+    expect(parseExitFee("Cancellation fee $20/remaining month", 12)).toBe(220);
+    expect(parseExitFee("Cancellation fee $20 per remaining month", 12)).toBe(
+      220,
+    );
+  });
+
+  it("uses flat fees and rejects unknown or ambiguous monthly fees", () => {
+    expect(parseExitFee("Cancellation fee $150", 12)).toBe(150);
+    expect(parseExitFee("Cancellation fee $20/month", 12)).toBeNull();
+    expect(
+      parseExitFee("Cancellation fee $20/remaining month", null),
+    ).toBeNull();
+    expect(
+      parseExitFee(
+        "Cancellation fee $20/remaining month. Cancellation fee $150",
+        12,
+      ),
+    ).toBeNull();
   });
 });

@@ -4,7 +4,7 @@ Product Build Brief: Texas Smart Power Application
 
 The Texas retail electric provider (REP) market exists as a predatory landscape of gimmick-tiered pricing and intentional opacity. Providers routinely leverage convoluted rate structures—including minimum usage fees and hidden "humps"—to obscure the effective cost of power, creating a system where consumer comparison is functionally impossible. The Texas Smart Power application establishes a strategic competitive moat through "objective simplification," distilling market volatility into a transparent, actionable data set [i].
 
-The project mission is the delivery of a singular, objective 12-point ranking system that prioritizes absolute consumer financial clarity over provider marketing narratives [i]. By implementing a standardized scoring engine, we shift the "Power of Choice" from the REP to the consumer, drastically reducing decision fatigue by replacing marketing-heavy rhetoric with empirical truth. This brief details the technical architecture and mathematical rigor required to maintain this system as the definitive source of truth in the Texas energy market.
+The project mission is the delivery of a singular, objective weighted ranking system with a maximum score of 10, prioritizing consumer financial clarity over provider marketing narratives [i]. By implementing a standardized scoring engine, we shift the "Power of Choice" from the REP to the consumer, drastically reducing decision fatigue by replacing marketing-heavy rhetoric with empirical truth. This brief details the technical architecture and mathematical rigor required to maintain this system as the definitive source of truth in the Texas energy market.
 
 2. SYSTEM ARCHITECTURE & DATA FLOW
 
@@ -24,7 +24,7 @@ Automated Pipeline & Data Refreshes
 The backend logic is designed to maintain data integrity in a market where prices fluctuate hourly:
 
 * Vercel Cron Scheduler: An automated job executes twice daily at /api/cron/fetch-plans to capture retail fluctuations [i].
-* Ranking Library Execution: The pipeline follows a Fetch \rightarrow Filter \rightarrow TOU Check \rightarrow Ranking Library sequence. Crucially, the 12-point score is calculated server-side during this phase rather than at the request level.
+* Ranking Library Execution: The pipeline follows a Fetch \rightarrow Filter \rightarrow TOU Check \rightarrow Ranking Library sequence. Crucially, the weighted score (maximum 10 points) is calculated server-side during this phase rather than at the request level.
 * Blob Persistence: The engine generates six static plans/{tdu}.json files, uploading them to Vercel Blob Storage to serve as the application's read-only data source [i].
 
 This architecture ensures that the complex mathematical engine documented below is executed in a controlled, server-side environment to ensure score consistency across all user devices.
@@ -35,13 +35,22 @@ Consumer trust in the Texas market is built on mathematical grounding. A weighte
 
 The Master Scaling Equation
 
-The final 12-point score is derived from four weighted components:
+The final weighted score is derived from four weighted components. Each
+component is scored from 0–10, so the weighted total has a maximum of 10:
 
 Score = \left(\frac{5}{12} \times S_{price}\right) + \left(\frac{3}{12} \times S_{slope}\right) + \left(\frac{3}{12} \times S_{flex}\right) + \left(\frac{1}{12} \times S_{green}\right)
 
 Component 1: Price Score (S_{price})
 
-The price score is normalized to a 0–10 scale based on the pricing floor (P_{min}) and ceiling (P_{max}) of the specific ZIP code. This ensures a plan's value is relative to its immediate market competitors rather than a state average [i].
+The price score uses each eligible plan's price at 500 kWh and is normalized
+to a 0–10 scale based on the pricing floor (P_{min}) and ceiling (P_{max}) of
+all eligible plans for the specific ZIP code, before user-selected UI filters:
+
+S_{price} = 10 \times \frac{P_{max} - P_{current}}{P_{max} - P_{min}}
+
+Scores are clamped to 0–10. If all eligible prices are equal (within 1e-9),
+each plan receives 10 points. This ensures a plan's value is relative to its
+immediate market competitors rather than a state average [i].
 
 Component 2: Slope & Gimmick Analysis (S_{slope})
 
@@ -55,19 +64,38 @@ Component 3: Flexibility & Risk (S_{flex})
 
 This component evaluates the strategic risk of the contract. Financial risk is defined as the total cost to exit a contract:
 
-Risk = \begin{cases} Fee_{flat} & \text{if flat fee} \\ Term \times Fee_{month} & \text{if monthly fee} \end{cases}
+Risk = \begin{cases} Fee_{flat} & \text{if flat fee} \\ (Term - 1) \times Fee_{month} & \text{if per remaining month} \end{cases}
 
-Plans are capped at a maximum risk of Fee_{max} = \$395.00 [i]. Points are awarded based on term length:
+The fee-risk score uses the highest exit fee among eligible plans for the ZIP
+code, before user-selected UI filters. The maximum is calculated from the
+current data on every run; \$395.00 is an observed value, not a hardcoded cap:
 
-Contract Term	Points
-12 months	10
-13–15 months	9
-< 12 months	8
-18–24 months	7
-36 months	5
-> 36 months	3
+S_{fee} = 10 \times \left(1 - \frac{exit\_fee}{max\_fee}\right)
+
+If all eligible plans have the same exit fee, each receives 10 fee points.
+A fee stated per remaining month (for example, \$20/remaining month) is
+converted to its worst-case total as `fee_per_month × (term_months - 1)`.
+Missing required ranking inputs exclude a plan from ranked results.
+
+Points are awarded based on term length:
+
+| Contract term | Points |
+| --- | ---: |
+| Exactly 12 months | 10 |
+| 13–15 months | 9 |
+| Under 12 months | 8 |
+| 16–17 months | 8 |
+| 18–24 months | 7 |
+| 25–35 months | 6 |
+| Exactly 36 months | 5 |
+| Over 36 months | 3 |
 
 Source: Internal Ranking Logic [i]
+
+The term component uses the table's points directly on a 0–10 scale. The
+flexibility score is the equal-weight average of term and fee scores:
+
+S_{flex} = 0.5 \times S_{term} + 0.5 \times S_{fee}
 
 Component 4: Environmental Impact (S_{green})
 
@@ -105,7 +133,7 @@ The transition to production requires final architecture hardening to ensure the
 
 Risk Inventory
 
-1. Usage Level Validation: We must confirm that the 12-point score remains mathematically sound at non-standard intervals (e.g., 750 kWh). If a user inputs these values, the S_{slope} logic must still successfully identify V-Traps occurring between the 1000 and 2000 tiers [i].
+1. Usage Level Validation: We must confirm that the weighted score remains mathematically sound at non-standard intervals (e.g., 750 kWh). If a user inputs these values, the S_{slope} logic must still successfully identify V-Traps occurring between the 1000 and 2000 tiers [i].
 2. Library Hardening: Final validation of the core ranking library is required to ensure no pricing edge cases result in unintended score inflation.
-3. Communication Strategy: Completion of the 2-minute strategic pitch highlighting the technical merits of the 12-point score [i].
+3. Communication Strategy: Completion of the 2-minute strategic pitch highlighting the technical merits of the weighted score [i].
 4. Local Environment Synchronization: Verification that the local development environment is perfectly synchronized with the Vercel production environment, adhering strictly to the requirements in README.md [i].

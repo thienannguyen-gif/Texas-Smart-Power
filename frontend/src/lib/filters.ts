@@ -1,9 +1,8 @@
-import type { Plan } from "../types/plan";
+import type { Plan } from "../types/plan.js";
 
-// PROVISIONAL user-preference filters for the sidebar. These are NOT the
-// stability filter or the ranking — those stay out until BRIEF.md defines them.
-// Each mapping below is the literal reading of an existing `Plan` field; the
-// bucket boundaries marked "confirm" are guesses that BRIEF.md should settle.
+// User-preference filters for the sidebar. These are separate from the
+// stability filter and ranking, which are applied during ingestion.
+// Each mapping below reads an existing `Plan` field.
 
 export type ProductType = "fixed" | "renewable100";
 export type ContractBucket = "mtm" | "m1_6" | "m7_12" | "m12plus";
@@ -28,7 +27,10 @@ export const EMPTY_FILTERS: PlanFilters = {
 };
 
 /** Add `name` to the selected list; it leaves the excluded list. */
-export function selectProvider(filters: PlanFilters, name: string): PlanFilters {
+export function selectProvider(
+  filters: PlanFilters,
+  name: string,
+): PlanFilters {
   return {
     ...filters,
     providers: filters.providers.includes(name)
@@ -39,7 +41,10 @@ export function selectProvider(filters: PlanFilters, name: string): PlanFilters 
 }
 
 /** Add `name` to the excluded list; it leaves the selected list. */
-export function excludeProvider(filters: PlanFilters, name: string): PlanFilters {
+export function excludeProvider(
+  filters: PlanFilters,
+  name: string,
+): PlanFilters {
   return {
     ...filters,
     providers: filters.providers.filter((n) => n !== name),

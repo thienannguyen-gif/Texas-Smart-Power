@@ -414,19 +414,99 @@ test("provider suggestions show their counts", async () => {
   expect(screen.getByRole("option", { name: "Beta (8)" })).toBeInTheDocument();
 });
 
-test("filter header counts active filters; 'Show N plans' closes the panel (phone)", async () => {
+// jsdom has no matchMedia, so tests run as "desktop" unless they stub a phone.
+function stubPhone() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
+test("the ZIP, usage and Change controls live in one sticky bar; desktop shows the sidebar, not a Filters button", async () => {
   renderMany();
   await screen.findByText("Page 1 of 3");
-  expect(screen.getByText("FILTERS")).toBeInTheDocument();
 
+  const bar = screen.getByText("ZIPCODE: 75201").closest(".sticky");
+  expect(bar).toHaveClass("sticky", "top-0");
+  expect(bar).toContainElement(screen.getByRole("button", { name: "Change" }));
+  expect(bar).toContainElement(screen.getByLabelText(/monthly usage in kWh/i));
+
+  expect(screen.getByRole("complementary", { name: "Filters" })).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: /^Filters/ }),
+  ).not.toBeInTheDocument();
+});
+
+test("phone: the sticky bar has a Filters button that opens a drawer; Apply commits, and the button shows the active count", async () => {
+  stubPhone();
+  renderMany();
+  await screen.findByText("Page 1 of 3");
+
+  const bar = screen.getByText("ZIPCODE: 75201").closest(".sticky");
+  const open = screen.getByRole("button", { name: "Filters" });
+  expect(bar).toContainElement(open);
+  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+  fireEvent.click(open);
+  const drawer = screen.getByRole("dialog", { name: "Filters" });
   pickProvider("alp", "Alpha");
-  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
-  expect(screen.getByText(/FILTERS · 2 active/)).toBeInTheDocument();
+  fireEvent.click(
+    within(drawer).getByRole("checkbox", { name: /7–12 months/i }),
+  );
+  expect(within(drawer).getByText("6 plans match")).toBeInTheDocument();
+  // nothing applied until Apply: the list behind is unchanged
+  expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 
-  const details = document.querySelector("details")!;
-  expect(details.open).toBe(true);
-  expect(screen.getByText("Tap to collapse")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Show 6 plans" }));
-  expect(details.open).toBe(false);
-  expect(screen.getByText("Tap to expand")).toBeInTheDocument();
+  fireEvent.click(within(drawer).getByRole("button", { name: "Apply" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByText("Page 1 of 1")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Filters (2)" }),
+  ).toBeInTheDocument();
+});
+
+test("phone drawer: Clear empties the draft only; closing without Apply discards edits", async () => {
+  stubPhone();
+  renderMany();
+  await screen.findByText("Page 1 of 3");
+
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  pickProvider("alp", "Alpha");
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+  expect(
+    screen.getByRole("button", { name: "Filters (1)" }),
+  ).toBeInTheDocument();
+
+  // Clear: the draft empties, the applied filters stay until Apply
+  fireEvent.click(screen.getByRole("button", { name: "Filters (1)" }));
+  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  expect(
+    screen.queryByRole("button", { name: "Remove Alpha" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Close filters" }));
+  expect(screen.getByText("Page 1 of 1")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Filters (1)" }),
+  ).toBeInTheDocument();
+
+  // Clear then Apply: everything is back
+  fireEvent.click(screen.getByRole("button", { name: "Filters (1)" }));
+  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+  expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Filters" })).toBeInTheDocument();
+
+  // Escape also discards
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 });

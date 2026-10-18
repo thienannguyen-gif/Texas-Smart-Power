@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  clampUsage,
-  estimatedMonthlyBill,
-  pricePerKwhAtUsage,
-} from "./usage";
+import { clampUsage, estimatedMonthlyBill, pricePerKwhAtUsage } from "./usage";
 import { formatAmount } from "./money";
 import type { Plan } from "../types/plan";
 
@@ -65,7 +61,7 @@ describe("estimatedMonthlyBill", () => {
 
   it("displays 0.130 dollars/kWh at 1000 kWh as $130", () => {
     const planAt130 = {
-      pricePerKwh: { at500: 0.130, at1000: 0.130, at2000: 0.130 },
+      pricePerKwh: { at500: 0.13, at1000: 0.13, at2000: 0.13 },
     } as Plan;
     expect(formatAmount(estimatedMonthlyBill(planAt130, 1000))).toBe("$130");
   });

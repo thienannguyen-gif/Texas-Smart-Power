@@ -105,6 +105,9 @@ export interface Plan {
   goToPlanUrl: string | null;
   factSheetUrl: string | null;
   termsUrl: string | null;
+  /** "Your Rights as a Customer" document (upstream `yrac_url`). Optional
+   *  because data stored before this field was ingested does not have it. */
+  yracUrl?: string | null;
   enrollPhone: string | null;
 }
 

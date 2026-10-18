@@ -139,6 +139,35 @@ describe("PlanDetailsModal", () => {
     ).toBeInTheDocument();
   });
 
+  it("lists the YRAC link below Terms of Service only when the plan has one", () => {
+    const { unmount } = render(
+      <PlanDetailsModal
+        plan={plan({ yracUrl: "https://example.com/yrac.pdf" })}
+        onClose={vi.fn()}
+      />,
+    );
+    const links = screen.getAllByRole("link").map((l) => l.textContent);
+    expect(links).toEqual([
+      "Electricity Facts Label (EFL)",
+      "Terms of Service",
+      "Your Rights as a Customer",
+    ]);
+    expect(
+      screen.getByRole("link", { name: "Your Rights as a Customer" }),
+    ).toHaveAttribute("href", "https://example.com/yrac.pdf");
+    unmount();
+
+    for (const yracUrl of [null, undefined, ""]) {
+      const { unmount: again } = render(
+        <PlanDetailsModal plan={plan({ yracUrl })} onClose={vi.fn()} />,
+      );
+      expect(
+        screen.queryByRole("link", { name: /your rights/i }),
+      ).not.toBeInTheDocument();
+      again();
+    }
+  });
+
   it("closes on the close button, backdrop click and Escape", () => {
     const onClose = vi.fn();
     const { container } = render(

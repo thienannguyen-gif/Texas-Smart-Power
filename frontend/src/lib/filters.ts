@@ -4,16 +4,14 @@ import type { Plan } from "../types/plan.js";
 // stability filter and ranking, which are applied during ingestion.
 // Each mapping below reads an existing `Plan` field.
 
-export type ProductType = "fixed" | "renewable100";
+export type ProductType = "fixed";
 export type ContractBucket = "mtm" | "m1_6" | "m7_12" | "m12plus";
 
 export interface PlanFilters {
   productTypes: ProductType[];
   contractBuckets: ContractBucket[];
-  /** Show only these providers (OR). Never overlaps `excludedProviders`. */
+  /** Show only these providers (OR). */
   providers: string[];
-  /** Hide these providers. Never overlaps `providers`. */
-  excludedProviders: string[];
   /** From the renewable slider (0 = off). */
   minRenewablePct: number;
 }
@@ -22,11 +20,10 @@ export const EMPTY_FILTERS: PlanFilters = {
   productTypes: [],
   contractBuckets: [],
   providers: [],
-  excludedProviders: [],
   minRenewablePct: 0,
 };
 
-/** Add `name` to the selected list; it leaves the excluded list. */
+/** Add `name` to the selected providers (no duplicates). */
 export function selectProvider(
   filters: PlanFilters,
   name: string,
@@ -36,21 +33,6 @@ export function selectProvider(
     providers: filters.providers.includes(name)
       ? filters.providers
       : [...filters.providers, name],
-    excludedProviders: filters.excludedProviders.filter((n) => n !== name),
-  };
-}
-
-/** Add `name` to the excluded list; it leaves the selected list. */
-export function excludeProvider(
-  filters: PlanFilters,
-  name: string,
-): PlanFilters {
-  return {
-    ...filters,
-    providers: filters.providers.filter((n) => n !== name),
-    excludedProviders: filters.excludedProviders.includes(name)
-      ? filters.excludedProviders
-      : [...filters.excludedProviders, name],
   };
 }
 
@@ -65,8 +47,6 @@ function matchesProductType(plan: Plan, type: ProductType): boolean {
   switch (type) {
     case "fixed":
       return rate.includes("fixed");
-    case "renewable100":
-      return renewablePct(plan) === 100;
   }
 }
 
@@ -103,7 +83,6 @@ export function filterPlans(plans: Plan[], filters: PlanFilters): Plan[] {
     ) {
       return false;
     }
-    if (filters.excludedProviders.includes(plan.companyName)) return false;
     if (
       filters.providers.length > 0 &&
       !filters.providers.includes(plan.companyName)
@@ -118,12 +97,49 @@ export function filterPlans(plans: Plan[], filters: PlanFilters): Plan[] {
   });
 }
 
+export type OptionGroup = "productTypes" | "contractBuckets";
+
+/**
+ * How many plans an option would show. Counts honour every other active
+ * filter; the option's own group is replaced by just this option (selected
+ * options in one group are OR'd, so the other ticks in the group are ignored).
+ */
+export function countForOption(
+  plans: Plan[],
+  filters: PlanFilters,
+  group: OptionGroup,
+  key: ProductType | ContractBucket,
+): number {
+  return filterPlans(plans, { ...filters, [group]: [key] }).length;
+}
+
+/** Plans a provider would show given every other active filter. */
+export function countForProvider(
+  plans: Plan[],
+  filters: PlanFilters,
+  name: string,
+): number {
+  return filterPlans(plans, {
+    ...filters,
+    providers: [name],
+  }).length;
+}
+
+/** How many separate filter choices are active (shown on the phone header). */
+export function activeFilterCount(filters: PlanFilters): number {
+  return (
+    filters.productTypes.length +
+    filters.contractBuckets.length +
+    filters.providers.length +
+    (filters.minRenewablePct > 0 ? 1 : 0)
+  );
+}
+
 export function isFiltering(filters: PlanFilters): boolean {
   return (
     filters.productTypes.length > 0 ||
     filters.contractBuckets.length > 0 ||
     filters.providers.length > 0 ||
-    filters.excludedProviders.length > 0 ||
     filters.minRenewablePct > 0
   );
 }

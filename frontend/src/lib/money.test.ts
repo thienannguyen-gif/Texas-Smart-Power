@@ -13,7 +13,7 @@ describe("formatRate", () => {
   it("shows cents with one decimal and the /kWh unit", () => {
     expect(formatRate(0.139)).toBe("13.9¢/kWh");
     expect(formatRate(0.151)).toBe("15.1¢/kWh");
-    expect(formatRate(0.130)).toBe("13.0¢/kWh");
+    expect(formatRate(0.13)).toBe("13.0¢/kWh");
   });
 
   it("pads to one decimal and rounds to it", () => {

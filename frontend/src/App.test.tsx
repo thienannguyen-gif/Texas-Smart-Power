@@ -132,3 +132,64 @@ test("invalid ZIP never triggers a lookup", () => {
   expect(fetchMock).not.toHaveBeenCalled();
   expect(screen.getByText(/enter a 5-digit zip/i)).toBeInTheDocument();
 });
+
+test("changing the ZIP on the plans page stays on the page, keeps usage, and loads the new area", async () => {
+  const centerpointFile: TduDataFile = {
+    ...oncorFile,
+    tdu: "centerpoint",
+    plans: [{ ...oncorFile.plans[0], id: 2, planName: "Houston Plan 24" }],
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: unknown, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/api/zip-lookup")) {
+        const { zip } = JSON.parse(String(init?.body));
+        const company =
+          zip === "77002"
+            ? { code: "centerpoint", name: "CenterPoint" }
+            : zip === "75201"
+              ? { code: "oncor", name: "Oncor" }
+              : null;
+        return Promise.resolve(ok({ companies: company ? [company] : [] }));
+      }
+      if (url.includes("/api/plans/oncor"))
+        return Promise.resolve(ok(oncorFile));
+      if (url.includes("/api/plans/centerpoint"))
+        return Promise.resolve(ok(centerpointFile));
+      return Promise.resolve({ ok: false, status: 404 });
+    }),
+  );
+
+  render(<App />);
+  submitZip("75201");
+  expect(await screen.findByText(/example plan 12/i)).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+    target: { value: "750" },
+  });
+
+  // an unknown ZIP: message shown, old plans and ZIP stay
+  fireEvent.click(screen.getByRole("button", { name: "Change" }));
+  fireEvent.change(screen.getByLabelText("ZIP code"), {
+    target: { value: "99999" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+  expect(
+    await screen.findByText(/no texas utility area found for zip/i),
+  ).toBeInTheDocument();
+  expect(screen.getByText("ZIPCODE: 75201")).toBeInTheDocument();
+  expect(screen.getByText(/example plan 12/i)).toBeInTheDocument();
+
+  // a known ZIP: the new area's plans load without leaving the page
+  fireEvent.click(screen.getByRole("button", { name: "Change" }));
+  fireEvent.change(screen.getByLabelText("ZIP code"), {
+    target: { value: "77002" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+  expect(await screen.findByText(/houston plan 24/i)).toBeInTheDocument();
+  expect(screen.getByText("ZIPCODE: 77002")).toBeInTheDocument();
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(
+    screen.queryByRole("heading", { name: /texas smart power/i }),
+  ).not.toBeInTheDocument();
+});

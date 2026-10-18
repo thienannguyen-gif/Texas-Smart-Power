@@ -32,11 +32,12 @@ describe("PlanCard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Example Energy")).toBeInTheDocument();
     expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 0.139 * 100, 1dp
+    expect(screen.getByText("$139")).toBeInTheDocument(); // 0.139 * 1000 kWh
     expect(screen.getByText("12 mos")).toBeInTheDocument();
     expect(screen.getByText("6% renewable")).toBeInTheDocument();
   });
 
-  it("shows an em dash for missing term / price / renewable", () => {
+  it("shows an em dash for missing term / price / bill / renewable", () => {
     render(
       <PlanCard
         plan={plan({
@@ -46,7 +47,7 @@ describe("PlanCard", () => {
         })}
       />,
     );
-    expect(screen.getAllByText("—")).toHaveLength(3);
+    expect(screen.getAllByText("—")).toHaveLength(4);
   });
 
   it("uses the logo (with company alt) instead of the company text when present", () => {
@@ -82,21 +83,18 @@ describe("PlanCard", () => {
     const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
     expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
     expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
+    expect(screen.getByText("$76")).toBeInTheDocument(); // 0.151 * 500 = 75.5
 
     rerender(<PlanCard plan={plan()} usageKwh={1500} />);
     expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
     expect(screen.getByText("14.2¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("$213")).toBeInTheDocument(); // 0.142 * 1500
   });
 
-  it("offers 'Hide this provider' only when a handler is given, and passes the company", () => {
-    const { rerender } = render(<PlanCard plan={plan()} />);
+  it("has no hide-provider action", () => {
+    render(<PlanCard plan={plan()} />);
     expect(
-      screen.queryByRole("button", { name: /hide this provider/i }),
+      screen.queryByRole("button", { name: /hide .*provider/i }),
     ).not.toBeInTheDocument();
-
-    const onHide = vi.fn();
-    rerender(<PlanCard plan={plan()} onHideProvider={onHide} />);
-    fireEvent.click(screen.getByRole("button", { name: /hide this provider/i }));
-    expect(onHide).toHaveBeenCalledWith("Example Energy");
   });
 });

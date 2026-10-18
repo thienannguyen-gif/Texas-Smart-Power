@@ -10,29 +10,18 @@ import {
 
 const ALL = ["Gexa Energy", "Reliant", "Green Mountain", "Gridpoint", "TXU"];
 
-function Harness({
-  initial = [] as string[],
-  initialExcluded = [] as string[],
-}) {
+function Harness({ initial = [] as string[] }) {
   const [f, setF] = useState<PlanFilters>({
     ...EMPTY_FILTERS,
     providers: initial,
-    excludedProviders: initialExcluded,
   });
   return (
     <ProviderPicker
       providers={ALL}
       selected={f.providers}
-      excluded={f.excludedProviders}
       onSelect={(name) => setF(selectProvider(f, name))}
       onUnselect={(name) =>
         setF({ ...f, providers: f.providers.filter((n) => n !== name) })
-      }
-      onUnexclude={(name) =>
-        setF({
-          ...f,
-          excludedProviders: f.excludedProviders.filter((n) => n !== name),
-        })
       }
     />
   );
@@ -56,7 +45,9 @@ describe("matchProviders", () => {
   });
 
   it("leaves out providers that are already chosen", () => {
-    expect(matchProviders(ALL, ["Gridpoint"], "gr")).toEqual(["Green Mountain"]);
+    expect(matchProviders(ALL, ["Gridpoint"], "gr")).toEqual([
+      "Green Mountain",
+    ]);
   });
 
   it("caps the suggestions at 8", () => {
@@ -99,7 +90,9 @@ describe("ProviderPicker", () => {
     fireEvent.mouseDown(screen.getByRole("option", { name: "Reliant" }));
     type("txu");
     fireEvent.mouseDown(screen.getByRole("option", { name: "TXU" }));
-    expect(screen.getByRole("button", { name: "Remove Reliant" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Remove Reliant" }),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "Remove TXU" })).toBeVisible();
   });
 
@@ -133,23 +126,6 @@ describe("ProviderPicker", () => {
     expect(
       chip.compareDocumentPosition(box()) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-  });
-
-  it("shows excluded providers as marked, removable chips", () => {
-    render(<Harness initialExcluded={["TXU"]} />);
-    expect(screen.getByText("hidden")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Show TXU again" }));
-    expect(screen.queryByText("hidden")).not.toBeInTheDocument();
-  });
-
-  it("selecting an excluded provider moves it out of the excluded chips", () => {
-    render(<Harness initialExcluded={["TXU"]} />);
-    type("txu");
-    fireEvent.mouseDown(screen.getByRole("option", { name: "TXU" }));
-    expect(screen.getByRole("button", { name: "Remove TXU" })).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Show TXU again" }),
-    ).not.toBeInTheDocument();
   });
 
   it("does not offer a provider that is already chosen", () => {

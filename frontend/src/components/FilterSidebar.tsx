@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
+import type { Plan } from "../types/plan";
 import {
+  activeFilterCount,
+  countForOption,
+  countForProvider,
   EMPTY_FILTERS,
   type ContractBucket,
   type PlanFilters,
@@ -12,7 +16,6 @@ import { ProviderPicker } from "./ProviderPicker";
 
 const PRODUCT_TYPES: { key: ProductType; label: string }[] = [
   { key: "fixed", label: "Fixed / Secured Rate" },
-  { key: "renewable100", label: "100% Renewable" },
 ];
 
 const CONTRACT_BUCKETS: { key: ContractBucket; label: string }[] = [
@@ -26,6 +29,46 @@ function toggle<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
+// One checkbox with its match count, e.g. "Fixed / Secured Rate (84)". An option
+// with no matches is greyed, never hidden; a ticked one stays clickable so the
+// user can always untick it. `count` is null until the plans have loaded.
+function OptionRow({
+  label,
+  count,
+  noneInArea,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  count: number | null;
+  /** No plan in the whole area matches (before any filter). */
+  noneInArea: boolean;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  const empty = count === 0;
+  return (
+    <label
+      className={`flex items-center gap-2 py-1.5 text-sm md:py-0 ${
+        empty ? "text-brand-navy/40" : "text-brand-navy/80"
+      }`}
+    >
+      <input
+        type="checkbox"
+        disabled={empty && !checked}
+        checked={checked}
+        onChange={onToggle}
+        className="h-5 w-5 rounded border-brand-navy/40 accent-brand-green md:h-4 md:w-4"
+      />
+      <span>
+        {label}
+        {count !== null && ` (${count})`}
+      </span>
+      {noneInArea && <span className="text-xs">No plans available</span>}
+    </label>
+  );
+}
+
 function GroupHeading({ children }: { children: string }) {
   return (
     <h3 className="text-center text-sm font-bold tracking-wide text-brand-green-700">
@@ -35,10 +78,16 @@ function GroupHeading({ children }: { children: string }) {
 }
 
 export function FilterSidebar({
+  plans,
+  resultCount,
   providers,
   value,
   onChange,
 }: {
+  /** Every plan in the area, before any filter (used for the option counts). */
+  plans: Plan[];
+  /** Plans matching the current filters (for the phone "Show N plans" button). */
+  resultCount: number;
   providers: string[];
   value: PlanFilters;
   onChange: (next: PlanFilters) => void;
@@ -58,6 +107,8 @@ export function FilterSidebar({
     return () => breakpoint.removeEventListener("change", syncWithViewport);
   }, []);
 
+  const hasPlans = plans.length > 0;
+  const activeCount = activeFilterCount(value);
   return (
     <aside
       className="filter-panel rounded-2xl bg-brand-lime-200 p-4 sm:p-5"
@@ -67,9 +118,14 @@ export function FilterSidebar({
         open={filtersOpen}
         onToggle={(event) => setFiltersOpen(event.currentTarget.open)}
       >
-        <summary className="cursor-pointer list-none text-sm font-bold tracking-wide text-brand-green-800 marker:hidden [&::-webkit-details-marker]:hidden">
-          FILTERS
-          <span className="float-right font-normal">Tap to expand</span>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold tracking-wide text-brand-green-800 marker:hidden [&::-webkit-details-marker]:hidden">
+          <span>
+            FILTERS
+            {activeCount > 0 && ` · ${activeCount} active`}
+          </span>
+          <span className="font-normal">
+            {filtersOpen ? "Tap to collapse" : "Tap to expand"}
+          </span>
         </summary>
         <div className="filter-panel-content mt-4 space-y-6">
           <div className="space-y-2">
@@ -78,53 +134,58 @@ export function FilterSidebar({
               (select all that apply)
             </p>
             {PRODUCT_TYPES.map(({ key, label }) => (
-              <label
+              <OptionRow
                 key={key}
-                className="flex items-center gap-2 text-sm text-brand-navy/80"
-              >
-                <input
-                  type="checkbox"
-                  checked={value.productTypes.includes(key)}
-                  onChange={() =>
-                    onChange({
-                      ...value,
-                      productTypes: toggle(value.productTypes, key),
-                    })
-                  }
-                  className="h-4 w-4 rounded border-brand-navy/40 accent-brand-green"
-                />
-                {label}
-              </label>
+                label={label}
+                count={
+                  hasPlans
+                    ? countForOption(plans, value, "productTypes", key)
+                    : null
+                }
+                noneInArea={
+                  hasPlans &&
+                  countForOption(plans, EMPTY_FILTERS, "productTypes", key) ===
+                    0
+                }
+                checked={value.productTypes.includes(key)}
+                onToggle={() =>
+                  onChange({
+                    ...value,
+                    productTypes: toggle(value.productTypes, key),
+                  })
+                }
+              />
             ))}
-            <button
-              type="button"
-              onClick={() => onChange(EMPTY_FILTERS)}
-              className="text-sm text-brand-navy/70 underline"
-            >
-              Show All
-            </button>
           </div>
 
           <div className="space-y-2">
             <GroupHeading>CONTRACT LENGTH</GroupHeading>
             {CONTRACT_BUCKETS.map(({ key, label }) => (
-              <label
+              <OptionRow
                 key={key}
-                className="flex items-center gap-2 text-sm text-brand-navy/80"
-              >
-                <input
-                  type="checkbox"
-                  checked={value.contractBuckets.includes(key)}
-                  onChange={() =>
-                    onChange({
-                      ...value,
-                      contractBuckets: toggle(value.contractBuckets, key),
-                    })
-                  }
-                  className="h-4 w-4 rounded border-brand-navy/40 accent-brand-green"
-                />
-                {label}
-              </label>
+                label={label}
+                count={
+                  hasPlans
+                    ? countForOption(plans, value, "contractBuckets", key)
+                    : null
+                }
+                noneInArea={
+                  hasPlans &&
+                  countForOption(
+                    plans,
+                    EMPTY_FILTERS,
+                    "contractBuckets",
+                    key,
+                  ) === 0
+                }
+                checked={value.contractBuckets.includes(key)}
+                onToggle={() =>
+                  onChange({
+                    ...value,
+                    contractBuckets: toggle(value.contractBuckets, key),
+                  })
+                }
+              />
             ))}
           </div>
 
@@ -152,8 +213,8 @@ export function FilterSidebar({
               <GroupHeading>PROVIDER</GroupHeading>
               <ProviderPicker
                 providers={providers}
+                countFor={(name) => countForProvider(plans, value, name)}
                 selected={value.providers}
-                excluded={value.excludedProviders}
                 onSelect={(name) => onChange(selectProvider(value, name))}
                 onUnselect={(name) =>
                   onChange({
@@ -161,17 +222,17 @@ export function FilterSidebar({
                     providers: value.providers.filter((n) => n !== name),
                   })
                 }
-                onUnexclude={(name) =>
-                  onChange({
-                    ...value,
-                    excludedProviders: value.excludedProviders.filter(
-                      (n) => n !== name,
-                    ),
-                  })
-                }
               />
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(false)}
+            className="min-h-11 w-full rounded-full bg-brand-green px-4 py-3 text-sm font-bold text-white md:hidden"
+          >
+            Show {resultCount} {resultCount === 1 ? "plan" : "plans"}
+          </button>
         </div>
       </details>
     </aside>

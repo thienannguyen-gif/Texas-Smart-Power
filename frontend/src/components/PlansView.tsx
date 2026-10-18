@@ -20,6 +20,7 @@ export function PlansView({
   onSubmitZip,
   zipBusy = false,
   zipStatus,
+  areaSwitch,
 }: {
   tdu: TduId;
   zip: string;
@@ -28,6 +29,16 @@ export function PlansView({
   zipBusy?: boolean;
   /** Lookup feedback (loading / error / area picker) shown under the ZIP bar. */
   zipStatus?: ReactNode;
+  /** Set only when this ZIP returned several utilities. While `choosing`,
+   *  the AREA label becomes a button group right in the header. */
+  areaSwitch?: {
+    currentCode: string;
+    options: { code: string; label: string }[];
+    choosing: boolean;
+    onChange: () => void;
+    onSelect: (code: string) => void;
+    onCancel: () => void;
+  };
 }) {
   const state = useTduPlans(tdu);
   const allPlans = state.status === "success" ? state.data.plans : [];
@@ -62,7 +73,9 @@ export function PlansView({
               e.preventDefault();
               if (!zipValid) return;
               setEditingZip(false);
-              if (zipDraft !== zip) onSubmitZip(zipDraft);
+              // Always forwarded: the parent decides what a repeated ZIP means
+              // (for a split ZIP, it re-opens the area choice).
+              onSubmitZip(zipDraft);
             }}
           >
             <label className="flex items-center gap-2 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
@@ -94,7 +107,7 @@ export function PlansView({
             </button>
           </form>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
               ZIPCODE: {zip}
             </span>
@@ -109,6 +122,61 @@ export function PlansView({
             >
               Change
             </button>
+            {areaSwitch && (
+              <>
+                <span aria-hidden="true" className="text-brand-navy/40">
+                  |
+                </span>
+                {areaSwitch.choosing ? (
+                  <span
+                    role="group"
+                    aria-label="Choose your utility area"
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <span className="text-sm font-bold">AREA:</span>
+                    {areaSwitch.options.map((option) => (
+                      <button
+                        key={option.code}
+                        type="button"
+                        aria-pressed={option.code === areaSwitch.currentCode}
+                        onClick={() => areaSwitch.onSelect(option.code)}
+                        className={`min-h-11 rounded-full px-4 py-2 text-sm font-bold ${
+                          option.code === areaSwitch.currentCode
+                            ? "bg-brand-green text-white"
+                            : "bg-brand-lime-200 text-brand-navy hover:bg-brand-lime-100"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={areaSwitch.onCancel}
+                      className="px-2 py-2 text-sm text-brand-navy/70 underline"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <>
+                    <span className="rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
+                      AREA:{" "}
+                      {areaSwitch.options.find(
+                        (option) => option.code === areaSwitch.currentCode,
+                      )?.label ?? areaSwitch.currentCode}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={areaSwitch.onChange}
+                      aria-label="Change utility area"
+                      className="px-2 py-2 text-sm text-brand-navy/70 underline"
+                    >
+                      Change
+                    </button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         )}
 

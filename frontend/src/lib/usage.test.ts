@@ -55,6 +55,14 @@ describe("estimatedMonthlyBill", () => {
     expect(formatAmount(estimatedMonthlyBill(p, 2000))).toBe("$224");
   });
 
+  it("prices 850 kWh at 12.22 cents and about $104 for 12.5/12.1/11.9", () => {
+    const p850 = {
+      pricePerKwh: { at500: 0.125, at1000: 0.121, at2000: 0.119 },
+    } as Plan;
+    expect(pricePerKwhAtUsage(p850, 850)).toBeCloseTo(0.1222, 10);
+    expect(formatAmount(estimatedMonthlyBill(p850, 850))).toBe("$104");
+  });
+
   it("calculates a bill using the interpolated rate", () => {
     expect(estimatedMonthlyBill(plan, 850)).toBeCloseTo(105.57, 10);
   });

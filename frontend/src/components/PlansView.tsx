@@ -42,15 +42,12 @@ export function PlansView({
   zipBusy?: boolean;
   /** Lookup feedback (loading / error / area picker) shown under the bar. */
   zipStatus?: ReactNode;
-  /** Set only when this ZIP returned several utilities. While `choosing`,
-   *  the AREA label becomes a button group right in the bar. */
+  /** Set only when this ZIP returned several utilities: the bar then shows a
+   *  select of them, labelled with each area's full company name. */
   areaSwitch?: {
     currentCode: string;
     options: { code: string; label: string }[];
-    choosing: boolean;
-    onChange: () => void;
     onSelect: (code: string) => void;
-    onCancel: () => void;
   };
 }) {
   const state = useTduPlans(tdu);
@@ -149,56 +146,21 @@ export function PlansView({
                   <span aria-hidden="true" className="text-brand-navy/40">
                     |
                   </span>
-                  {areaSwitch.choosing ? (
-                    <span
-                      role="group"
-                      aria-label="Choose your utility area"
-                      className="flex flex-wrap items-center gap-2"
+                  <label className="flex min-w-0 items-center gap-2 text-xs font-bold sm:text-sm">
+                    AREA:
+                    <select
+                      value={areaSwitch.currentCode}
+                      onChange={(e) => areaSwitch.onSelect(e.target.value)}
+                      aria-label="Utility area"
+                      className="min-h-9 max-w-[15rem] min-w-0 truncate rounded-full border-0 bg-brand-lime-200 py-1.5 pr-2 pl-3 text-base font-bold sm:max-w-xs sm:text-sm"
                     >
-                      <span className="text-xs font-bold sm:text-sm">
-                        AREA:
-                      </span>
                       {areaSwitch.options.map((option) => (
-                        <button
-                          key={option.code}
-                          type="button"
-                          aria-pressed={option.code === areaSwitch.currentCode}
-                          onClick={() => areaSwitch.onSelect(option.code)}
-                          className={`min-h-9 rounded-full px-3 py-1.5 text-xs font-bold sm:px-4 sm:text-sm ${
-                            option.code === areaSwitch.currentCode
-                              ? "bg-brand-green text-white"
-                              : "bg-brand-lime-200 text-brand-navy hover:bg-brand-lime-100"
-                          }`}
-                        >
+                        <option key={option.code} value={option.code}>
                           {option.label}
-                        </button>
+                        </option>
                       ))}
-                      <button
-                        type="button"
-                        onClick={areaSwitch.onCancel}
-                        className={LINK}
-                      >
-                        Cancel
-                      </button>
-                    </span>
-                  ) : (
-                    <>
-                      <span className={PILL}>
-                        AREA:{" "}
-                        {areaSwitch.options.find(
-                          (option) => option.code === areaSwitch.currentCode,
-                        )?.label ?? areaSwitch.currentCode}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={areaSwitch.onChange}
-                        aria-label="Change utility area"
-                        className={LINK}
-                      >
-                        Change
-                      </button>
-                    </>
-                  )}
+                    </select>
+                  </label>
                 </>
               )}
             </div>

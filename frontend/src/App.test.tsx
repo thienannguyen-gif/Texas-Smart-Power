@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import type { TduDataFile } from "./types/plan";
@@ -264,121 +270,10 @@ test("75201 returns one company: the picker is skipped and plans load", async ()
 
   expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
   expect(areaPicker()).not.toBeInTheDocument();
-  expect(screen.queryByText(/^AREA:/)).not.toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "Change utility area" }),
+    screen.queryByRole("combobox", { name: "Utility area" }),
   ).not.toBeInTheDocument();
-});
-
-test("after choosing an area for a split ZIP, the area 'Change' brings the picker back", async () => {
-  stubSplitZips();
-  render(<App />);
-  submitZip("75067");
-  fireEvent.click(
-    await screen.findByRole("button", { name: /texas-new mexico power/i }),
-  );
-  expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
-  expect(areaPicker()).not.toBeInTheDocument();
-  expect(screen.getByText("AREA: TNMP")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Change utility area" }));
-  // the chooser opens in the header bar itself, next to the ZIP, with short names
-  const group = areaPicker();
-  expect(group).toBeInTheDocument();
-  expect(
-    screen.getByText("ZIPCODE: 75067").parentElement?.contains(group),
-  ).toBe(true);
-  expect(within(group!).getByRole("button", { name: "TNMP" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  fireEvent.click(within(group!).getByRole("button", { name: "Oncor" }));
-  expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
-  expect(areaPicker()).not.toBeInTheDocument();
-  expect(screen.getByText("AREA: Oncor")).toBeInTheDocument();
-});
-
-test("resubmitting the same split ZIP via Change shows the picker again", async () => {
-  stubSplitZips();
-  render(<App />);
-  submitZip("75067");
-  fireEvent.click(
-    await screen.findByRole("button", { name: /texas-new mexico power/i }),
-  );
-  await screen.findByText("TNMP Plan");
-
-  changeZip("75067");
-  expect(areaPicker()).toBeInTheDocument();
-});
-
-test("changing to a single-area ZIP clears the split-area controls", async () => {
-  stubSplitZips();
-  render(<App />);
-  submitZip("75067");
-  fireEvent.click(
-    await screen.findByRole("button", { name: /texas-new mexico power/i }),
-  );
-  await screen.findByText("TNMP Plan");
-
-  changeZip("75201");
-  expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
-  expect(areaPicker()).not.toBeInTheDocument();
   expect(screen.queryByText(/^AREA:/)).not.toBeInTheDocument();
-});
-
-test("header shows ZIP and chosen area; the picker block is gone once a choice is made", async () => {
-  stubSplitZips();
-  render(<App />);
-  submitZip("75067");
-  expect(
-    await screen.findByRole("group", { name: /choose your utility area/i }),
-  ).toBeInTheDocument();
-  // before a choice there is no area label (and no plans page yet)
-  expect(screen.queryByText(/^AREA:/)).not.toBeInTheDocument();
-
-  fireEvent.click(
-    screen.getByRole("button", { name: /oncor electric delivery/i }),
-  );
-  await screen.findByText("Oncor Plan");
-  expect(screen.getByText("ZIPCODE: 75067")).toBeInTheDocument();
-  expect(screen.getByText("AREA: Oncor")).toBeInTheDocument();
-  expect(areaPicker()).not.toBeInTheDocument();
-});
-
-test("area Change re-opens the picker in place, keeping ZIP, usage and filters; Cancel closes it", async () => {
-  stubSplitZips();
-  render(<App />);
-  submitZip("75067");
-  fireEvent.click(
-    await screen.findByRole("button", { name: /oncor electric delivery/i }),
-  );
-  await screen.findByText("Oncor Plan");
-
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "750" },
-  });
-  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
-
-  fireEvent.click(screen.getByRole("button", { name: "Change utility area" }));
-  expect(areaPicker()).toBeInTheDocument();
-  // nothing was reset, and the current plans stay on screen
-  expect(screen.getByText("ZIPCODE: 75067")).toBeInTheDocument();
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
-  expect(screen.getByRole("checkbox", { name: /7–12 months/i })).toBeChecked();
-  expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(areaPicker()).not.toBeInTheDocument();
-  expect(screen.getByText("AREA: Oncor")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Change utility area" }));
-  fireEvent.click(screen.getByRole("button", { name: "TNMP" }));
-  expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
-  expect(screen.getByText("AREA: TNMP")).toBeInTheDocument();
-  expect(areaPicker()).not.toBeInTheDocument();
-  expect(screen.getByText("ZIPCODE: 75067")).toBeInTheDocument();
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
-  expect(screen.getByRole("checkbox", { name: /7–12 months/i })).toBeChecked();
 });
 
 test("first load for a split ZIP defaults usage to 1000 kWh, same as a single-area ZIP", async () => {
@@ -398,7 +293,10 @@ test("first load for a split ZIP defaults usage to 1000 kWh, same as a single-ar
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(1000);
 });
 
-test("the area label stays after a failed lookup of another ZIP", async () => {
+const areaSelect = () =>
+  screen.queryByRole("combobox", { name: "Utility area" });
+
+async function openSplitZip() {
   stubSplitZips();
   render(<App />);
   submitZip("75067");
@@ -406,12 +304,84 @@ test("the area label stays after a failed lookup of another ZIP", async () => {
     await screen.findByRole("button", { name: /oncor electric delivery/i }),
   );
   await screen.findByText("Oncor Plan");
+}
+
+test("header shows a select with the full company name of the current area, listing every area for the ZIP; the body picker is gone", async () => {
+  await openSplitZip();
+
+  const select = areaSelect() as HTMLSelectElement;
+  expect(select).toBeInTheDocument();
+  expect(
+    screen.getByText("ZIPCODE: 75067").parentElement?.contains(select),
+  ).toBe(true);
+  expect(select).toHaveDisplayValue("ONCOR ELECTRIC DELIVERY COMPANY");
+  expect(
+    within(select)
+      .getAllByRole("option")
+      .map((o) => o.textContent),
+  ).toEqual([
+    "ONCOR ELECTRIC DELIVERY COMPANY",
+    "TEXAS-NEW MEXICO POWER COMPANY",
+  ]);
+  expect(areaPicker()).not.toBeInTheDocument();
+  // no Change link or button group for the area any more
+  expect(
+    screen.queryByRole("button", { name: /change utility area/i }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "TNMP" }),
+  ).not.toBeInTheDocument();
+});
+
+test("choosing another area in the select loads its plans and keeps ZIP, usage and filters", async () => {
+  await openSplitZip();
+  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+    target: { value: "750" },
+  });
+  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+
+  fireEvent.change(areaSelect()!, { target: { value: "tnmp" } });
+
+  expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
+  expect(screen.queryByText("Oncor Plan")).not.toBeInTheDocument();
+  expect(areaSelect()).toHaveDisplayValue("TEXAS-NEW MEXICO POWER COMPANY");
+  expect(screen.getByText("ZIPCODE: 75067")).toBeInTheDocument();
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(screen.getByRole("checkbox", { name: /7–12 months/i })).toBeChecked();
+  expect(areaPicker()).not.toBeInTheDocument();
+
+  // and back again
+  fireEvent.change(areaSelect()!, { target: { value: "oncor" } });
+  expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+});
+
+test("resubmitting the same split ZIP keeps the select and the chosen area", async () => {
+  await openSplitZip();
+  fireEvent.change(areaSelect()!, { target: { value: "tnmp" } });
+  await screen.findByText("TNMP Plan");
+
+  changeZip("75067");
+  expect(areaSelect()).toHaveDisplayValue("TEXAS-NEW MEXICO POWER COMPANY");
+  expect(screen.getByText("TNMP Plan")).toBeInTheDocument();
+});
+
+test("changing to a single-area ZIP removes the select", async () => {
+  await openSplitZip();
+
+  changeZip("75201");
+  expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
+  await waitFor(() => expect(areaSelect()).not.toBeInTheDocument());
+});
+
+test("the select stays after a failed lookup of another ZIP", async () => {
+  await openSplitZip();
 
   changeZip("99999");
   expect(
     await screen.findByText(/no texas utility area found for zip/i),
   ).toBeInTheDocument();
-  expect(screen.getByText("AREA: Oncor")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Change utility area" }));
-  expect(areaPicker()).toBeInTheDocument();
+  expect(areaSelect()).toHaveDisplayValue("ONCOR ELECTRIC DELIVERY COMPANY");
+  fireEvent.change(areaSelect()!, { target: { value: "tnmp" } });
+  expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
 });

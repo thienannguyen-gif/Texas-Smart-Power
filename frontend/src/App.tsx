@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isTduId, TDU_LABELS, type TduId } from "./types/plan";
+import { isTduId, type TduId } from "./types/plan";
 import type { UtilityArea } from "./types/zip";
 import { useZipLookup } from "./hooks/useZipLookup";
 import { SiteHeader } from "./components/SiteHeader";
@@ -15,18 +15,14 @@ export default function App() {
   const [tdu, setTdu] = useState<TduId | null>(null);
   const [activeZip, setActiveZip] = useState("");
   // Every area the active ZIP returned. More than one means a split ZIP: the
-  // header then shows the chosen area, and "Change" re-opens the picker from
-  // this list — independent of any later lookup for a different ZIP.
+  // header then shows an area select built from this list — independent of any
+  // later lookup for a different ZIP.
   const [activeAreas, setActiveAreas] = useState<UtilityArea[]>([]);
-  const [choosingArea, setChoosingArea] = useState(false);
 
   const lookup = useZipLookup(submittedZip);
   const activeIsSplit = activeAreas.length > 1;
 
   function submitZip(zip: string) {
-    setChoosingArea(false);
-    // The ZIP already on screen, and it is split: re-open the area choice.
-    if (zip === activeZip && activeIsSplit) setChoosingArea(true);
     if (zip !== submittedZip) setSubmittedZip(zip);
   }
 
@@ -74,8 +70,7 @@ export default function App() {
       {/* A newly looked-up split ZIP: pick its area. */}
       {lookup.status === "ready" &&
         lookup.areas.length > 1 &&
-        lookup.zip !== activeZip &&
-        !choosingArea && (
+        lookup.zip !== activeZip && (
           <div className="rounded-2xl bg-white/80 p-4">
             <AreaPicker
               areas={lookup.areas}
@@ -115,17 +110,11 @@ export default function App() {
                   currentCode: tdu,
                   options: activeAreas.map((area) => ({
                     code: area.code,
-                    label: isTduId(area.code)
-                      ? TDU_LABELS[area.code]
-                      : area.name,
+                    label: area.name,
                   })),
-                  choosing: choosingArea,
-                  onChange: () => setChoosingArea(true),
                   onSelect: (code) => {
                     if (isTduId(code)) setTdu(code);
-                    setChoosingArea(false);
                   },
-                  onCancel: () => setChoosingArea(false),
                 }
               : undefined
           }

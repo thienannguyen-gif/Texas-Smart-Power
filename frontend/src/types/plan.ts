@@ -19,17 +19,6 @@ export const TDU_IDS = [
 
 export type TduId = (typeof TDU_IDS)[number];
 
-/** Short display names for the header label (the upstream names are long and
- *  all-caps, e.g. "ONCOR ELECTRIC DELIVERY COMPANY"). Display only. */
-export const TDU_LABELS: Record<TduId, string> = {
-  oncor: "Oncor",
-  centerpoint: "CenterPoint",
-  "aep-central": "AEP Texas Central",
-  "aep-north": "AEP Texas North",
-  tnmp: "TNMP",
-  lubbock: "Lubbock",
-};
-
 export function isTduId(value: string): value is TduId {
   return (TDU_IDS as readonly string[]).includes(value);
 }

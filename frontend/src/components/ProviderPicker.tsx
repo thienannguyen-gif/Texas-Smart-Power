@@ -112,7 +112,7 @@ export function ProviderPicker({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 z-10 max-h-56 overflow-y-auto rounded border border-brand-navy/30 bg-white text-sm shadow"
+          className="max-h-56 overflow-y-auto rounded border border-brand-navy/30 bg-white text-sm shadow"
         >
           {matches.map((name, i) => (
             <li

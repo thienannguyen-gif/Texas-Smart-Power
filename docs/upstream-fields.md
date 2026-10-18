@@ -1,11 +1,14 @@
 # Upstream field list (Power to Choose `plans` response)
 
-**Observed 2026-10-18** from a live Vercel cron run of `/api/cron/fetch-plans`,
-which logged the key names of the first raw plan record it received (before
-normalization). This is **observed, not taken from documentation** — it is the
-first real look we have at the upstream response shape. Only key _names_ were
-logged, never values, so nothing below says how often a field is populated or
-what its values look like.
+**Status: OBSERVED, not DOCUMENTED.**
+
+Observed 2026-10-18 from a live Vercel cron run of `/api/cron/fetch-plans` on
+the **production deployment**, which logged the key names of the first raw plan
+record it received (before normalization). This is **not taken from
+documentation** — it is the first real look we have at the upstream response
+shape. Only key _names_ were logged, never values, so the field list below says
+nothing about what values look like. (`yrac_url` population was checked
+separately — see "Confirmed by this observation".)
 
 Limits of this observation:
 
@@ -66,6 +69,10 @@ Observed but **not read**: `special_terms`, `promotions`, `prepaid_url`,
 ## Confirmed by this observation
 
 - **YRAC link:** the field is `yrac_url` (index 29). The normalizer's name was
-  correct. Whether it is populated, and on how many plans, is not yet known.
+  correct. After the cron run following deploy, the stored plans (Blob,
+  generated 2026-10-18 14:15 UTC) have `yracUrl` populated on **854 of 854**
+  plans (127 aep-central, 123 aep-north, 132 centerpoint, 79 lubbock, 132
+  oncor, 261 tnmp). Not every value is a direct PDF: the lubbock sample is a
+  viewer page (`eflviewer.gexaenergy.com/eflviewer.aspx?...prodcode=YRAC`).
 - **Customer eligibility:** `new_customer` exists (index 39). Its value type
   and population are not yet known.

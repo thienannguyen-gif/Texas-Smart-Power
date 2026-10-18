@@ -5,6 +5,7 @@ import {
   isFiltering,
   renewablePct,
   selectProvider,
+  summarizePlans,
   type PlanFilters,
 } from "./filters";
 import type { Plan } from "../types/plan";
@@ -129,5 +130,25 @@ describe("isFiltering", () => {
     expect(isFiltering(EMPTY_FILTERS)).toBe(false);
     expect(isFiltering(withFilters({ providers: ["Gexa"] }))).toBe(true);
     expect(isFiltering(withFilters({ minRenewablePct: 10 }))).toBe(true);
+  });
+});
+
+describe("summarizePlans", () => {
+  const mk = (term: number | null, renewable: string | null) =>
+    make({ termMonths: term, renewableDescription: renewable });
+
+  it("counts 100% renewable and 7–12 month plans among those given", () => {
+    const plans = [
+      mk(12, "100% Renewable"), // both
+      mk(7, "22% Renewable"), // 7–12 only
+      mk(24, "100% Renewable"), // renewable only
+      mk(3, null), // neither
+      mk(13, "100% Renewable"), // 13 is "12+", not 7–12
+    ];
+    expect(summarizePlans(plans)).toEqual({ renewable100: 3, months7to12: 2 });
+  });
+
+  it("is all zeros for no plans", () => {
+    expect(summarizePlans([])).toEqual({ renewable100: 0, months7to12: 0 });
   });
 });

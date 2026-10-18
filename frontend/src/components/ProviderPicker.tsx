@@ -105,7 +105,7 @@ export function ProviderPicker({
         }}
         onKeyDown={onKeyDown}
         onBlur={() => setOpen(false)}
-        className="w-full rounded border border-brand-navy/30 bg-white px-2 py-1 text-sm"
+        className="min-h-10 w-full rounded border border-brand-navy/30 bg-white px-2 py-1 text-base sm:min-h-0 sm:text-sm"
       />
 
       {showList && (
@@ -125,7 +125,7 @@ export function ProviderPicker({
                 e.preventDefault();
                 choose(name);
               }}
-              className={`cursor-pointer px-2 py-1 ${
+              className={`cursor-pointer px-2 py-2 sm:py-1 ${
                 i === activeIndex ? "bg-brand-lime-100" : ""
               } ${countFor?.(name) === 0 ? "text-brand-navy/40" : ""}`}
             >

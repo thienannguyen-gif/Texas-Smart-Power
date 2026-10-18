@@ -26,7 +26,9 @@ function Stat({
       <p className="rounded-full bg-brand-lime-200 px-4 py-1 text-center text-sm font-bold tracking-wide text-brand-green-800">
         {label}
       </p>
-      <p className="mt-1 text-center text-xl font-extrabold">{value}</p>
+      <p className="mt-1 break-words text-center text-xl font-extrabold">
+        {value}
+      </p>
       {note && <p className="text-center text-xs text-brand-navy/60">{note}</p>}
     </div>
   );
@@ -97,7 +99,7 @@ export function PlanDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="plan-details-title"
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-h-[90vh] sm:rounded-3xl sm:p-8"
+        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-h-[90dvh] sm:rounded-3xl sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -114,7 +116,7 @@ export function PlanDetailsModal({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="rounded-full px-3 py-1 text-brand-navy/70 hover:bg-brand-lime-100"
+            className="min-h-11 min-w-11 shrink-0 rounded-full px-3 py-1 text-brand-navy/70 hover:bg-brand-lime-100"
             aria-label="Close"
           >
             ✕
@@ -185,7 +187,7 @@ export function PlanDetailsModal({
                     href={plan.factSheetUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-brand-green-800 underline"
+                    className="inline-block py-2 text-brand-green-800 underline"
                   >
                     Electricity Facts Label (EFL)
                   </a>
@@ -197,7 +199,7 @@ export function PlanDetailsModal({
                     href={plan.termsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-brand-green-800 underline"
+                    className="inline-block py-2 text-brand-green-800 underline"
                   >
                     Terms of Service
                   </a>
@@ -209,7 +211,7 @@ export function PlanDetailsModal({
                     href={plan.yracUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-brand-green-800 underline"
+                    className="inline-block py-2 text-brand-green-800 underline"
                   >
                     Your Rights as a Customer
                   </a>

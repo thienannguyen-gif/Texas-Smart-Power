@@ -48,7 +48,7 @@ export function FilterDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Filters"
-        className="slide-up flex max-h-[85vh] w-full flex-col rounded-t-3xl bg-brand-lime-200"
+        className="slide-up flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-brand-lime-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 pt-3">

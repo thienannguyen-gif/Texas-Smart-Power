@@ -510,3 +510,54 @@ test("phone drawer: Clear empties the draft only; closing without Apply discards
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 });
+
+test("a one-line summary above the list counts what is showing and follows the filters", async () => {
+  mockPlans({
+    ...file,
+    planCount: 4,
+    plans: [
+      mk({
+        id: 1,
+        planName: "A",
+        termMonths: 12,
+        renewableDescription: "100% Renewable",
+      }),
+      mk({
+        id: 2,
+        planName: "B",
+        termMonths: 12,
+        renewableDescription: "22% Renewable",
+      }),
+      mk({
+        id: 3,
+        planName: "C",
+        termMonths: 24,
+        renewableDescription: "100% Renewable",
+      }),
+      mk({ id: 4, planName: "D", termMonths: 3, renewableDescription: null }),
+    ],
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+
+  expect(
+    await screen.findByText(
+      "4 plans · 2 are 100% renewable · 2 are 7–12 months",
+    ),
+  ).toBeInTheDocument();
+
+  // at least 100% renewable: A and C remain; only A is 7–12 months
+  fireEvent.change(screen.getByLabelText(/minimum renewable percentage/i), {
+    target: { value: "100" },
+  });
+  expect(
+    screen.getByText(
+      "Showing 2 of 4 plans · 2 are 100% renewable · 1 is 7–12 months",
+    ),
+  ).toBeInTheDocument();
+
+  // parts that would say "0" are left out
+  fireEvent.click(screen.getByRole("checkbox", { name: /12\+ months/i }));
+  expect(
+    screen.getByText("Showing 1 of 4 plans · 1 is 100% renewable"),
+  ).toBeInTheDocument();
+});

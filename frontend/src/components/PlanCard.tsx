@@ -36,8 +36,8 @@ export function PlanCard({
   return (
     <article className="rounded-2xl border-2 border-brand-navy bg-white p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-bold text-brand-green-700">
+        <div className="min-w-0">
+          <h3 className="break-words text-lg font-bold text-brand-green-700">
             {plan.planName}
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -45,7 +45,7 @@ export function PlanCard({
               <img
                 src={plan.companyLogo}
                 alt={plan.companyName}
-                className="h-5 w-auto object-contain"
+                className="h-5 w-auto max-w-[10rem] object-contain"
               />
             ) : (
               <span className="text-sm text-brand-navy/70">
@@ -99,7 +99,7 @@ export function PlanCard({
           <dt className="text-sm font-semibold text-brand-navy/80">
             % Renewable
           </dt>
-          <dd className="mt-1 text-lg font-extrabold">
+          <dd className="mt-1 break-words text-base font-extrabold sm:text-lg">
             {plan.renewableDescription ?? "—"}
           </dd>
         </div>

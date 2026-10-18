@@ -112,7 +112,7 @@ export function PlansView({
                   }
                   aria-label="ZIP code"
                   aria-invalid={!zipValid}
-                  className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 font-normal"
+                  className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-base font-normal sm:text-sm"
                 />
               </label>
               <button
@@ -219,7 +219,7 @@ export function PlansView({
                 onChange={(e) => setUsageKwh(Number(e.target.value))}
                 onBlur={(e) => setUsageKwh(clampUsage(Number(e.target.value)))}
                 aria-label="Monthly usage in kWh"
-                className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right font-normal"
+                className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right text-base font-normal sm:text-sm"
               />
               kWh
             </label>

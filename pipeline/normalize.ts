@@ -53,6 +53,7 @@ export function normalizePlan(raw: RawPlan): Plan | null {
     goToPlanUrl: str(raw.go_to_plan),
     factSheetUrl: str(raw.fact_sheet),
     termsUrl: str(raw.terms_of_service),
+    yracUrl: str(raw.yrac_url),
     enrollPhone: str(raw.enroll_phone),
   };
 }

@@ -7,7 +7,7 @@ import { PlanDetailsModal } from "./PlanDetailsModal";
 export const PLANS_PER_PAGE = 6;
 
 const PAGE_BUTTON =
-  "rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold text-brand-navy hover:bg-brand-lime-100 disabled:opacity-40 disabled:hover:bg-brand-lime-200";
+  "min-h-11 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold text-brand-navy hover:bg-brand-lime-100 disabled:opacity-40 disabled:hover:bg-brand-lime-200";
 
 // Plans arrive in rank order; the sidebar's preference filters have already
 // been applied by the time they reach this component.
@@ -21,7 +21,6 @@ export function PlanList({
   generatedAt,
   page,
   onPageChange,
-  onHideProvider,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
   plans: Plan[];
@@ -29,7 +28,6 @@ export function PlanList({
   generatedAt: string;
   page: number;
   onPageChange: (next: number) => void;
-  onHideProvider?: (companyName: string) => void;
   usageKwh?: number;
 }) {
   const [selected, setSelected] = useState<Plan | null>(null);
@@ -81,7 +79,6 @@ export function PlanList({
                   plan={plan}
                   usageKwh={usageKwh}
                   onMoreDetails={() => setSelected(plan)}
-                  onHideProvider={onHideProvider}
                 />
               </li>
             ))}

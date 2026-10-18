@@ -1,6 +1,10 @@
 import type { Plan } from "../types/plan";
-import { DEFAULT_USAGE_KWH, pricePerKwhAtUsage } from "../lib/usage";
-import { formatKwh, formatRate } from "../lib/money";
+import {
+  DEFAULT_USAGE_KWH,
+  estimatedMonthlyBill,
+  pricePerKwhAtUsage,
+} from "../lib/usage";
+import { formatAmount, formatKwh, formatRate } from "../lib/money";
 
 // Display-only. Ranking is computed by the ingestion pipeline; this card
 // renders plan details without showing the internal score.
@@ -23,13 +27,10 @@ function RatingPlaceholder() {
 export function PlanCard({
   plan,
   onMoreDetails,
-  onHideProvider,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
   plan: Plan;
   onMoreDetails?: () => void;
-  /** Called with the provider's name; the parent adds it to the excluded list. */
-  onHideProvider?: (companyName: string) => void;
   usageKwh?: number;
 }) {
   return (
@@ -58,15 +59,24 @@ export function PlanCard({
           <button
             type="button"
             onClick={onMoreDetails}
-            className="shrink-0 rounded-full bg-brand-lime-200 px-3 py-2 text-xs font-bold text-brand-navy hover:bg-brand-lime-100 sm:px-4 sm:text-sm"
+            className="min-h-11 shrink-0 rounded-full bg-brand-lime-200 px-3 py-2 text-xs font-bold text-brand-navy hover:bg-brand-lime-100 sm:px-4 sm:text-sm"
           >
             MORE DETAILS
           </button>
         )}
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-center sm:grid-cols-3 sm:gap-4">
-        <div className="col-span-2 rounded-xl bg-brand-lime-100 px-2 py-3 sm:col-span-1 sm:bg-transparent sm:px-0 sm:py-0">
+      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-center sm:grid-cols-4 sm:gap-4">
+        <div className="rounded-xl bg-brand-lime-100 px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
+          <dt className="text-sm font-semibold text-brand-navy/80">
+            Est. monthly bill
+          </dt>
+          <p className="text-xs text-brand-navy/50">per month</p>
+          <dd className="mt-1 text-2xl font-extrabold">
+            {formatAmount(estimatedMonthlyBill(plan, usageKwh))}
+          </dd>
+        </div>
+        <div className="rounded-xl bg-brand-lime-100 px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
           <dt className="text-sm font-semibold text-brand-navy/80">
             Price per kWh
           </dt>
@@ -94,19 +104,6 @@ export function PlanCard({
           </dd>
         </div>
       </dl>
-
-      {onHideProvider && (
-        <div className="mt-3 text-right">
-          <button
-            type="button"
-            onClick={() => onHideProvider(plan.companyName)}
-            aria-label={`Hide this provider: ${plan.companyName}`}
-            className="text-xs text-brand-navy/60 underline hover:text-brand-navy"
-          >
-            Hide this provider
-          </button>
-        </div>
-      )}
     </article>
   );
 }

@@ -69,7 +69,7 @@ test("updates card and bill/average prices immediately when usage changes", asyn
       }),
     ],
   });
-  render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
   expect(await screen.findByText("at 1,000 kWh")).toBeInTheDocument();
   const card = screen.getByRole("article");
@@ -97,7 +97,9 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   expect(within(updatedDialog).getByText("$106")).toBeInTheDocument();
   expect(within(updatedDialog).getByText("12.4¢/kWh")).toBeInTheDocument();
 
-  fireEvent.click(within(updatedDialog).getByRole("button", { name: /close/i }));
+  fireEvent.click(
+    within(updatedDialog).getByRole("button", { name: /close/i }),
+  );
   fireEvent.change(box, { target: { value: "9999" } });
   fireEvent.blur(box);
   expect(box).toHaveValue(4000); // clamped
@@ -112,15 +114,23 @@ test("updates card and bill/average prices immediately when usage changes", asyn
 
 // Type into the provider box, then click the matching suggestion.
 function pickProvider(typed: string, name: string) {
-  fireEvent.change(screen.getByRole("combobox", { name: /search providers/i }), {
-    target: { value: typed },
-  });
-  fireEvent.mouseDown(screen.getByRole("option", { name }));
+  fireEvent.change(
+    screen.getByRole("combobox", { name: /search providers/i }),
+    {
+      target: { value: typed },
+    },
+  );
+  // suggestions read "Name (count)"
+  fireEvent.mouseDown(
+    screen.getByRole("option", {
+      name: new RegExp("^" + name + " \\(\\d+\\)$"),
+    }),
+  );
 }
 
-test("provider autocomplete filters the list; Show All restores it", async () => {
+test("provider autocomplete filters the list; removing the chip restores it", async () => {
   mockPlans();
-  render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
 
   pickProvider("gex", "Gexa");
@@ -129,13 +139,13 @@ test("provider autocomplete filters the list; Show All restores it", async () =>
   expect(screen.queryByText("APGE 12")).not.toBeInTheDocument();
   expect(screen.getByText(/showing 1 of 2 plans/i)).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: /show all/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Remove Gexa" }));
   expect(screen.getByText("APGE 12")).toBeInTheDocument();
 });
 
 test("a filter that matches nothing shows the empty-filter message", async () => {
   mockPlans();
-  render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
 
   // both sample plans have no renewable info
@@ -147,7 +157,7 @@ test("a filter that matches nothing shows the empty-filter message", async () =>
 
 function renderMany() {
   mockPlans(many);
-  render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 }
 
 const next = () => screen.getByRole("button", { name: /next/i });
@@ -192,7 +202,7 @@ test("Previous is disabled on page 1, Next on the last page", async () => {
 
 test("exactly 6 plans is one page with both buttons disabled", async () => {
   mockPlans({ ...many, planCount: 6, plans: many.plans.slice(0, 6) });
-  render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   expect(await screen.findByText("Page 1 of 1")).toBeInTheDocument();
   expect(prev()).toBeDisabled();
   expect(next()).toBeDisabled();
@@ -254,78 +264,169 @@ test("a usage change keeps the same page number", async () => {
   expect(screen.getByText("Plan 7")).toBeInTheDocument();
 });
 
-test("product type offers only Fixed and 100% Renewable", async () => {
+test("product type offers only Fixed (renewable is the slider's job)", async () => {
   mockPlans();
-  render(<PlansView tdu="oncor" zip="75201" onChangeZip={() => {}} />);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
   expect(screen.getByRole("checkbox", { name: /fixed/i })).toBeInTheDocument();
   expect(
-    screen.getByRole("checkbox", { name: /100% renewable/i }),
+    screen.queryByRole("checkbox", { name: /100% renewable/i }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByLabelText(/minimum renewable percentage/i),
   ).toBeInTheDocument();
   expect(screen.queryByText(/variable/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/prepaid/i)).not.toBeInTheDocument();
 });
 
-test("'Hide this provider' removes that provider and adds a removable excluded chip", async () => {
+test("plan cards have no hide-provider action; the sidebar has no Show All or hidden-provider chips, but provider search remains", async () => {
   renderMany();
   await screen.findByText("Page 1 of 3");
-  fireEvent.click(next()); // page 2, to prove the reset to page 1
-  fireEvent.click(
-    screen.getAllByRole("button", { name: /hide this provider: beta/i })[0],
-  );
 
-  // Beta (plans 7-14) is gone; Alpha's six plans remain on one page
+  expect(
+    screen.queryByRole("button", { name: /hide .*provider/i }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /show all/i }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("combobox", { name: /search providers/i }),
+  ).toBeInTheDocument();
+
+  pickProvider("alp", "Alpha");
   expect(screen.getByText("Page 1 of 1")).toBeInTheDocument();
-  expect(screen.getAllByRole("article")).toHaveLength(6);
-  expect(screen.queryByText("Plan 7")).not.toBeInTheDocument();
-  expect(screen.getByText("hidden")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Show Beta again" }));
-  expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
   expect(screen.queryByText("hidden")).not.toBeInTheDocument();
 });
 
-test("hiding a selected provider removes it from the selected chips, and vice versa", async () => {
-  renderMany();
-  await screen.findByText("Page 1 of 3");
-
-  pickProvider("alp", "Alpha");
-  expect(screen.getByRole("button", { name: "Remove Alpha" })).toBeVisible();
-
-  fireEvent.click(
-    screen.getAllByRole("button", { name: /hide this provider: alpha/i })[0],
-  );
+test("a contract length with no plans in the area is disabled and says so", async () => {
+  mockPlans(); // both sample plans are 12 months
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("Gexa 12");
   expect(
-    screen.queryByRole("button", { name: "Remove Alpha" }),
-  ).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Show Alpha again" })).toBeVisible();
-
-  // selecting it again takes it out of the excluded chips
-  pickProvider("alp", "Alpha");
+    screen.getByRole("checkbox", { name: /month-to-month/i }),
+  ).toBeDisabled();
   expect(
-    screen.queryByRole("button", { name: "Show Alpha again" }),
-  ).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Remove Alpha" })).toBeVisible();
+    screen.getByText(/month-to-month/i).closest("label"),
+  ).toHaveTextContent("No plans available");
+  expect(screen.getByRole("checkbox", { name: /7–12 months/i })).toBeEnabled();
 });
 
-test("Show All clears excluded providers too", async () => {
-  renderMany();
+test("month-to-month is selectable when the area has such a plan", async () => {
+  mockPlans({
+    ...file,
+    plans: [mk({ id: 1, planName: "Flex 1", termMonths: 1 }), ...file.plans],
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("Flex 1");
+  const box = screen.getByRole("checkbox", { name: /month-to-month/i });
+  expect(box).toBeEnabled();
+  fireEvent.click(box);
+  expect(screen.getByText("Flex 1")).toBeInTheDocument();
+  expect(screen.queryByText("Gexa 12")).not.toBeInTheDocument();
+});
+
+test("Change turns the ZIP into an input; submitting asks for the new ZIP and keeps usage and filters", async () => {
+  mockPlans(many);
+  const onSubmitZip = vi.fn();
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={onSubmitZip} />);
   await screen.findByText("Page 1 of 3");
-  fireEvent.click(
-    screen.getAllByRole("button", { name: /hide this provider: alpha/i })[0],
-  );
-  expect(screen.getByText("hidden")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /show all/i }));
-  expect(screen.queryByText("hidden")).not.toBeInTheDocument();
-  expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+    target: { value: "750" },
+  });
+  pickProvider("bet", "Beta");
+
+  fireEvent.click(screen.getByRole("button", { name: "Change" }));
+  const input = screen.getByLabelText("ZIP code");
+  expect(input).toHaveValue("75201");
+  fireEvent.change(input, { target: { value: "770" } });
+  expect(screen.getByRole("button", { name: "Update" })).toBeDisabled();
+  fireEvent.change(input, { target: { value: "77002" } });
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+
+  expect(onSubmitZip).toHaveBeenCalledWith("77002");
+  expect(screen.getByText("ZIPCODE: 75201")).toBeInTheDocument();
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(screen.getByRole("button", { name: "Remove Beta" })).toBeVisible();
+});
+
+test("Cancel leaves the ZIP alone", async () => {
+  mockPlans();
+  const onSubmitZip = vi.fn();
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={onSubmitZip} />);
+  await screen.findByText("Gexa 12");
+  fireEvent.click(screen.getByRole("button", { name: "Change" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(onSubmitZip).not.toHaveBeenCalled();
+  expect(screen.getByText("ZIPCODE: 75201")).toBeInTheDocument();
 });
 
 test("suggestions only come from providers in the loaded area", async () => {
   renderMany();
   await screen.findByText("Page 1 of 3");
-  fireEvent.change(screen.getByRole("combobox", { name: /search providers/i }), {
-    target: { value: "a" },
-  });
-  const names = screen.getAllByRole("option").map((o) => o.textContent);
+  fireEvent.change(
+    screen.getByRole("combobox", { name: /search providers/i }),
+    {
+      target: { value: "a" },
+    },
+  );
+  const names = screen
+    .getAllByRole("option")
+    .map((o) => o.textContent?.replace(/ \(\d+\)$/, ""));
   expect(names.sort()).toEqual(["Alpha", "Beta"]);
+});
+
+test("every option shows its match count, reflecting the other active filters; empty ones are greyed, not hidden", async () => {
+  renderMany(); // Alpha: plans 1-6, Beta: plans 7-14, all 12 months, Fixed
+  await screen.findByText("Page 1 of 3");
+
+  const row = (name: RegExp) =>
+    screen.getByRole("checkbox", { name }).closest("label")!;
+  expect(row(/fixed/i)).toHaveTextContent("Fixed / Secured Rate (14)");
+  expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (14)");
+  expect(row(/12\+ months/i)).toHaveTextContent("12+ months (0)");
+
+  // choosing a provider narrows every count
+  pickProvider("alp", "Alpha");
+  expect(row(/fixed/i)).toHaveTextContent("Fixed / Secured Rate (6)");
+  expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (6)");
+
+  // zero-match options stay on screen, greyed
+  expect(row(/12\+ months/i)).toHaveTextContent("12+ months (0)");
+  expect(row(/12\+ months/i)).toHaveClass("text-brand-navy/40");
+  expect(screen.getByRole("checkbox", { name: /12\+ months/i })).toBeDisabled();
+
+  // a contract length is counted against the provider, ignoring its own group
+  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  expect(row(/1–6 months/i)).toHaveTextContent("1–6 months (0)");
+  expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (6)");
+});
+
+test("provider suggestions show their counts", async () => {
+  renderMany();
+  await screen.findByText("Page 1 of 3");
+  fireEvent.change(
+    screen.getByRole("combobox", { name: /search providers/i }),
+    {
+      target: { value: "a" },
+    },
+  );
+  expect(screen.getByRole("option", { name: "Alpha (6)" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Beta (8)" })).toBeInTheDocument();
+});
+
+test("filter header counts active filters; 'Show N plans' closes the panel (phone)", async () => {
+  renderMany();
+  await screen.findByText("Page 1 of 3");
+  expect(screen.getByText("FILTERS")).toBeInTheDocument();
+
+  pickProvider("alp", "Alpha");
+  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  expect(screen.getByText(/FILTERS · 2 active/)).toBeInTheDocument();
+
+  const details = document.querySelector("details")!;
+  expect(details.open).toBe(true);
+  expect(screen.getByText("Tap to collapse")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Show 6 plans" }));
+  expect(details.open).toBe(false);
+  expect(screen.getByText("Tap to expand")).toBeInTheDocument();
 });

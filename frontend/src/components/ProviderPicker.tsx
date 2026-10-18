@@ -17,23 +17,20 @@ export function matchProviders(
 }
 
 // One text box with autocomplete. Chosen providers become removable chips above
-// it, and hidden ("excluded") providers show as struck-through chips; the full
-// provider list is never shown. A provider is never in both lists — the parent
-// enforces that (selectProvider / excludeProvider in lib/filters.ts).
+// it; the full provider list is never shown.
 export function ProviderPicker({
   providers,
+  countFor,
   selected,
-  excluded,
   onSelect,
   onUnselect,
-  onUnexclude,
 }: {
   providers: string[];
+  /** Matching plans for a provider under the other active filters (optional). */
+  countFor?: (name: string) => number;
   selected: string[];
-  excluded: string[];
   onSelect: (name: string) => void;
   onUnselect: (name: string) => void;
-  onUnexclude: (name: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -70,7 +67,7 @@ export function ProviderPicker({
 
   return (
     <div className="relative space-y-2">
-      {(selected.length > 0 || excluded.length > 0) && (
+      {selected.length > 0 && (
         <ul className="flex flex-wrap gap-2" aria-label="Provider chips">
           {selected.map((name) => (
             <li
@@ -83,23 +80,6 @@ export function ProviderPicker({
                 onClick={() => onUnselect(name)}
                 aria-label={`Remove ${name}`}
                 className="text-brand-navy/60 hover:text-brand-navy"
-              >
-                ✕
-              </button>
-            </li>
-          ))}
-          {excluded.map((name) => (
-            <li
-              key={`out-${name}`}
-              className="flex items-center gap-1 rounded-full border border-red-300 bg-red-50 px-3 py-1 text-xs font-semibold text-red-800"
-            >
-              <span className="line-through">{name}</span>
-              <span className="font-normal">hidden</span>
-              <button
-                type="button"
-                onClick={() => onUnexclude(name)}
-                aria-label={`Show ${name} again`}
-                className="text-red-800/70 hover:text-red-800"
               >
                 ✕
               </button>
@@ -147,14 +127,14 @@ export function ProviderPicker({
               }}
               className={`cursor-pointer px-2 py-1 ${
                 i === activeIndex ? "bg-brand-lime-100" : ""
-              }`}
+              } ${countFor?.(name) === 0 ? "text-brand-navy/40" : ""}`}
             >
               {name}
+              {countFor && ` (${countFor(name)})`}
             </li>
           ))}
         </ul>
       )}
-
     </div>
   );
 }

@@ -38,8 +38,19 @@ describe("normalizePlan", () => {
       goToPlanUrl: null,
       factSheetUrl: "https://example.com/efl.pdf",
       termsUrl: null,
+      yracUrl: null,
       enrollPhone: null,
     });
+  });
+
+  it("copies yrac_url, and leaves it null when absent or blank", () => {
+    const base = { plan_id: 1, plan_name: "P", company_name: "Co" };
+    expect(
+      normalizePlan({ ...base, yrac_url: "https://example.com/yrac.pdf" })
+        ?.yracUrl,
+    ).toBe("https://example.com/yrac.pdf");
+    expect(normalizePlan(base)?.yracUrl).toBeNull();
+    expect(normalizePlan({ ...base, yrac_url: "  " })?.yracUrl).toBeNull();
   });
 
   it("represents absent optional fields as null / false", () => {

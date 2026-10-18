@@ -148,10 +148,7 @@ export function PlanDetailsModal({
           {rateAtUsage === null ? (
             <Unavailable label="AVG PRICE PER kWh" why={priceWhy} />
           ) : (
-            <Stat
-              label="AVG PRICE PER kWh"
-              value={formatRate(rateAtUsage)}
-            />
+            <Stat label="AVG PRICE PER kWh" value={formatRate(rateAtUsage)} />
           )}
           <Stat
             label="PLAN LENGTH"
@@ -176,7 +173,7 @@ export function PlanDetailsModal({
           />
         </div>
 
-        {(plan.factSheetUrl || plan.termsUrl) && (
+        {(plan.factSheetUrl || plan.termsUrl || plan.yracUrl) && (
           <>
             <h3 className="mt-6 text-sm font-bold tracking-wide text-brand-green-700">
               DOCUMENTS
@@ -203,6 +200,18 @@ export function PlanDetailsModal({
                     className="text-brand-green-800 underline"
                   >
                     Terms of Service
+                  </a>
+                </li>
+              )}
+              {plan.yracUrl && (
+                <li>
+                  <a
+                    href={plan.yracUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-green-800 underline"
+                  >
+                    Your Rights as a Customer
                   </a>
                 </li>
               )}

@@ -1,35 +1,60 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { TduId } from "../types/plan";
 import { useTduPlans } from "../hooks/useTduPlans";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import {
   clampUsage,
   DEFAULT_USAGE_KWH,
   MAX_USAGE_KWH,
   MIN_USAGE_KWH,
 } from "../lib/usage";
-import { EMPTY_FILTERS, filterPlans, type PlanFilters } from "../lib/filters";
+import {
+  activeFilterCount,
+  EMPTY_FILTERS,
+  filterPlans,
+  type PlanFilters,
+} from "../lib/filters";
 import { PlanList } from "./PlanList";
-import { FilterSidebar } from "./FilterSidebar";
+import { FilterPanel } from "./FilterPanel";
+import { FilterDrawer } from "./FilterDrawer";
 
-// The results screen from the mockup: ZIPCODE pill + an editable "electricity
-// usage" kWh field, then a filter sidebar beside the plan list. The usage value
-// feeds every card and the details modal.
+const PILL =
+  "rounded-full bg-brand-lime-200 px-3 py-1.5 text-xs font-bold sm:px-4 sm:py-2 sm:text-sm";
+const LINK =
+  "px-2 py-1.5 text-xs text-brand-navy/70 underline disabled:opacity-50 sm:py-2 sm:text-sm";
+
+// The results screen from the mockup. A sticky bar holds the ZIP (and, for a
+// split ZIP, the area), the usage field and — on phones — the Filters button;
+// below it the filters sit beside the plan list (a drawer on phones). The usage
+// value feeds every card and the details modal.
 export function PlansView({
   tdu,
   zip,
   onSubmitZip,
   zipBusy = false,
   zipStatus,
+  areaSwitch,
 }: {
   tdu: TduId;
   zip: string;
   /** Called with a valid 5-digit ZIP; the parent looks up its area. */
   onSubmitZip: (zip: string) => void;
   zipBusy?: boolean;
-  /** Lookup feedback (loading / error / area picker) shown under the ZIP bar. */
+  /** Lookup feedback (loading / error / area picker) shown under the bar. */
   zipStatus?: ReactNode;
+  /** Set only when this ZIP returned several utilities. While `choosing`,
+   *  the AREA label becomes a button group right in the bar. */
+  areaSwitch?: {
+    currentCode: string;
+    options: { code: string; label: string }[];
+    choosing: boolean;
+    onChange: () => void;
+    onSelect: (code: string) => void;
+    onCancel: () => void;
+  };
 }) {
   const state = useTduPlans(tdu);
+  const isDesktop = useIsDesktop();
   const allPlans = state.status === "success" ? state.data.plans : [];
   const providers = [...new Set(allPlans.map((p) => p.companyName))].sort();
 
@@ -40,12 +65,19 @@ export function PlansView({
   const [page, setPage] = useState(1);
   const [editingZip, setEditingZip] = useState(false);
   const [zipDraft, setZipDraft] = useState(zip);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const zipValid = /^\d{5}$/.test(zipDraft);
 
   // A new area starts at page 1. Filters and usage deliberately carry over.
   useEffect(() => setPage(1), [tdu]);
 
+  // The drawer only exists on phones; close it if the window grows past that.
+  useEffect(() => {
+    if (isDesktop) setDrawerOpen(false);
+  }, [isDesktop]);
+
   const visiblePlans = filterPlans(allPlans, filters);
+  const activeCount = activeFilterCount(filters);
 
   function changeFilters(next: PlanFilters) {
     setFilters(next);
@@ -53,130 +85,227 @@ export function PlansView({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
-        {editingZip ? (
-          <form
-            className="flex flex-wrap items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!zipValid) return;
-              setEditingZip(false);
-              if (zipDraft !== zip) onSubmitZip(zipDraft);
-            }}
-          >
-            <label className="flex items-center gap-2 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
-              ZIPCODE:
-              <input
-                autoFocus
-                inputMode="numeric"
-                maxLength={5}
-                value={zipDraft}
-                onChange={(e) => setZipDraft(e.target.value.replace(/\D/g, ""))}
-                aria-label="ZIP code"
-                aria-invalid={!zipValid}
-                className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 font-normal"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={!zipValid}
-              className="rounded-full bg-brand-green px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-            >
-              Update
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditingZip(false)}
-              className="px-2 py-2 text-sm text-brand-navy/70 underline"
-            >
-              Cancel
-            </button>
-          </form>
-        ) : (
-          <div className="flex items-center gap-3">
-            <span className="rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold">
-              ZIPCODE: {zip}
-            </span>
-            <button
-              type="button"
-              disabled={zipBusy}
-              onClick={() => {
-                setZipDraft(zip);
-                setEditingZip(true);
+    <div>
+      <div className="sticky top-0 z-30 border-b border-brand-navy/10 bg-brand-lime/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3">
+          {editingZip ? (
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!zipValid) return;
+                setEditingZip(false);
+                // Always forwarded: the parent decides what a repeated ZIP
+                // means (for a split ZIP, it re-opens the area choice).
+                onSubmitZip(zipDraft);
               }}
-              className="px-2 py-2 text-sm text-brand-navy/70 underline disabled:opacity-50"
             >
-              Change
-            </button>
-          </div>
-        )}
-
-        <label className="flex items-center justify-between gap-2 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold sm:justify-start">
-          Electricity usage
-          <input
-            type="number"
-            min={MIN_USAGE_KWH}
-            max={MAX_USAGE_KWH}
-            step={50}
-            value={usageKwh}
-            onChange={(e) => setUsageKwh(Number(e.target.value))}
-            onBlur={(e) => setUsageKwh(clampUsage(Number(e.target.value)))}
-            aria-label="Monthly usage in kWh"
-            className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-2 text-right font-normal"
-          />
-          kWh
-        </label>
-      </div>
-
-      {zipStatus && <div className="mt-4 space-y-3">{zipStatus}</div>}
-
-      <div className="mt-6 grid gap-6 md:grid-cols-[260px_1fr]">
-        <FilterSidebar
-          plans={allPlans}
-          resultCount={visiblePlans.length}
-          providers={providers}
-          value={filters}
-          onChange={changeFilters}
-        />
-
-        <main>
-          {state.status === "loading" && (
-            <p role="status" className="text-brand-navy/70">
-              Loading plans…
-            </p>
-          )}
-
-          {state.status === "error" && (
-            <div
-              role="alert"
-              className="rounded-2xl border-2 border-red-300 bg-red-50 p-4 text-red-800"
-            >
-              <p className="font-bold">Couldn’t load plans.</p>
-              <p className="mt-1 text-sm">{state.error}</p>
+              <label className={`flex items-center gap-2 ${PILL}`}>
+                ZIPCODE:
+                <input
+                  autoFocus
+                  inputMode="numeric"
+                  maxLength={5}
+                  value={zipDraft}
+                  onChange={(e) =>
+                    setZipDraft(e.target.value.replace(/\D/g, ""))
+                  }
+                  aria-label="ZIP code"
+                  aria-invalid={!zipValid}
+                  className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-base font-normal sm:text-sm"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={!zipValid}
+                className="min-h-9 rounded-full bg-brand-green px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50 sm:text-sm"
+              >
+                Update
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingZip(false)}
+                className={LINK}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 sm:gap-x-3">
+              <span className={PILL}>ZIPCODE: {zip}</span>
+              <button
+                type="button"
+                disabled={zipBusy}
+                onClick={() => {
+                  setZipDraft(zip);
+                  setEditingZip(true);
+                }}
+                className={LINK}
+              >
+                Change
+              </button>
+              {areaSwitch && (
+                <>
+                  <span aria-hidden="true" className="text-brand-navy/40">
+                    |
+                  </span>
+                  {areaSwitch.choosing ? (
+                    <span
+                      role="group"
+                      aria-label="Choose your utility area"
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <span className="text-xs font-bold sm:text-sm">
+                        AREA:
+                      </span>
+                      {areaSwitch.options.map((option) => (
+                        <button
+                          key={option.code}
+                          type="button"
+                          aria-pressed={option.code === areaSwitch.currentCode}
+                          onClick={() => areaSwitch.onSelect(option.code)}
+                          className={`min-h-9 rounded-full px-3 py-1.5 text-xs font-bold sm:px-4 sm:text-sm ${
+                            option.code === areaSwitch.currentCode
+                              ? "bg-brand-green text-white"
+                              : "bg-brand-lime-200 text-brand-navy hover:bg-brand-lime-100"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={areaSwitch.onCancel}
+                        className={LINK}
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <>
+                      <span className={PILL}>
+                        AREA:{" "}
+                        {areaSwitch.options.find(
+                          (option) => option.code === areaSwitch.currentCode,
+                        )?.label ?? areaSwitch.currentCode}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={areaSwitch.onChange}
+                        aria-label="Change utility area"
+                        className={LINK}
+                      >
+                        Change
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           )}
 
-          {state.status === "empty" && (
-            <p className="text-brand-navy/70">
-              No plans available for{" "}
-              <span className="font-semibold">{state.tdu}</span> right now.
-              Check back after the next data refresh.
-            </p>
+          <div className="flex items-center justify-between gap-2 sm:justify-start">
+            <label className={`flex items-center gap-2 ${PILL}`}>
+              <span>
+                <span className="hidden sm:inline">Electricity </span>
+                usage
+              </span>
+              <input
+                type="number"
+                min={MIN_USAGE_KWH}
+                max={MAX_USAGE_KWH}
+                step={50}
+                value={usageKwh}
+                onChange={(e) => setUsageKwh(Number(e.target.value))}
+                onBlur={(e) => setUsageKwh(clampUsage(Number(e.target.value)))}
+                aria-label="Monthly usage in kWh"
+                className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right text-base font-normal sm:text-sm"
+              />
+              kWh
+            </label>
+            {!isDesktop && (
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                aria-haspopup="dialog"
+                className="min-h-10 rounded-full bg-brand-green px-4 py-1.5 text-sm font-bold text-white"
+              >
+                {activeCount > 0 ? `Filters (${activeCount})` : "Filters"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pt-4 pb-6 sm:px-6">
+        {zipStatus && <div className="space-y-3">{zipStatus}</div>}
+
+        <div className="mt-4 grid gap-6 md:grid-cols-[260px_1fr]">
+          {isDesktop && (
+            <aside
+              aria-label="Filters"
+              className="self-start rounded-2xl bg-brand-lime-200 p-5"
+            >
+              <FilterPanel
+                plans={allPlans}
+                providers={providers}
+                value={filters}
+                onChange={changeFilters}
+              />
+            </aside>
           )}
 
-          {state.status === "success" && (
-            <PlanList
-              plans={visiblePlans}
-              totalCount={state.data.plans.length}
-              generatedAt={state.data.generatedAt}
-              page={page}
-              onPageChange={setPage}
-              usageKwh={usageKwh}
-            />
-          )}
-        </main>
+          <main>
+            {state.status === "loading" && (
+              <p role="status" className="text-brand-navy/70">
+                Loading plans…
+              </p>
+            )}
+
+            {state.status === "error" && (
+              <div
+                role="alert"
+                className="rounded-2xl border-2 border-red-300 bg-red-50 p-4 text-red-800"
+              >
+                <p className="font-bold">Couldn’t load plans.</p>
+                <p className="mt-1 text-sm">{state.error}</p>
+              </div>
+            )}
+
+            {state.status === "empty" && (
+              <p className="text-brand-navy/70">
+                No plans available for{" "}
+                <span className="font-semibold">{state.tdu}</span> right now.
+                Check back after the next data refresh.
+              </p>
+            )}
+
+            {state.status === "success" && (
+              <PlanList
+                plans={visiblePlans}
+                totalCount={state.data.plans.length}
+                generatedAt={state.data.generatedAt}
+                page={page}
+                onPageChange={setPage}
+                usageKwh={usageKwh}
+              />
+            )}
+          </main>
+        </div>
       </div>
+
+      {drawerOpen && !isDesktop && (
+        <FilterDrawer
+          plans={allPlans}
+          providers={providers}
+          applied={filters}
+          onApply={(next) => {
+            changeFilters(next);
+            setDrawerOpen(false);
+          }}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
     </div>
   );
 }

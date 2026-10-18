@@ -125,6 +125,17 @@ export function countForProvider(
   }).length;
 }
 
+/** Counts shown in the results summary line, over whatever plans are showing. */
+export function summarizePlans(plans: Plan[]): {
+  renewable100: number;
+  months7to12: number;
+} {
+  return {
+    renewable100: plans.filter((p) => renewablePct(p) === 100).length,
+    months7to12: plans.filter((p) => matchesContractBucket(p, "m7_12")).length,
+  };
+}
+
 /** How many separate filter choices are active (shown on the phone header). */
 export function activeFilterCount(filters: PlanFilters): number {
   return (

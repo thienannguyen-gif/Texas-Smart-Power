@@ -16,15 +16,25 @@
 body {
   background-color: var(--color-brand-lime);
   color: var(--color-brand-navy);
+  overflow-x: clip;
 }
 
-@media (min-width: 768px) {
-  .filter-panel > details > summary {
-    display: none;
+/* Phone filter drawer slides up from the bottom edge. */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
   }
+  to {
+    transform: translateY(0);
+  }
+}
 
-  .filter-panel-content {
-    display: block;
-    margin-top: 0;
+.slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-up {
+    animation: none;
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
+import { summarizePlans } from "../lib/filters";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
 
@@ -41,6 +42,23 @@ export function PlanList({
   const canNext = current < pageCount;
   const modalOpen = selected !== null;
 
+  // One line: how many are showing, then how many of those are 100% renewable
+  // and 7–12 months. Parts that would say "0" are left out.
+  const { renewable100, months7to12 } = summarizePlans(plans);
+  const summaryLine = [
+    filtered
+      ? `Showing ${plans.length} of ${totalCount} plans`
+      : `${totalCount} ${totalCount === 1 ? "plan" : "plans"}`,
+    renewable100 > 0
+      ? `${renewable100} ${renewable100 === 1 ? "is" : "are"} 100% renewable`
+      : null,
+    months7to12 > 0
+      ? `${months7to12} ${months7to12 === 1 ? "is" : "are"} 7–12 months`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   useEffect(() => {
     if (modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -62,11 +80,9 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
-      <p className="mb-1 text-sm text-brand-navy/70">
-        {filtered
-          ? `Showing ${plans.length} of ${totalCount} plans`
-          : `${totalCount} ${totalCount === 1 ? "plan" : "plans"}`}{" "}
-        · updated {new Date(generatedAt).toLocaleString("en-US")}
+      <p className="text-xs text-brand-navy/70 sm:text-sm">{summaryLine}</p>
+      <p className="mb-2 text-xs text-brand-navy/50">
+        Updated {new Date(generatedAt).toLocaleString("en-US")}
       </p>
       {plans.length === 0 ? (
         <p className="text-brand-navy/70">No plans match these filters.</p>

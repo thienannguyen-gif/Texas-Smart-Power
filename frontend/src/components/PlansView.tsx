@@ -204,9 +204,12 @@ export function PlansView({
 
         <div className="mt-4 grid gap-6 md:grid-cols-[260px_1fr]">
           {isDesktop && (
+            // Sticks below the sticky bar (about 4rem tall) with a small gap, and
+            // scrolls inside itself when taller than the screen, so the provider
+            // search at the bottom stays reachable.
             <aside
               aria-label="Filters"
-              className="self-start rounded-2xl bg-brand-lime-200 p-5"
+              className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl bg-brand-lime-200 p-5"
             >
               <FilterPanel
                 plans={allPlans}

@@ -437,7 +437,11 @@ test("the ZIP, usage and Change controls live in one sticky bar; desktop shows t
   expect(bar).toContainElement(screen.getByRole("button", { name: "Change" }));
   expect(bar).toContainElement(screen.getByLabelText(/monthly usage in kWh/i));
 
-  expect(screen.getByRole("complementary", { name: "Filters" })).toBeVisible();
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+  expect(sidebar).toBeVisible();
+  // stays in view below the bar, and scrolls inside itself if taller than the screen
+  expect(sidebar).toHaveClass("sticky", "top-20", "overflow-y-auto");
+  expect(sidebar.className).toContain("max-h-[calc(100dvh-");
   expect(
     screen.queryByRole("button", { name: /^Filters/ }),
   ).not.toBeInTheDocument();

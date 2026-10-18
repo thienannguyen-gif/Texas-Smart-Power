@@ -121,10 +121,8 @@ async function loadRawPlans(
 async function ingestTdu(
   tdu: TduId,
   useFixtures: boolean,
-  onRawPlans: (rawPlans: RawPlan[]) => void,
 ): Promise<IngestResult> {
   const { plans: raw, source } = await loadRawPlans(tdu, useFixtures);
-  onRawPlans(raw);
 
   const normalized = raw
     .map(normalizePlan)
@@ -173,16 +171,6 @@ export default async function handler(
   const useFixtures =
     fixturesAllowedHere() && req.headers["x-seed-fixtures"] === "1";
 
-  // TEMPORARY diagnostic: print the field NAMES (never values) of the first
-  // raw record this run receives, once, to confirm the real upstream field
-  // list (e.g. is it `yrac_url`?). Remove after reading the Vercel logs.
-  let loggedRawFields = false;
-  const onRawPlans = (rawPlans: RawPlan[]) => {
-    if (loggedRawFields || rawPlans.length === 0) return;
-    loggedRawFields = true;
-    console.log("RAW FIELDS:", Object.keys(rawPlans[0]));
-  };
-
   const results: IngestResult[] = [];
   const errors: Array<{ tdu: TduId; message: string }> = [];
 
@@ -190,7 +178,7 @@ export default async function handler(
   // delete their previous good files.
   for (const tdu of TDU_IDS) {
     try {
-      results.push(await ingestTdu(tdu, useFixtures, onRawPlans));
+      results.push(await ingestTdu(tdu, useFixtures));
     } catch (error) {
       errors.push({
         tdu,

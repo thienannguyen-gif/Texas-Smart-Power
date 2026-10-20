@@ -10,7 +10,7 @@ It is not affiliated with, endorsed by, or sponsored by Power to Choose, the Pub
 
 ## 2. Where the data comes from
 
-All plan information comes from the public Power to Choose API. It is pulled automatically once a day, early in the morning (Texas time). The "as of" date next to the plan count shows when the plans you're looking at were last pulled.
+All plan information comes from the public Power to Choose API. It is pulled automatically once a day, early in the morning (Texas time). The "Updated" date next to the plan count shows when the plans you're looking at were last pulled.
 
 Prices and plan details are displayed as they come from Power to Choose. Providers can change or withdraw plans at any time, so what you see here may already be out of date.
 
@@ -20,17 +20,16 @@ Plans are pulled once per utility area (TDU), so everyone in the same area sees 
 
 Everything on this site is provided "as is," without warranty of any kind. Data can be incomplete, wrong, or stale, either at the source or because of a mistake in how this site processes it. Always confirm the details with the provider.
 
-## 4. How plans are ranked and filtered
+## 4. How plans are ranked
 
-The ranking is this project's own scoring formula. It weighs price, how steady the price is across usage levels, cancellation fee, contract length, and renewable content. It is an opinion, not a recommendation, and "Best match" may not be the best plan for you.
+The ranking is this project’s own scoring formula. It weighs the price, how steady that price stays as usage changes, the cancellation fee, the contract length, and the renewable content. It is an opinion, not a recommendation — the plan at the top is the best by our formula, which may not be the best plan for you.
 
-Some plans are left out of the main list on purpose:
+Some plans are pushed down the list rather than hidden:
 
-- Plans whose price per kWh dips or spikes at 1,000 kWh compared with 500 and 2,000 kWh — usually a sign of a usage-based bill credit that can backfire if your usage changes.
-- Plans that require a minimum monthly usage.
-- Time-of-use plans, whose price depends on the time of day. These can be shown in their own unranked section, but the prices shown are Power to Choose's flat reference rates, not what you'll actually pay.
+- Plans with an unstable price curve — where the rate per kWh dips or spikes at 1,000 kWh compared with 500 and 2,000. This is usually the signature of a usage-based bill credit, which rewards you only if your usage lands in a narrow window and can backfire if it doesn’t. These plans score zero on stability, so they fall to the bottom, but they remain visible.
+- Time-of-use plans, where the rate depends on the hour of the day. The prices shown for them come from Power to Choose’s flat reference rates, not from what you would actually pay, so treat their position in the list with caution.
 
-Bill amounts are estimates. Power to Choose only publishes prices at 500, 1,000 and 2,000 kWh; prices at other usage levels are estimated from those three points.
+Bill amounts are estimates. Power to Choose publishes prices at only three usage levels — 500, 1,000 and 2,000 kWh — so any figure at another level is interpolated from those three points. Real pricing is often tiered rather than linear, and the estimate may not include every charge on an actual bill.
 
 ## 5. Not an offer, not advice
 

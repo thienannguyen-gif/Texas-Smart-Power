@@ -1,34 +1,31 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DisclaimerPage, splitLastUpdated } from "./DisclaimerPage";
+import { DisclaimerPage, formatUpdated } from "./DisclaimerPage";
 
 beforeEach(() => {
   window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
 });
 
-describe("splitLastUpdated", () => {
-  it.each([
-    ["**Last updated:** 20 October 2026", "20 October 2026"],
-    ["Last updated: 20 October 2026", "20 October 2026"],
-    ["_Last Updated - October 2026_", "October 2026"],
-    ["*Last updated:* 2026-10-20", "2026-10-20"],
-  ])("finds the date in %j", (line, date) => {
-    const result = splitLastUpdated(`# Title\n\n${line}\n\nBody text.`);
-    expect(result.date).toBe(date);
-    expect(result.body).not.toMatch(/last updated/i);
-    expect(result.body).toContain("Body text.");
+describe("formatUpdated", () => {
+  it("formats an ISO date as day, month name, year", () => {
+    expect(formatUpdated("2026-10-20T12:26:23+07:00")).toBe("20 October 2026");
+    expect(formatUpdated("2026-01-05T00:00:00Z")).toBe("5 January 2026");
   });
 
-  it("reports no date when the text has none", () => {
-    expect(splitLastUpdated("# Title\n\nBody").date).toBeNull();
+  it("uses the UTC calendar day, so the page reads the same wherever it is opened", () => {
+    expect(formatUpdated("2026-10-20T23:30:00Z")).toBe("20 October 2026");
+  });
+
+  it("returns null for nothing or for garbage", () => {
+    expect(formatUpdated(null)).toBeNull();
+    expect(formatUpdated("")).toBeNull();
+    expect(formatUpdated("not a date")).toBeNull();
   });
 });
 
 describe("DisclaimerPage", () => {
   const source = [
     "# Disclaimer & Terms of Use",
-    "",
-    "**Last updated:** 20 October 2026",
     "",
     "## 1. Information only",
     "",
@@ -38,8 +35,10 @@ describe("DisclaimerPage", () => {
     "- Confirm before enrolling",
   ].join("\n");
 
-  it("shows the title, then the Last updated date at the top, then the text", () => {
-    render(<DisclaimerPage source={source} />);
+  it("shows the title, then the build-time Last updated date, then the text", () => {
+    render(
+      <DisclaimerPage source={source} updated="2026-10-20T12:26:23+07:00" />,
+    );
     const title = screen.getByRole("heading", {
       level: 1,
       name: "Disclaimer & Terms of Use",
@@ -53,12 +52,17 @@ describe("DisclaimerPage", () => {
       date.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    // the date is shown once, not repeated in the body
-    expect(screen.getAllByText(/last updated/i)).toHaveLength(1);
+  });
+
+  it("says the date is unavailable, rather than going blank or guessing, when the build could not find one", () => {
+    render(<DisclaimerPage source={source} updated={null} />);
+    expect(
+      screen.getByText("Last updated: not available in this build"),
+    ).toBeInTheDocument();
   });
 
   it("is a readable single column with a way back", () => {
-    render(<DisclaimerPage source={source} />);
+    render(<DisclaimerPage source={source} updated={null} />);
     expect(screen.getByRole("article")).toHaveClass(
       "max-w-[75ch]",
       "leading-7",
@@ -69,13 +73,15 @@ describe("DisclaimerPage", () => {
   });
 
   it("scrolls to the top when it opens", () => {
-    render(<DisclaimerPage source={source} />);
+    render(<DisclaimerPage source={source} updated={null} />);
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
-  it("renders the real docs/DISCLAIMER.md with a title and a Last updated line", () => {
+  it("renders the real docs/DISCLAIMER.md: a title, one Last updated line, and no hand-written date in the text", () => {
     render(<DisclaimerPage />);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+    // exactly one "Last updated" on the page: the injected one, not a line in the file
+    expect(screen.getAllByText(/last updated/i)).toHaveLength(1);
     expect(screen.getByText(/^Last updated:/)).toBeInTheDocument();
   });
 });

@@ -4,36 +4,36 @@ import { useEffect } from "react";
 import disclaimerSource from "../../../docs/DISCLAIMER.md?raw";
 import { parseBlocks, renderBlocks } from "./Markdown";
 
-// Matches a line such as "**Last updated:** 20 October 2026" (any mix of
-// bold/italic markers, ":" or "-" after the label).
-const LAST_UPDATED =
-  /^[\s*_>]*last updated[\s*_]*[:：–-]?[\s*_]*(.+?)[\s*_]*$/im;
-
-/** Pull the "Last updated" line out of the text so the page can show it at the top. */
-export function splitLastUpdated(source: string): {
-  body: string;
-  date: string | null;
-} {
-  const match = LAST_UPDATED.exec(source);
-  if (!match) return { body: source, date: null };
-  return {
-    body: source.replace(match[0], ""),
-    date: match[1].trim(),
-  };
+/** "2026-10-20T12:26:23+07:00" -> "20 October 2026", or null if unreadable. */
+export function formatUpdated(iso: string | null): string | null {
+  if (!iso || Number.isNaN(Date.parse(iso))) return null;
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 // Long-form reading page: one column of about 70 characters, generous line
 // height, on a white card like the plan cards.
+//
+// "Last updated" is not in the text: it is the git date of docs/DISCLAIMER.md,
+// injected at build time (see vite.config.ts), so it changes only when the text
+// does, not on every deploy.
 export function DisclaimerPage({
   source = disclaimerSource,
+  updated = __DISCLAIMER_UPDATED__,
 }: {
   source?: string;
+  /** ISO date the text last changed; defaults to the build-time value. */
+  updated?: string | null;
 }) {
-  const { body, date } = splitLastUpdated(source);
-  const blocks = parseBlocks(body);
+  const blocks = parseBlocks(source);
   const first = blocks[0];
   const title = first?.kind === "heading" && first.level === 1 ? first : null;
   const rest = title ? blocks.slice(1) : blocks;
+  const date = formatUpdated(updated);
 
   // arriving from the footer or the header: start at the top of the text
   useEffect(() => {
@@ -55,11 +55,9 @@ export function DisclaimerPage({
             {title.text}
           </h1>
         )}
-        {date && (
-          <p className="mt-3 text-sm font-semibold text-brand-navy/80">
-            Last updated: {date}
-          </p>
-        )}
+        <p className="mt-3 text-sm font-semibold text-brand-navy/80">
+          Last updated: {date ?? "not available in this build"}
+        </p>
 
         {renderBlocks(rest)}
       </article>

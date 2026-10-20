@@ -1,7 +1,5 @@
 # Disclaimer & Terms of Use
 
-**Last updated:** 20 October 2026
-
 ## 1. What this site is
 
 Texas Smart Power is an independent, non-commercial learning project, built for fun. It helps compare Texas retail electricity plans by how stable their prices are across different usage levels, not just by the headline rate.

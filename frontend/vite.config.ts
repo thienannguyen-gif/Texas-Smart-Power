@@ -6,6 +6,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // The disclaimer page imports ../docs/DISCLAIMER.md (one source of truth
+    // for the text), which sits outside this folder: allow the repo root.
+    fs: { allow: [".."] },
     // `vercel dev` assigns a port and passes it as $PORT, then proxies
     // :3000 to it. Vite ignores $PORT on its own, so bind to it explicitly.
     // Falls back to Vite's default for a plain `npm run dev`.

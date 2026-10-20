@@ -6,6 +6,9 @@ import { SiteHeader } from "./components/SiteHeader";
 import { HeroLanding } from "./components/HeroLanding";
 import { AreaPicker } from "./components/AreaPicker";
 import { PlansView } from "./components/PlansView";
+import { DisclaimerPage } from "./components/DisclaimerPage";
+import { SiteFooter } from "./components/SiteFooter";
+import { useHashRoute } from "./hooks/useHashRoute";
 
 export default function App() {
   // submittedZip drives the lookup; activeZip is the ZIP whose area (tdu) the
@@ -20,6 +23,7 @@ export default function App() {
   const [activeAreas, setActiveAreas] = useState<UtilityArea[]>([]);
 
   const lookup = useZipLookup(submittedZip);
+  const onDisclaimer = useHashRoute() === "#disclaimer";
   const activeIsSplit = activeAreas.length > 1;
 
   function submitZip(zip: string) {
@@ -96,36 +100,47 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <SiteHeader />
 
-      {tdu ? (
-        <PlansView
-          tdu={tdu}
-          zip={activeZip}
-          onSubmitZip={submitZip}
-          areaSwitch={
-            activeIsSplit
-              ? {
-                  currentCode: tdu,
-                  options: activeAreas.map((area) => ({
-                    code: area.code,
-                    label: area.name,
-                  })),
-                  onSelect: (code) => {
-                    if (isTduId(code)) setTdu(code);
-                  },
-                }
-              : undefined
-          }
-          zipBusy={lookup.status === "loading"}
-          zipStatus={lookupMessages}
-        />
-      ) : (
-        <HeroLanding onSubmitZip={submitZip} busy={lookup.status === "loading"}>
-          {lookupMessages}
-        </HeroLanding>
-      )}
+      {onDisclaimer && <DisclaimerPage />}
+
+      {/* Hidden, not unmounted, while the disclaimer is open, so the ZIP,
+          usage and filters are all still there when the user comes back. */}
+      <div hidden={onDisclaimer} className="flex-1">
+        {tdu ? (
+          <PlansView
+            tdu={tdu}
+            zip={activeZip}
+            onSubmitZip={submitZip}
+            areaSwitch={
+              activeIsSplit
+                ? {
+                    currentCode: tdu,
+                    options: activeAreas.map((area) => ({
+                      code: area.code,
+                      label: area.name,
+                    })),
+                    onSelect: (code) => {
+                      if (isTduId(code)) setTdu(code);
+                    },
+                  }
+                : undefined
+            }
+            zipBusy={lookup.status === "loading"}
+            zipStatus={lookupMessages}
+          />
+        ) : (
+          <HeroLanding
+            onSubmitZip={submitZip}
+            busy={lookup.status === "loading"}
+          >
+            {lookupMessages}
+          </HeroLanding>
+        )}
+      </div>
+
+      <SiteFooter />
     </div>
   );
 }

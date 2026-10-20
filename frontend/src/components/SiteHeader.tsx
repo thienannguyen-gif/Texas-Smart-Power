@@ -1,8 +1,12 @@
 import { BrandMark } from "./BrandMark";
 
 // Navy top bar from the mockup: logo + wordmark left, nav right.
-// The nav targets aren't defined yet — they're placeholders.
-const NAV = ["Home", "About", "More"];
+// Home and About are still placeholders; MORE opens the disclaimer page.
+const NAV = [
+  { label: "Home", href: "/" },
+  { label: "About", href: "/" },
+  { label: "More", href: "#disclaimer" },
+];
 
 export function SiteHeader() {
   return (
@@ -17,9 +21,9 @@ export function SiteHeader() {
         <nav aria-label="Primary">
           <ul className="flex gap-3 text-[10px] font-bold tracking-wide sm:gap-10 sm:text-sm">
             {NAV.map((item) => (
-              <li key={item}>
-                <a href="/" className="hover:text-brand-lime">
-                  {item.toUpperCase()}
+              <li key={item.label}>
+                <a href={item.href} className="hover:text-brand-lime">
+                  {item.label.toUpperCase()}
                 </a>
               </li>
             ))}

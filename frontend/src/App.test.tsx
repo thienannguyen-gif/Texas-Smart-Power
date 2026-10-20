@@ -5,7 +5,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import App from "./App";
 import type { TduDataFile } from "./types/plan";
 
@@ -384,4 +384,75 @@ test("the select stays after a failed lookup of another ZIP", async () => {
   expect(areaSelect()).toHaveDisplayValue("ONCOR ELECTRIC DELIVERY COMPANY");
   fireEvent.change(areaSelect()!, { target: { value: "tnmp" } });
   expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
+});
+
+// ---- Disclaimer page (hash route #disclaimer)
+
+function goToHash(hash: string) {
+  window.location.hash = hash;
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
+
+describe("disclaimer page", () => {
+  beforeEach(() => {
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+  });
+  afterEach(() => goToHash(""));
+
+  test("every page has a footer link, and the header's MORE item opens the disclaimer", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    render(<App />);
+
+    expect(
+      screen.getByRole("link", { name: "Disclaimer & Terms of Use" }),
+    ).toHaveAttribute("href", "#disclaimer");
+    expect(screen.getByRole("link", { name: "MORE" })).toHaveAttribute(
+      "href",
+      "#disclaimer",
+    );
+  });
+
+  test("#disclaimer shows the page, still with the footer; leaving it brings the app back", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    render(<App />);
+    const zipBox = screen.getByLabelText(/zip code/i);
+
+    goToHash("#disclaimer");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /disclaimer/i }),
+    ).toBeInTheDocument();
+    expect(zipBox).not.toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Disclaimer & Terms of Use" }),
+    ).toBeVisible();
+
+    goToHash("");
+    await waitFor(() => expect(zipBox).toBeVisible());
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+  });
+
+  test("opening the disclaimer from the plans page keeps the ZIP, usage and filters", async () => {
+    stubSplitZips();
+    render(<App />);
+    submitZip("75201");
+    await screen.findByText("Oncor Plan");
+    fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+      target: { value: "750" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+
+    goToHash("#disclaimer");
+    await screen.findByRole("article");
+    goToHash("");
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/monthly usage in kWh/i)).toBeVisible(),
+    );
+    expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+    expect(
+      screen.getByRole("checkbox", { name: /7–12 months/i }),
+    ).toBeChecked();
+    expect(screen.getByText("ZIPCODE: 75201")).toBeInTheDocument();
+    expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
+  });
 });

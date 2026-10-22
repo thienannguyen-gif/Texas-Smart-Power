@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Plan } from "../types/plan";
-import { calculatePriceScore, rankPlans, scorePlans } from "./ranking";
+import {
+  calculatePriceScore,
+  priceCurveWarning,
+  rankPlans,
+  scorePlans,
+} from "./ranking";
 
 const base: Plan = {
   id: 0,
@@ -167,5 +172,44 @@ describe("scorePlans", () => {
     });
 
     expect(rankPlans([worse, better]).map((plan) => plan.id)).toEqual([1, 2]);
+  });
+});
+
+describe("priceCurveWarning", () => {
+  const curve = (at500: number, at1000: number, at2000: number) =>
+    makePlan({ pricePerKwh: { at500, at1000, at2000 } });
+
+  it("flags a V-Trap (P1000 < P2000) and a Hump (P1000 > P500), per BRIEF.md", () => {
+    expect(priceCurveWarning(curve(0.1, 0.09, 0.11))).toBe("v-trap");
+    expect(priceCurveWarning(curve(0.1, 0.12, 0.11))).toBe("hump");
+  });
+
+  it("does not flag a curve that only falls or stays flat", () => {
+    expect(priceCurveWarning(curve(0.13, 0.12, 0.11))).toBeNull();
+    expect(priceCurveWarning(curve(0.12, 0.12, 0.12))).toBeNull();
+  });
+
+  it("says nothing when an anchor price is missing", () => {
+    expect(
+      priceCurveWarning(
+        makePlan({ pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 } }),
+      ),
+    ).toBeNull();
+  });
+
+  it("agrees with the score: flagged exactly when S_slope is zero", () => {
+    const curves: Array<[number, number, number]> = [
+      [0.1, 0.09, 0.11],
+      [0.1, 0.12, 0.11],
+      [0.13, 0.12, 0.11],
+      [0.12, 0.12, 0.12],
+    ];
+    for (const [a, b, c] of curves) {
+      const plan = curve(a, b, c);
+      const [scored] = scorePlans([plan]);
+      expect(priceCurveWarning(plan) !== null).toBe(
+        scored.breakdown.slope === 0,
+      );
+    }
   });
 });

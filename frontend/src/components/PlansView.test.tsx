@@ -565,3 +565,158 @@ test("a one-line summary above the list counts what is showing and follows the f
     screen.getByText("Showing 1 of 4 plans · 1 is 100% renewable"),
   ).toBeInTheDocument();
 });
+
+// ---- Sort: Best match / Lowest bill
+
+// Arrive in "best match" (score) order A, B, C, D. Bills at 500 / 1000 / 2000 kWh:
+//   A Flat      60 / 120 / 240
+//   B Credit   100 / 100 / 200
+//   C Unstable  50 /  90 / 220   (V-Trap: rate at 1,000 kWh below the rate at 2,000)
+//   D NoAnchor  no estimable bill (the 2,000 kWh price is missing)
+const sortFile: TduDataFile = {
+  ...file,
+  planCount: 4,
+  plans: [
+    mk({
+      id: 1,
+      planName: "A Flat",
+      pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 },
+    }),
+    mk({
+      id: 2,
+      planName: "B Credit",
+      pricePerKwh: { at500: 0.2, at1000: 0.1, at2000: 0.1 },
+    }),
+    mk({
+      id: 3,
+      planName: "C Unstable",
+      pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 },
+    }),
+    mk({
+      id: 4,
+      planName: "D NoAnchor",
+      pricePerKwh: { at500: 0.01, at1000: 0.01, at2000: null },
+    }),
+  ],
+};
+
+const cardNames = () =>
+  screen
+    .getAllByRole("article")
+    .map((card) => within(card).getByRole("heading").textContent);
+
+function renderSortable() {
+  mockPlans(sortFile);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+}
+
+test("sort control: Best match is the default and keeps the ranked order, with its description", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
+  expect(screen.getByRole("radio", { name: "Lowest bill" })).not.toBeChecked();
+  expect(cardNames()).toEqual([
+    "A Flat",
+    "B Credit",
+    "C Unstable",
+    "D NoAnchor",
+  ]);
+  expect(screen.getByText(/sorted by our score/i)).toBeInTheDocument();
+});
+
+test("Lowest bill puts the cheapest estimated bill first, with the new description", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+
+  // usage defaults to 1,000 kWh: C 90, B 100, A 120, and D (no estimate) last
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "B Credit",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+  const first = screen.getAllByRole("article")[0];
+  expect(within(first).getByText("$90")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Sorted by estimated monthly bill at your usage level. Cheapest first.",
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/sorted by our score/i)).not.toBeInTheDocument();
+});
+
+test("in Lowest bill mode, changing the usage re-sorts the list", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "B Credit",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+
+  const usage = screen.getByLabelText(/monthly usage in kWh/i);
+
+  fireEvent.change(usage, { target: { value: "500" } }); // C 50, A 60, B 100
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "A Flat",
+    "B Credit",
+    "D NoAnchor",
+  ]);
+
+  fireEvent.change(usage, { target: { value: "2000" } }); // B 200, C 220, A 240
+  expect(cardNames()).toEqual([
+    "B Credit",
+    "C Unstable",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+  const first = screen.getAllByRole("article")[0];
+  expect(within(first).getByText("$200")).toBeInTheDocument();
+
+  // and back to Best match: the ranked order again, whatever the usage
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  expect(cardNames()).toEqual([
+    "A Flat",
+    "B Credit",
+    "C Unstable",
+    "D NoAnchor",
+  ]);
+});
+
+test("the unstable-price badge shows in both modes; the sort order never pushes the plan down", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  const badgeOwners = () =>
+    screen
+      .getAllByRole("article")
+      .filter((card) => within(card).queryByText(/unstable price/i))
+      .map((card) => within(card).getByRole("heading").textContent);
+
+  expect(badgeOwners()).toEqual(["C Unstable"]);
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  expect(badgeOwners()).toEqual(["C Unstable"]);
+  // ...and it is first, even though it is the plan with the warning
+  expect(cardNames()[0]).toBe("C Unstable");
+});
+
+test("changing the sort goes back to page 1; filters still apply before sorting", async () => {
+  renderMany();
+  await screen.findByText("Page 1 of 3");
+  fireEvent.click(next());
+  expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+
+  // a filter narrows the set; the sort is applied to what is left
+  pickProvider("bet", "Beta");
+  expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+});

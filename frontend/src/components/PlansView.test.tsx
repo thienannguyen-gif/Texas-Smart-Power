@@ -325,7 +325,7 @@ test("month-to-month is selectable when the area has such a plan", async () => {
   expect(screen.queryByText("Gexa 12")).not.toBeInTheDocument();
 });
 
-test("Change turns the ZIP into an input; submitting asks for the new ZIP and keeps usage and filters", async () => {
+test("the header's search box submits a new ZIP; invalid ones are refused; usage and filters are kept", async () => {
   mockPlans(many);
   const onSubmitZip = vi.fn();
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={onSubmitZip} />);
@@ -335,29 +335,32 @@ test("Change turns the ZIP into an input; submitting asks for the new ZIP and ke
   });
   pickProvider("bet", "Beta");
 
-  fireEvent.click(screen.getByRole("button", { name: "Change" }));
   const input = screen.getByLabelText("ZIP code");
   expect(input).toHaveValue("75201");
   fireEvent.change(input, { target: { value: "770" } });
-  expect(screen.getByRole("button", { name: "Update" })).toBeDisabled();
-  fireEvent.change(input, { target: { value: "77002" } });
-  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+  fireEvent.click(screen.getByRole("button", { name: "Find plans" }));
+  expect(onSubmitZip).not.toHaveBeenCalled();
+  expect(screen.getByText("Enter a 5-digit ZIP code.")).toBeInTheDocument();
 
+  fireEvent.change(input, { target: { value: "77002" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find plans" }));
   expect(onSubmitZip).toHaveBeenCalledWith("77002");
-  expect(screen.getByText("ZIPCODE: 75201")).toBeInTheDocument();
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
   expect(screen.getByRole("button", { name: "Remove Beta" })).toBeVisible();
 });
 
-test("Cancel leaves the ZIP alone", async () => {
+test("the ZIP box takes digits only, and a new ZIP from the lookup replaces what was typed", async () => {
   mockPlans();
-  const onSubmitZip = vi.fn();
-  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={onSubmitZip} />);
+  const { rerender } = render(
+    <PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />,
+  );
   await screen.findByText("Gexa 12");
-  fireEvent.click(screen.getByRole("button", { name: "Change" }));
-  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(onSubmitZip).not.toHaveBeenCalled();
-  expect(screen.getByText("ZIPCODE: 75201")).toBeInTheDocument();
+  const input = screen.getByLabelText("ZIP code");
+  fireEvent.change(input, { target: { value: "ab12" } });
+  expect(input).toHaveValue("12");
+
+  rerender(<PlansView tdu="oncor" zip="77002" onSubmitZip={() => {}} />);
+  expect(screen.getByLabelText("ZIP code")).toHaveValue("77002");
 });
 
 test("suggestions only come from providers in the loaded area", async () => {
@@ -428,33 +431,48 @@ function stubPhone() {
   }));
 }
 
-test("the ZIP, usage and Change controls live in one sticky bar; desktop shows the sidebar, not a Filters button", async () => {
+test("the header holds the search and the usage control in normal flow; desktop shows the sidebar, not a Filters button", async () => {
   renderMany();
   await screen.findByText("Page 1 of 3");
 
-  const bar = screen.getByText("ZIPCODE: 75201").closest(".sticky");
-  expect(bar).toHaveClass("sticky", "top-0");
-  expect(bar).toContainElement(screen.getByRole("button", { name: "Change" }));
-  expect(bar).toContainElement(screen.getByLabelText(/monthly usage in kWh/i));
+  const header = screen.getByRole("region", { name: "Your search" });
+  expect(header).toContainElement(screen.getByLabelText("ZIP code"));
+  expect(header).toContainElement(
+    screen.getByRole("button", { name: "Find plans" }),
+  );
+  expect(header).toContainElement(
+    screen.getByLabelText(/monthly usage in kWh/i),
+  );
+  expect(header).toContainElement(
+    screen.getByLabelText("Monthly usage slider"),
+  );
+  // the full header scrolls away; only the slim bar (below) is fixed
+  expect(header.className).not.toMatch(/sticky|fixed/);
+  expect(screen.queryByLabelText(/top bar/i)).not.toBeInTheDocument();
 
   const sidebar = screen.getByRole("complementary", { name: "Filters" });
   expect(sidebar).toBeVisible();
-  // stays in view below the bar, and scrolls inside itself if taller than the screen
-  expect(sidebar).toHaveClass("sticky", "top-28", "overflow-y-auto");
+  // stays in view below the slim bar, and scrolls inside itself if taller than the screen
+  expect(sidebar).toHaveClass("sticky", "top-20", "overflow-y-auto");
   expect(sidebar.className).toContain("max-h-[calc(100dvh-");
   expect(
     screen.queryByRole("button", { name: /^Filters/ }),
   ).not.toBeInTheDocument();
 });
 
-test("phone: the sticky bar has a Filters button that opens a drawer; Apply commits, and the button shows the active count", async () => {
+test("phone: a Filters button under the header opens a drawer; Apply commits, and the button shows the active count", async () => {
   stubPhone();
   renderMany();
   await screen.findByText("Page 1 of 3");
 
-  const bar = screen.getByText("ZIPCODE: 75201").closest(".sticky");
+  const header = screen.getByRole("region", { name: "Your search" });
   const open = screen.getByRole("button", { name: "Filters" });
-  expect(bar).toContainElement(open);
+  // directly under the header, full width
+  expect(header).not.toContainElement(open);
+  expect(
+    header.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(open).toHaveClass("w-full");
   expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
@@ -888,26 +906,76 @@ test("moving the slider re-prices and re-sorts the list live, and the number box
   ]); // 50, 60, 100
 });
 
-test("the usage control sits in the sticky bar with the slider on its own row below the number box", async () => {
+test("usage block: band pill on the left, number box on the right, the slider full width below, ticks under it", async () => {
   stubPhone();
   renderSortable();
   await screen.findByText("A Flat");
 
-  const bar = screen.getByText("ZIPCODE: 75201").closest(".sticky");
+  const header = screen.getByRole("region", { name: "Your search" });
   const numberBox = screen.getByLabelText(/monthly usage in kWh/i);
   const slider = screen.getByLabelText("Monthly usage slider");
-  expect(bar).toContainElement(numberBox);
-  expect(bar).toContainElement(slider);
+  const band = within(header).getByText("Average Home");
 
-  // first row: band name, number box, Filters button; the slider is not in it
-  const firstRow = numberBox.closest("label")!.parentElement!;
-  expect(within(firstRow).getByText("Average Home")).toBeInTheDocument();
+  // first row: band pill, then the number box; the slider is not in that row
+  const firstRow = band.parentElement!;
+  expect(firstRow).toContainElement(numberBox);
   expect(
-    within(firstRow).getByRole("button", { name: "Filters" }),
-  ).toBeInTheDocument();
+    band.compareDocumentPosition(numberBox) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expect(firstRow).not.toContainElement(slider);
-  // and it comes after that row
+  // the slider spans the block and comes after that row
+  expect(slider).toHaveClass("w-full");
   expect(
     firstRow.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
+  // tick labels come after the slider
+  expect(
+    slider.compareDocumentPosition(within(header).getByText("1,000 kWh")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
+test("once the full header has scrolled away, a slim bar keeps the ZIP, area and usage in reach", async () => {
+  stubPhone();
+  renderSortable();
+  await screen.findByText("A Flat");
+  const headerWrap = screen.getByRole("region", {
+    name: "Your search",
+  }).parentElement!;
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
+  // header in view: no slim bar
+  expect(
+    screen.queryByLabelText("Monthly usage in kWh (top bar)"),
+  ).not.toBeInTheDocument();
+
+  // scrolled past it
+  vi.spyOn(headerWrap, "getBoundingClientRect").mockReturnValue({
+    bottom: -20,
+  } as DOMRect);
+  fireEvent.scroll(window);
+  const topUsage = screen.getByLabelText("Monthly usage in kWh (top bar)");
+  const bar = topUsage.closest(".fixed") as HTMLElement;
+  expect(bar).toHaveClass("fixed", "top-0");
+  expect(bar).toHaveTextContent("ZIP 75201");
+  expect(
+    within(bar).getByRole("button", { name: "Filters" }),
+  ).toBeInTheDocument();
+
+  // it drives the same usage as the header's own box
+  fireEvent.change(topUsage, { target: { value: "2000" } });
+  expect(screen.getByLabelText("Monthly usage in kWh")).toHaveValue(2000);
+
+  // Edit takes the user back up
+  fireEvent.click(within(bar).getByRole("button", { name: "Edit" }));
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
+
+  // back in view: the slim bar goes away
+  vi.spyOn(headerWrap, "getBoundingClientRect").mockReturnValue({
+    bottom: 120,
+  } as DOMRect);
+  fireEvent.scroll(window);
+  expect(
+    screen.queryByLabelText("Monthly usage in kWh (top bar)"),
+  ).not.toBeInTheDocument();
 });

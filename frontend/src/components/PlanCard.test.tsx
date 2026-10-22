@@ -98,3 +98,30 @@ describe("PlanCard", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("PlanCard price-curve warning", () => {
+  it("shows an Unstable price badge for a V-Trap or a Hump, and not for a stable curve", () => {
+    const { rerender } = render(
+      <PlanCard
+        plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 } })}
+      />,
+    );
+    expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
+
+    rerender(
+      <PlanCard
+        plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.12, at2000: 0.11 } })}
+      />,
+    );
+    expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
+
+    rerender(
+      <PlanCard
+        plan={plan({
+          pricePerKwh: { at500: 0.13, at1000: 0.12, at2000: 0.11 },
+        })}
+      />,
+    );
+    expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
+  });
+});

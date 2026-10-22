@@ -14,7 +14,9 @@ import {
   filterPlans,
   type PlanFilters,
 } from "../lib/filters";
+import { sortPlans, type SortMode } from "../lib/sort";
 import { PlanList } from "./PlanList";
+import { SortControl } from "./SortControl";
 import { FilterPanel } from "./FilterPanel";
 import { FilterDrawer } from "./FilterDrawer";
 
@@ -57,6 +59,7 @@ export function PlansView({
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
+  const [sortMode, setSortMode] = useState<SortMode>("best");
   // Current page (1-based) of the filtered, rank-ordered list. A filter
   // change goes back to page 1; a usage change leaves it alone.
   const [page, setPage] = useState(1);
@@ -73,7 +76,14 @@ export function PlansView({
     if (isDesktop) setDrawerOpen(false);
   }, [isDesktop]);
 
-  const visiblePlans = filterPlans(allPlans, filters);
+  // Filter first, then order. "Best match" keeps the ranked order from
+  // ingestion; "Lowest bill" re-sorts by the bill at the current usage, so it
+  // follows the usage field on every render.
+  const visiblePlans = sortPlans(
+    filterPlans(allPlans, filters),
+    sortMode,
+    usageKwh,
+  );
   const activeCount = activeFilterCount(filters);
 
   function changeFilters(next: PlanFilters) {
@@ -243,6 +253,16 @@ export function PlansView({
                 <span className="font-semibold">{state.tdu}</span> right now.
                 Check back after the next data refresh.
               </p>
+            )}
+
+            {state.status === "success" && (
+              <SortControl
+                value={sortMode}
+                onChange={(next) => {
+                  setSortMode(next);
+                  setPage(1);
+                }}
+              />
             )}
 
             {state.status === "success" && (

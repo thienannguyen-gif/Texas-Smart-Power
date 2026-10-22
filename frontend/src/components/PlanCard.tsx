@@ -5,6 +5,7 @@ import {
   pricePerKwhAtUsage,
 } from "../lib/usage";
 import { formatAmount, formatKwh, formatRate } from "../lib/money";
+import { PriceCurveBadge } from "./PriceCurveBadge";
 
 // Display-only. Ranking is computed by the ingestion pipeline; this card
 // renders plan details without showing the internal score.
@@ -53,6 +54,7 @@ export function PlanCard({
               </span>
             )}
             <RatingPlaceholder />
+            <PriceCurveBadge plan={plan} />
           </div>
         </div>
         {onMoreDetails && (

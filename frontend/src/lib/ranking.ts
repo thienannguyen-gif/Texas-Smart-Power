@@ -62,6 +62,30 @@ function termScore(termMonths: number | null): number | null {
   return null;
 }
 
+export type PriceCurveWarning = "v-trap" | "hump";
+
+/**
+ * The price-curve check from BRIEF.md (Component 2): a "V-Trap" is
+ * P1000 < P2000, a "Hump" is P1000 > P500. Either one makes S_slope zero.
+ * Returns null for a stable curve, and also when an anchor price is missing
+ * (nothing can be said about it). The score and the warning badge both use
+ * this, so there is one definition of "unstable".
+ */
+export function priceCurveWarning(plan: Plan): PriceCurveWarning | null {
+  const { at500, at1000, at2000 } = plan.pricePerKwh;
+  if (at500 === null || at1000 === null || at2000 === null) return null;
+  if (
+    !Number.isFinite(at500) ||
+    !Number.isFinite(at1000) ||
+    !Number.isFinite(at2000)
+  ) {
+    return null;
+  }
+  if (at1000 < at2000) return "v-trap";
+  if (at1000 > at500) return "hump";
+  return null;
+}
+
 function slopeScore(plan: Plan): number | null {
   const { at500, at1000, at2000 } = plan.pricePerKwh;
   if (at500 === null || at1000 === null || at2000 === null) return null;
@@ -72,7 +96,7 @@ function slopeScore(plan: Plan): number | null {
   ) {
     return null;
   }
-  return at1000 < at2000 || at1000 > at500 ? 0 : 10;
+  return priceCurveWarning(plan) === null ? 10 : 0;
 }
 
 function eligiblePlans(plans: Plan[]): EligiblePlan[] {

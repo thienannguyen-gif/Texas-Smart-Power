@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Plan } from "../types/plan";
 import { formatAmount, formatKwh, formatRate } from "../lib/money";
 import { parseCancellationFee } from "../lib/cancellationFee";
+import { PriceCurveBadge } from "./PriceCurveBadge";
 import {
   DEFAULT_USAGE_KWH,
   estimatedMonthlyBill,
@@ -136,6 +137,8 @@ export function PlanDetailsModal({
             </div>
           ))}
         </div>
+
+        <PriceCurveBadge plan={plan} explain className="mt-3" />
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {bill === null ? (

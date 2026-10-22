@@ -181,3 +181,29 @@ describe("PlanDetailsModal", () => {
     expect(onClose).toHaveBeenCalledTimes(3);
   });
 });
+
+describe("PlanDetailsModal price-curve warning", () => {
+  it("explains an unstable price curve in plain text, and says nothing for a stable one", () => {
+    const { unmount } = render(
+      <PlanDetailsModal
+        plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 } })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/can backfire if your usage changes/i),
+    ).toBeVisible();
+    unmount();
+
+    render(
+      <PlanDetailsModal
+        plan={plan({
+          pricePerKwh: { at500: 0.13, at1000: 0.12, at2000: 0.11 },
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
+  });
+});

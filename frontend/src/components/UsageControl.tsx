@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { formatKwh } from "../lib/money";
 import {
   clampUsage,
@@ -21,36 +20,30 @@ function tickLeft(kwh: number): string {
   return `calc(${fraction * 100}% + ${(0.5 - fraction) * THUMB_PX}px)`;
 }
 
-const PILL =
-  "rounded-full bg-brand-lime-200 px-3 py-1.5 text-xs font-bold sm:px-4 sm:py-2 sm:text-sm";
-
-// The electricity-usage control in the sticky bar: a number box for an exact
-// value, a band name to its left, and a slider on its own row below. Typing
-// moves the slider and dragging the slider changes the number; both just call
-// `onChange`, so the plan list re-prices and re-sorts live either way.
+// The electricity-usage block: the band name as a pill on the left, the number
+// box on the right, and a slider spanning the full width below with its tick
+// labels underneath. Typing moves the slider and dragging the slider changes
+// the number; both just call `onChange`, so the plan list re-prices and
+// re-sorts live either way.
 export function UsageControl({
   value,
   onChange,
-  trailing,
 }: {
   value: number;
   onChange: (kwh: number) => void;
-  /** Sits at the end of the first row (the phone Filters button). */
-  trailing?: ReactNode;
 }) {
   const band = usageBand(value);
 
   return (
-    <div className="flex flex-col gap-1 sm:w-96">
-      <div className="flex items-center justify-between gap-2 sm:justify-end">
+    <div className="w-full">
+      <div className="flex items-center justify-between gap-3">
         <span
           aria-live="polite"
-          className="min-w-0 truncate text-xs font-semibold text-brand-navy/80 sm:text-sm"
+          className="rounded-full bg-brand-lime-200 px-4 py-1.5 text-sm font-bold text-brand-navy"
         >
           {band}
         </span>
-        <label className={`flex shrink-0 items-center gap-2 ${PILL}`}>
-          <span className="hidden sm:inline">Electricity usage</span>
+        <label className="flex items-center gap-2 text-sm font-bold">
           <input
             type="number"
             min={MIN_USAGE_KWH}
@@ -60,14 +53,13 @@ export function UsageControl({
             onChange={(e) => onChange(Number(e.target.value))}
             onBlur={(e) => onChange(clampUsage(Number(e.target.value)))}
             aria-label="Monthly usage in kWh"
-            className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right text-base font-normal sm:text-sm"
+            className="w-24 rounded-lg border-2 border-brand-navy/20 bg-white px-2 py-1.5 text-right text-base font-normal focus:border-brand-green focus:outline-none"
           />
           kWh
         </label>
-        {trailing}
       </div>
 
-      <div className="px-1">
+      <div className="mt-3 px-1">
         <input
           type="range"
           min={MIN_USAGE_KWH}
@@ -79,12 +71,12 @@ export function UsageControl({
           aria-valuetext={`${formatKwh(snapToSlider(value))} kWh, ${band}`}
           className="block h-6 w-full accent-brand-green"
         />
-        <div aria-hidden="true" className="relative h-3.5">
+        <div aria-hidden="true" className="relative h-4">
           {TICKS.map((tick) => (
             <span
               key={tick}
               style={{ left: tickLeft(tick) }}
-              className="absolute top-0 -translate-x-1/2 text-[10px] leading-none font-semibold whitespace-nowrap text-brand-navy/70"
+              className="absolute top-0 -translate-x-1/2 text-[9px] leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:text-xs"
             >
               {formatKwh(tick)} kWh
             </span>

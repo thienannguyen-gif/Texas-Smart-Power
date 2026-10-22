@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { isTduId, type TduId } from "./types/plan";
+import { isTduId, TDU_LABELS, type TduId } from "./types/plan";
 import type { UtilityArea } from "./types/zip";
 import { useZipLookup } from "./hooks/useZipLookup";
 import { SiteHeader } from "./components/SiteHeader";
 import { HeroLanding } from "./components/HeroLanding";
 import { AreaPicker } from "./components/AreaPicker";
 import { PlansView } from "./components/PlansView";
+import type { AreaChoice } from "./components/AreaCard";
 import { DisclaimerPage } from "./components/DisclaimerPage";
 import { SiteFooter } from "./components/SiteFooter";
 import { useHashRoute } from "./hooks/useHashRoute";
@@ -71,8 +72,10 @@ export default function App() {
         </p>
       )}
 
-      {/* A newly looked-up split ZIP: pick its area. */}
-      {lookup.status === "ready" &&
+      {/* A newly looked-up split ZIP, before any plans are showing: pick its
+          area here. Once the plans page is up, its header card does this. */}
+      {!tdu &&
+        lookup.status === "ready" &&
         lookup.areas.length > 1 &&
         lookup.zip !== activeZip && (
           <div className="rounded-2xl bg-white/80 p-4">
@@ -99,6 +102,46 @@ export default function App() {
     </>
   );
 
+  const areaOptions = (areas: UtilityArea[]) =>
+    areas.map((area) => ({
+      code: area.code,
+      label: isTduId(area.code) ? TDU_LABELS[area.code] : area.name,
+      fullName: area.name,
+    }));
+
+  // The header's area card: a freshly searched split ZIP asks for its area; a
+  // split ZIP whose area is already chosen shows the choice and lets it change.
+  const pendingAreas =
+    lookup.status === "ready" &&
+    lookup.areas.length > 1 &&
+    lookup.zip !== activeZip
+      ? lookup.areas
+      : null;
+  let areaChoice: AreaChoice | undefined;
+  if (pendingAreas) {
+    areaChoice = {
+      options: areaOptions(pendingAreas),
+      currentCode: null,
+      awaiting: true,
+      onSelect: (code) => {
+        if (isTduId(code)) {
+          setTdu(code);
+          setActiveZip(lookup.status === "ready" ? lookup.zip : activeZip);
+          setActiveAreas(pendingAreas);
+        }
+      },
+    };
+  } else if (activeIsSplit && tdu) {
+    areaChoice = {
+      options: areaOptions(activeAreas),
+      currentCode: tdu,
+      awaiting: false,
+      onSelect: (code) => {
+        if (isTduId(code)) setTdu(code);
+      },
+    };
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -113,20 +156,7 @@ export default function App() {
             tdu={tdu}
             zip={activeZip}
             onSubmitZip={submitZip}
-            areaSwitch={
-              activeIsSplit
-                ? {
-                    currentCode: tdu,
-                    options: activeAreas.map((area) => ({
-                      code: area.code,
-                      label: area.name,
-                    })),
-                    onSelect: (code) => {
-                      if (isTduId(code)) setTdu(code);
-                    },
-                  }
-                : undefined
-            }
+            areaChoice={areaChoice}
             zipBusy={lookup.status === "loading"}
             zipStatus={lookupMessages}
           />

@@ -2,12 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { TduId } from "../types/plan";
 import { useTduPlans } from "../hooks/useTduPlans";
 import { useIsDesktop } from "../hooks/useIsDesktop";
-import {
-  clampUsage,
-  DEFAULT_USAGE_KWH,
-  MAX_USAGE_KWH,
-  MIN_USAGE_KWH,
-} from "../lib/usage";
+import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import {
   activeFilterCount,
   EMPTY_FILTERS,
@@ -16,6 +11,7 @@ import {
 } from "../lib/filters";
 import { sortPlans, type SortMode } from "../lib/sort";
 import { PlanList } from "./PlanList";
+import { UsageControl } from "./UsageControl";
 import { FilterPanel } from "./FilterPanel";
 import { FilterDrawer } from "./FilterDrawer";
 
@@ -98,7 +94,7 @@ export function PlansView({
   return (
     <div>
       <div className="sticky top-0 z-30 border-b border-brand-navy/10 bg-brand-lime/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3">
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:px-6 sm:py-3">
           {editingZip ? (
             <form
               className="flex flex-wrap items-center gap-2"
@@ -180,36 +176,22 @@ export function PlansView({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2 sm:justify-start">
-            <label className={`flex items-center gap-2 ${PILL}`}>
-              <span>
-                <span className="hidden sm:inline">Electricity </span>
-                usage
-              </span>
-              <input
-                type="number"
-                min={MIN_USAGE_KWH}
-                max={MAX_USAGE_KWH}
-                step={50}
-                value={usageKwh}
-                onChange={(e) => setUsageKwh(Number(e.target.value))}
-                onBlur={(e) => setUsageKwh(clampUsage(Number(e.target.value)))}
-                aria-label="Monthly usage in kWh"
-                className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right text-base font-normal sm:text-sm"
-              />
-              kWh
-            </label>
-            {!isDesktop && (
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                aria-haspopup="dialog"
-                className="min-h-10 rounded-full bg-brand-green px-4 py-1.5 text-sm font-bold text-white"
-              >
-                {activeCount > 0 ? `Filters (${activeCount})` : "Filters"}
-              </button>
-            )}
-          </div>
+          <UsageControl
+            value={usageKwh}
+            onChange={setUsageKwh}
+            trailing={
+              !isDesktop && (
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-haspopup="dialog"
+                  className="min-h-10 shrink-0 rounded-full bg-brand-green px-3 py-1.5 text-sm font-bold text-white sm:px-4"
+                >
+                  {activeCount > 0 ? `Filters (${activeCount})` : "Filters"}
+                </button>
+              )
+            }
+          />
         </div>
       </div>
 
@@ -223,7 +205,7 @@ export function PlansView({
             // search at the bottom stays reachable.
             <aside
               aria-label="Filters"
-              className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl bg-brand-lime-200 p-5"
+              className="sticky top-28 max-h-[calc(100dvh-8rem)] self-start overflow-y-auto rounded-2xl bg-brand-lime-200 p-5"
             >
               <FilterPanel
                 plans={allPlans}

@@ -47,3 +47,27 @@ export function estimatedMonthlyBill(
   const rate = pricePerKwhAtUsage(plan, usageKwh);
   return rate === null ? null : rate * usageKwh;
 }
+
+/** The slider and the number box both move in steps of this many kWh. */
+export const USAGE_STEP_KWH = 50;
+
+export type UsageBand = "Efficient" | "Average Home" | "High Usage";
+
+/**
+ * Names the usage level: under 700 kWh is "Efficient", 700 to 1,400 (both
+ * included) is "Average Home", above 1,400 is "High Usage".
+ */
+export function usageBand(kwh: number): UsageBand {
+  if (kwh < 700) return "Efficient";
+  if (kwh <= 1400) return "Average Home";
+  return "High Usage";
+}
+
+/** The nearest slider position (a multiple of the step, from the minimum) to a typed value. */
+export function snapToSlider(kwh: number): number {
+  const clamped = clampUsage(kwh);
+  return (
+    MIN_USAGE_KWH +
+    Math.round((clamped - MIN_USAGE_KWH) / USAGE_STEP_KWH) * USAGE_STEP_KWH
+  );
+}

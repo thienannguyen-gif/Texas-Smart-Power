@@ -440,7 +440,7 @@ test("the ZIP, usage and Change controls live in one sticky bar; desktop shows t
   const sidebar = screen.getByRole("complementary", { name: "Filters" });
   expect(sidebar).toBeVisible();
   // stays in view below the bar, and scrolls inside itself if taller than the screen
-  expect(sidebar).toHaveClass("sticky", "top-20", "overflow-y-auto");
+  expect(sidebar).toHaveClass("sticky", "top-28", "overflow-y-auto");
   expect(sidebar.className).toContain("max-h-[calc(100dvh-");
   expect(
     screen.queryByRole("button", { name: /^Filters/ }),
@@ -847,4 +847,67 @@ test("phone: closing the drawer discards a sort change; Clear empties filters bu
   expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: "Apply" }));
   expect(cardNames()[0]).toBe("C Unstable");
+});
+
+// ---- Usage slider in the sticky bar
+
+test("moving the slider re-prices and re-sorts the list live, and the number box follows", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "B Credit",
+    "A Flat",
+    "D NoAnchor",
+  ]); // at 1,000 kWh
+
+  const slider = screen.getByLabelText("Monthly usage slider");
+  fireEvent.change(slider, { target: { value: "2000" } }); // B 200, C 220, A 240
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(2000);
+  expect(cardNames()).toEqual([
+    "B Credit",
+    "C Unstable",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+  const first = screen.getAllByRole("article")[0];
+  expect(within(first).getByText("$200")).toBeInTheDocument();
+  expect(within(first).getAllByText("at 2,000 kWh").length).toBeGreaterThan(0);
+
+  // typing moves the slider back
+  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+    target: { value: "500" },
+  });
+  expect(slider).toHaveValue("500");
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "A Flat",
+    "B Credit",
+    "D NoAnchor",
+  ]); // 50, 60, 100
+});
+
+test("the usage control sits in the sticky bar with the slider on its own row below the number box", async () => {
+  stubPhone();
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  const bar = screen.getByText("ZIPCODE: 75201").closest(".sticky");
+  const numberBox = screen.getByLabelText(/monthly usage in kWh/i);
+  const slider = screen.getByLabelText("Monthly usage slider");
+  expect(bar).toContainElement(numberBox);
+  expect(bar).toContainElement(slider);
+
+  // first row: band name, number box, Filters button; the slider is not in it
+  const firstRow = numberBox.closest("label")!.parentElement!;
+  expect(within(firstRow).getByText("Average Home")).toBeInTheDocument();
+  expect(
+    within(firstRow).getByRole("button", { name: "Filters" }),
+  ).toBeInTheDocument();
+  expect(firstRow).not.toContainElement(slider);
+  // and it comes after that row
+  expect(
+    firstRow.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });

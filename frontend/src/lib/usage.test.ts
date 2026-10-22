@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { clampUsage, estimatedMonthlyBill, pricePerKwhAtUsage } from "./usage";
+import {
+  clampUsage,
+  estimatedMonthlyBill,
+  pricePerKwhAtUsage,
+  snapToSlider,
+  usageBand,
+} from "./usage";
 import { formatAmount } from "./money";
 import type { Plan } from "../types/plan";
 
@@ -98,5 +104,30 @@ describe("clampUsage", () => {
 
   it("falls back to the default on NaN", () => {
     expect(clampUsage(Number.NaN)).toBe(1000);
+  });
+});
+
+describe("usageBand", () => {
+  it.each([
+    [100, "Efficient"],
+    [699, "Efficient"],
+    [700, "Average Home"],
+    [1000, "Average Home"],
+    [1400, "Average Home"],
+    [1401, "High Usage"],
+    [4000, "High Usage"],
+  ])("%i kWh is %s", (kwh, band) => {
+    expect(usageBand(kwh)).toBe(band);
+  });
+});
+
+describe("snapToSlider", () => {
+  it("lands on a slider step (a multiple of 50 from 100) and stays in range", () => {
+    expect(snapToSlider(1000)).toBe(1000);
+    expect(snapToSlider(1234)).toBe(1250);
+    expect(snapToSlider(1224)).toBe(1200);
+    expect(snapToSlider(9999)).toBe(4000);
+    expect(snapToSlider(0)).toBe(100);
+    expect(snapToSlider(Number.NaN)).toBe(1000);
   });
 });

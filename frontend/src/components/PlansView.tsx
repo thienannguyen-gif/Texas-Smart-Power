@@ -16,7 +16,6 @@ import {
 } from "../lib/filters";
 import { sortPlans, type SortMode } from "../lib/sort";
 import { PlanList } from "./PlanList";
-import { SortControl } from "./SortControl";
 import { FilterPanel } from "./FilterPanel";
 import { FilterDrawer } from "./FilterDrawer";
 
@@ -85,6 +84,11 @@ export function PlansView({
     usageKwh,
   );
   const activeCount = activeFilterCount(filters);
+
+  function changeSort(next: SortMode) {
+    setSortMode(next);
+    setPage(1);
+  }
 
   function changeFilters(next: PlanFilters) {
     setFilters(next);
@@ -226,6 +230,8 @@ export function PlansView({
                 providers={providers}
                 value={filters}
                 onChange={changeFilters}
+                sort={sortMode}
+                onSortChange={changeSort}
               />
             </aside>
           )}
@@ -256,16 +262,6 @@ export function PlansView({
             )}
 
             {state.status === "success" && (
-              <SortControl
-                value={sortMode}
-                onChange={(next) => {
-                  setSortMode(next);
-                  setPage(1);
-                }}
-              />
-            )}
-
-            {state.status === "success" && (
               <PlanList
                 plans={visiblePlans}
                 totalCount={state.data.plans.length}
@@ -284,8 +280,10 @@ export function PlansView({
           plans={allPlans}
           providers={providers}
           applied={filters}
-          onApply={(next) => {
+          appliedSort={sortMode}
+          onApply={(next, sort) => {
             changeFilters(next);
+            changeSort(sort);
             setDrawerOpen(false);
           }}
           onClose={() => setDrawerOpen(false)}

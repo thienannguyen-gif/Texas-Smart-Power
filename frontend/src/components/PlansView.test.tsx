@@ -720,3 +720,131 @@ test("changing the sort goes back to page 1; filters still apply before sorting"
   expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
   expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
 });
+
+// ---- Sort control lives in the filter sidebar / drawer
+
+test("desktop: SORT BY is the first section of the left sidebar, styled like the others, and not above the list", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+  const main = screen.getByRole("main");
+
+  // both options are in the sidebar, none above the plan list
+  expect(
+    within(sidebar).getByRole("radio", { name: "Best match" }),
+  ).toBeInTheDocument();
+  expect(
+    within(sidebar).getByRole("radio", { name: "Lowest bill" }),
+  ).toBeInTheDocument();
+  expect(within(main).queryByRole("radio")).not.toBeInTheDocument();
+
+  // SORT BY comes before PRODUCT TYPE and CONTRACT LENGTH, with the same heading look
+  const headings = within(sidebar)
+    .getAllByRole("heading", { level: 3 })
+    .map((h) => h.textContent);
+  expect(headings.slice(0, 3)).toEqual([
+    "SORT BY",
+    "PRODUCT TYPE",
+    "CONTRACT LENGTH",
+  ]);
+  const sortHeading = within(sidebar).getByRole("heading", { name: "SORT BY" });
+  const productHeading = within(sidebar).getByRole("heading", {
+    name: "PRODUCT TYPE",
+  });
+  expect(sortHeading.className).toBe(productHeading.className);
+});
+
+test("desktop: the sort in the sidebar still sorts by bill and follows the usage", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+
+  fireEvent.click(within(sidebar).getByRole("radio", { name: "Lowest bill" }));
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "B Credit",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+    target: { value: "2000" },
+  });
+  expect(cardNames()).toEqual([
+    "B Credit",
+    "C Unstable",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+});
+
+test("phone: the drawer opens on Sort by, and Apply applies the sort choice with the filters", async () => {
+  stubPhone();
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  // nothing sort-related above the list any more
+  expect(
+    within(screen.getByRole("main")).queryByRole("radio"),
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  const drawer = screen.getByRole("dialog", { name: "Filters" });
+
+  // first thing in the drawer
+  const headings = within(drawer)
+    .getAllByRole("heading", { level: 3 })
+    .map((h) => h.textContent);
+  expect(headings[0]).toBe("SORT BY");
+  expect(within(drawer).getAllByRole("radio")[0]).toHaveAccessibleName(
+    "Best match",
+  );
+
+  fireEvent.click(within(drawer).getByRole("radio", { name: "Lowest bill" }));
+  // a draft until Apply: the list behind is unchanged
+  expect(cardNames()).toEqual([
+    "A Flat",
+    "B Credit",
+    "C Unstable",
+    "D NoAnchor",
+  ]);
+
+  fireEvent.click(within(drawer).getByRole("button", { name: "Apply" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(cardNames()).toEqual([
+    "C Unstable",
+    "B Credit",
+    "A Flat",
+    "D NoAnchor",
+  ]);
+  // the sort is not a filter, so it is not counted on the button
+  expect(screen.getByRole("button", { name: "Filters" })).toBeInTheDocument();
+
+  // reopening shows the applied choice
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+});
+
+test("phone: closing the drawer discards a sort change; Clear empties filters but keeps the chosen sort", async () => {
+  stubPhone();
+  renderSortable();
+  await screen.findByText("A Flat");
+
+  // ✕ discards
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  fireEvent.click(screen.getByRole("button", { name: "Close filters" }));
+  expect(cardNames()[0]).toBe("A Flat");
+
+  // Clear leaves the sort alone
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  expect(
+    screen.getByRole("checkbox", { name: /7–12 months/i }),
+  ).not.toBeChecked();
+  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+  expect(cardNames()[0]).toBe("C Unstable");
+});

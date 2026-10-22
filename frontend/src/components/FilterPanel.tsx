@@ -8,6 +8,7 @@ import {
   type ProductType,
   selectProvider,
 } from "../lib/filters";
+import type { SortMode } from "../lib/sort";
 import { ProviderPicker } from "./ProviderPicker";
 
 // User-preference filters are applied after the ingestion pipeline ranks plans.
@@ -15,6 +16,22 @@ import { ProviderPicker } from "./ProviderPicker";
 const PRODUCT_TYPES: { key: ProductType; label: string }[] = [
   { key: "fixed", label: "Fixed / Secured Rate" },
 ];
+
+const SORT_OPTIONS: { value: SortMode; label: string; description: string }[] =
+  [
+    {
+      value: "best",
+      label: "Best match",
+      description:
+        "Sorted by our score: price, price stability, flexibility and renewable content.",
+    },
+    {
+      value: "lowestBill",
+      label: "Lowest bill",
+      description:
+        "Sorted by estimated monthly bill at your usage level. Cheapest first.",
+    },
+  ];
 
 const CONTRACT_BUCKETS: { key: ContractBucket; label: string }[] = [
   { key: "mtm", label: "Month-to-month" },
@@ -75,23 +92,67 @@ function GroupHeading({ children }: { children: string }) {
   );
 }
 
-// The filter controls only: no frame, no collapse. The desktop sidebar and the
+// Two clean modes, drawn like the other sections: radio rows (native inputs, so
+// the arrow keys work) and the chosen mode's description underneath.
+function SortSection({
+  value,
+  onChange,
+}: {
+  value: SortMode;
+  onChange: (next: SortMode) => void;
+}) {
+  const current =
+    SORT_OPTIONS.find((option) => option.value === value) ?? SORT_OPTIONS[0];
+  return (
+    <fieldset className="space-y-2">
+      <legend className="sr-only">Sort plans</legend>
+      <GroupHeading>SORT BY</GroupHeading>
+      {SORT_OPTIONS.map((option) => (
+        <label
+          key={option.value}
+          className="flex items-center gap-2 py-1.5 text-sm text-brand-navy/80 md:py-0"
+        >
+          <input
+            type="radio"
+            name="sort-plans"
+            value={option.value}
+            checked={option.value === value}
+            onChange={() => onChange(option.value)}
+            className="h-5 w-5 border-brand-navy/40 accent-brand-green md:h-4 md:w-4"
+          />
+          {option.label}
+        </label>
+      ))}
+      <p className="text-center text-xs text-brand-navy/60">
+        {current.description}
+      </p>
+    </fieldset>
+  );
+}
+
+// The sort and filter controls only: no frame, no collapse. The desktop sidebar and the
 // phone drawer each wrap this in their own container.
 export function FilterPanel({
   plans,
   providers,
   value,
   onChange,
+  sort,
+  onSortChange,
 }: {
   /** Every plan in the area, before any filter (used for the option counts). */
   plans: Plan[];
   providers: string[];
   value: PlanFilters;
   onChange: (next: PlanFilters) => void;
+  sort: SortMode;
+  onSortChange: (next: SortMode) => void;
 }) {
   const hasPlans = plans.length > 0;
   return (
     <div className="space-y-6">
+      <SortSection value={sort} onChange={onSortChange} />
+
       <div className="space-y-2">
         <GroupHeading>PRODUCT TYPE</GroupHeading>
         <p className="text-center text-xs text-brand-navy/50">

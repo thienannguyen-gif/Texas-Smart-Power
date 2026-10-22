@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
 import { EMPTY_FILTERS, filterPlans, type PlanFilters } from "../lib/filters";
+import type { SortMode } from "../lib/sort";
 import { FilterPanel } from "./FilterPanel";
 
-// Phone-only slide-up panel holding the filters. Edits go to a draft: Apply
-// commits it, Clear empties the draft, and closing any other way (✕, backdrop,
+// Phone-only slide-up panel holding the sort and the filters. Edits go to a
+// draft: Apply commits both, Clear empties the filters in the draft (the sort
+// is not a filter, so it stays as chosen), and closing any other way (✕, backdrop,
 // Escape) throws it away.
 export function FilterDrawer({
   plans,
   providers,
   applied,
+  appliedSort,
   onApply,
   onClose,
 }: {
@@ -17,10 +20,13 @@ export function FilterDrawer({
   providers: string[];
   /** The filters currently in effect; the draft starts as a copy. */
   applied: PlanFilters;
-  onApply: (next: PlanFilters) => void;
+  /** The sort in effect; the draft starts as a copy. */
+  appliedSort: SortMode;
+  onApply: (next: PlanFilters, sort: SortMode) => void;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState(applied);
+  const [draftSort, setDraftSort] = useState(appliedSort);
   const closeRef = useRef<HTMLButtonElement>(null);
   const matching = filterPlans(plans, draft).length;
 
@@ -72,6 +78,8 @@ export function FilterDrawer({
             providers={providers}
             value={draft}
             onChange={setDraft}
+            sort={draftSort}
+            onSortChange={setDraftSort}
           />
         </div>
 
@@ -89,7 +97,7 @@ export function FilterDrawer({
             </button>
             <button
               type="button"
-              onClick={() => onApply(draft)}
+              onClick={() => onApply(draft, draftSort)}
               className="min-h-11 flex-1 rounded-full bg-brand-green px-4 py-2 text-sm font-bold text-white"
             >
               Apply

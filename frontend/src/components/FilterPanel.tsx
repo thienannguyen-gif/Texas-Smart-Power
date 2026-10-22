@@ -1,21 +1,16 @@
 import type { Plan } from "../types/plan";
 import {
-  countForOption,
+  countForBucket,
   countForProvider,
   EMPTY_FILTERS,
   type ContractBucket,
   type PlanFilters,
-  type ProductType,
   selectProvider,
 } from "../lib/filters";
 import type { SortMode } from "../lib/sort";
 import { ProviderPicker } from "./ProviderPicker";
 
 // User-preference filters are applied after the ingestion pipeline ranks plans.
-
-const PRODUCT_TYPES: { key: ProductType; label: string }[] = [
-  { key: "fixed", label: "Fixed / Secured Rate" },
-];
 
 const SORT_OPTIONS: { value: SortMode; label: string; description: string }[] =
   [
@@ -44,7 +39,7 @@ function toggle<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
-// One checkbox with its match count, e.g. "Fixed / Secured Rate (84)". An option
+// One checkbox with its match count, e.g. "7–12 months (84)". An option
 // with no matches is greyed, never hidden; a ticked one stays clickable so the
 // user can always untick it. `count` is null until the plans have loaded.
 function OptionRow({
@@ -154,48 +149,14 @@ export function FilterPanel({
       <SortSection value={sort} onChange={onSortChange} />
 
       <div className="space-y-2">
-        <GroupHeading>PRODUCT TYPE</GroupHeading>
-        <p className="text-center text-xs text-brand-navy/50">
-          (select all that apply)
-        </p>
-        {PRODUCT_TYPES.map(({ key, label }) => (
-          <OptionRow
-            key={key}
-            label={label}
-            count={
-              hasPlans
-                ? countForOption(plans, value, "productTypes", key)
-                : null
-            }
-            noneInArea={
-              hasPlans &&
-              countForOption(plans, EMPTY_FILTERS, "productTypes", key) === 0
-            }
-            checked={value.productTypes.includes(key)}
-            onToggle={() =>
-              onChange({
-                ...value,
-                productTypes: toggle(value.productTypes, key),
-              })
-            }
-          />
-        ))}
-      </div>
-
-      <div className="space-y-2">
         <GroupHeading>CONTRACT LENGTH</GroupHeading>
         {CONTRACT_BUCKETS.map(({ key, label }) => (
           <OptionRow
             key={key}
             label={label}
-            count={
-              hasPlans
-                ? countForOption(plans, value, "contractBuckets", key)
-                : null
-            }
+            count={hasPlans ? countForBucket(plans, value, key) : null}
             noneInArea={
-              hasPlans &&
-              countForOption(plans, EMPTY_FILTERS, "contractBuckets", key) === 0
+              hasPlans && countForBucket(plans, EMPTY_FILTERS, key) === 0
             }
             checked={value.contractBuckets.includes(key)}
             onToggle={() =>

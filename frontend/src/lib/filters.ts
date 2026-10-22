@@ -4,11 +4,9 @@ import type { Plan } from "../types/plan.js";
 // stability filter and ranking, which are applied during ingestion.
 // Each mapping below reads an existing `Plan` field.
 
-export type ProductType = "fixed";
 export type ContractBucket = "mtm" | "m1_6" | "m7_12" | "m12plus";
 
 export interface PlanFilters {
-  productTypes: ProductType[];
   contractBuckets: ContractBucket[];
   /** Show only these providers (OR). */
   providers: string[];
@@ -17,7 +15,6 @@ export interface PlanFilters {
 }
 
 export const EMPTY_FILTERS: PlanFilters = {
-  productTypes: [],
   contractBuckets: [],
   providers: [],
   minRenewablePct: 0,
@@ -42,14 +39,6 @@ export function renewablePct(plan: Plan): number | null {
   return match ? Number(match[1]) : null;
 }
 
-function matchesProductType(plan: Plan, type: ProductType): boolean {
-  const rate = plan.rateType?.toLowerCase() ?? "";
-  switch (type) {
-    case "fixed":
-      return rate.includes("fixed");
-  }
-}
-
 function matchesContractBucket(plan: Plan, bucket: ContractBucket): boolean {
   const m = plan.termMonths;
   switch (bucket) {
@@ -72,12 +61,6 @@ function matchesContractBucket(plan: Plan, bucket: ContractBucket): boolean {
 export function filterPlans(plans: Plan[], filters: PlanFilters): Plan[] {
   return plans.filter((plan) => {
     if (
-      filters.productTypes.length > 0 &&
-      !filters.productTypes.some((t) => matchesProductType(plan, t))
-    ) {
-      return false;
-    }
-    if (
       filters.contractBuckets.length > 0 &&
       !filters.contractBuckets.some((b) => matchesContractBucket(plan, b))
     ) {
@@ -97,20 +80,18 @@ export function filterPlans(plans: Plan[], filters: PlanFilters): Plan[] {
   });
 }
 
-export type OptionGroup = "productTypes" | "contractBuckets";
-
 /**
- * How many plans an option would show. Counts honour every other active
- * filter; the option's own group is replaced by just this option (selected
- * options in one group are OR'd, so the other ticks in the group are ignored).
+ * How many plans a contract-length option would show. Counts honour every
+ * other active filter; the contract-length group itself is replaced by just
+ * this option (selected options in the group are OR'd, so the other ticks in
+ * it are ignored).
  */
-export function countForOption(
+export function countForBucket(
   plans: Plan[],
   filters: PlanFilters,
-  group: OptionGroup,
-  key: ProductType | ContractBucket,
+  key: ContractBucket,
 ): number {
-  return filterPlans(plans, { ...filters, [group]: [key] }).length;
+  return filterPlans(plans, { ...filters, contractBuckets: [key] }).length;
 }
 
 /** Plans a provider would show given every other active filter. */
@@ -139,7 +120,6 @@ export function summarizePlans(plans: Plan[]): {
 /** How many separate filter choices are active (shown on the phone header). */
 export function activeFilterCount(filters: PlanFilters): number {
   return (
-    filters.productTypes.length +
     filters.contractBuckets.length +
     filters.providers.length +
     (filters.minRenewablePct > 0 ? 1 : 0)
@@ -148,7 +128,6 @@ export function activeFilterCount(filters: PlanFilters): number {
 
 export function isFiltering(filters: PlanFilters): boolean {
   return (
-    filters.productTypes.length > 0 ||
     filters.contractBuckets.length > 0 ||
     filters.providers.length > 0 ||
     filters.minRenewablePct > 0

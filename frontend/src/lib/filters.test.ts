@@ -66,14 +66,6 @@ describe("filterPlans", () => {
     expect(filterPlans(plans, EMPTY_FILTERS)).toHaveLength(4);
   });
 
-  it("filters by product type (OR within the group)", () => {
-    expect(
-      filterPlans(plans, withFilters({ productTypes: ["fixed"] })).map(
-        (p) => p.id,
-      ),
-    ).toEqual([1, 3, 4]);
-  });
-
   it("filters by contract bucket", () => {
     expect(
       filterPlans(plans, withFilters({ contractBuckets: ["m12plus"] })).map(

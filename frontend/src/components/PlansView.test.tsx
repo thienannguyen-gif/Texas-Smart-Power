@@ -264,19 +264,35 @@ test("a usage change keeps the same page number", async () => {
   expect(screen.getByText("Plan 7")).toBeInTheDocument();
 });
 
-test("product type offers only Fixed (renewable is the slider's job)", async () => {
+test("the sidebar has no PRODUCT TYPE section any more; the other sections are still there", async () => {
   mockPlans();
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
-  expect(screen.getByRole("checkbox", { name: /fixed/i })).toBeInTheDocument();
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+
+  expect(within(sidebar).queryByText("PRODUCT TYPE")).not.toBeInTheDocument();
   expect(
-    screen.queryByRole("checkbox", { name: /100% renewable/i }),
+    within(sidebar).queryByText(/select all that apply/i),
   ).not.toBeInTheDocument();
   expect(
-    screen.getByLabelText(/minimum renewable percentage/i),
-  ).toBeInTheDocument();
-  expect(screen.queryByText(/variable/i)).not.toBeInTheDocument();
-  expect(screen.queryByText(/prepaid/i)).not.toBeInTheDocument();
+    within(sidebar).queryByRole("checkbox", { name: /fixed/i }),
+  ).not.toBeInTheDocument();
+
+  const headings = within(sidebar)
+    .getAllByRole("heading", { level: 3 })
+    .map((h) => h.textContent);
+  expect(headings).toEqual([
+    "SORT BY",
+    "CONTRACT LENGTH",
+    "RENEWABLE ENERGY",
+    "PROVIDER",
+  ]);
+  // no product-type checkbox is left: the only checkboxes are the contract lengths
+  const checkboxes = within(sidebar)
+    .getAllByRole("checkbox")
+    .map((box) => box.closest("label")?.textContent);
+  expect(checkboxes).toHaveLength(4);
+  expect(checkboxes.join(" ")).toMatch(/month-to-month/i);
 });
 
 test("plan cards have no hide-provider action; the sidebar has no Show All or hidden-provider chips, but provider search remains", async () => {
@@ -384,13 +400,11 @@ test("every option shows its match count, reflecting the other active filters; e
 
   const row = (name: RegExp) =>
     screen.getByRole("checkbox", { name }).closest("label")!;
-  expect(row(/fixed/i)).toHaveTextContent("Fixed / Secured Rate (14)");
   expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (14)");
   expect(row(/12\+ months/i)).toHaveTextContent("12+ months (0)");
 
   // choosing a provider narrows every count
   pickProvider("alp", "Alpha");
-  expect(row(/fixed/i)).toHaveTextContent("Fixed / Secured Rate (6)");
   expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (6)");
 
   // zero-match options stay on screen, greyed
@@ -757,20 +771,16 @@ test("desktop: SORT BY is the first section of the left sidebar, styled like the
   ).toBeInTheDocument();
   expect(within(main).queryByRole("radio")).not.toBeInTheDocument();
 
-  // SORT BY comes before PRODUCT TYPE and CONTRACT LENGTH, with the same heading look
+  // SORT BY is the first section, with the same heading look as the others
   const headings = within(sidebar)
     .getAllByRole("heading", { level: 3 })
     .map((h) => h.textContent);
-  expect(headings.slice(0, 3)).toEqual([
-    "SORT BY",
-    "PRODUCT TYPE",
-    "CONTRACT LENGTH",
-  ]);
+  expect(headings.slice(0, 2)).toEqual(["SORT BY", "CONTRACT LENGTH"]);
   const sortHeading = within(sidebar).getByRole("heading", { name: "SORT BY" });
-  const productHeading = within(sidebar).getByRole("heading", {
-    name: "PRODUCT TYPE",
+  const contractHeading = within(sidebar).getByRole("heading", {
+    name: "CONTRACT LENGTH",
   });
-  expect(sortHeading.className).toBe(productHeading.className);
+  expect(sortHeading.className).toBe(contractHeading.className);
 });
 
 test("desktop: the sort in the sidebar still sorts by bill and follows the usage", async () => {

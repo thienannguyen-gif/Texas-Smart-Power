@@ -56,9 +56,9 @@ export function PlanList({
   const touCount = timeOfUsePlans.length;
 
   // One line: how many ranked plans are showing, how many of those are 100%
-  // renewable and 7–12 months (parts that would say "0" are left out), and how
+  // renewable and 12 months (parts that would say "0" are left out), and how
   // many time-of-use plans are shown separately.
-  const { renewable100, months7to12 } = summarizePlans(plans);
+  const { renewable100, months12 } = summarizePlans(plans);
   const summaryLine = showRanked
     ? [
         filtered
@@ -67,8 +67,8 @@ export function PlanList({
         renewable100 > 0
           ? `${renewable100} ${renewable100 === 1 ? "is" : "are"} 100% renewable`
           : null,
-        months7to12 > 0
-          ? `${months7to12} ${months7to12 === 1 ? "is" : "are"} 7–12 months`
+        months12 > 0
+          ? `${months12} ${months12 === 1 ? "is" : "are"} 12 months`
           : null,
         touCount > 0
           ? `${touCount} time-of-use ${plural(touCount, "plan", "plans")} shown separately`

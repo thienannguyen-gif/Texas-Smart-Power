@@ -2,6 +2,7 @@ import type { Plan } from "../types/plan";
 import {
   countForBucket,
   countForProvider,
+  countRenewable100,
   countTimeOfUse,
   plansInScope,
   EMPTY_FILTERS,
@@ -32,10 +33,10 @@ const SORT_OPTIONS: { value: SortMode; label: string; description: string }[] =
   ];
 
 const CONTRACT_BUCKETS: { key: ContractBucket; label: string }[] = [
-  { key: "mtm", label: "Month-to-month" },
   { key: "m1_6", label: "1–6 months" },
-  { key: "m7_12", label: "7–12 months" },
-  { key: "m12plus", label: "12+ months" },
+  { key: "m7_11", label: "7–11 months" },
+  { key: "m12", label: "12 months" },
+  { key: "m13plus", label: "13+ months" },
 ];
 
 function toggle<T>(list: T[], item: T): T[] {
@@ -194,21 +195,17 @@ export function FilterPanel({
 
       <div className="space-y-2">
         <GroupHeading>RENEWABLE ENERGY</GroupHeading>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={5}
-          value={value.minRenewablePct}
-          onChange={(e) =>
-            onChange({ ...value, minRenewablePct: Number(e.target.value) })
+        <OptionRow
+          label="100% renewable only"
+          count={hasPlans ? countRenewable100(scope, value) : null}
+          noneInArea={
+            hasPlans && countRenewable100(allPlans, EMPTY_FILTERS) === 0
           }
-          className="w-full accent-brand-green"
-          aria-label="Minimum renewable percentage"
+          checked={value.renewable100Only}
+          onToggle={() =>
+            onChange({ ...value, renewable100Only: !value.renewable100Only })
+          }
         />
-        <p className="text-center text-xs text-brand-navy/60">
-          at least {value.minRenewablePct}% renewable
-        </p>
       </div>
 
       {providers.length > 0 && (

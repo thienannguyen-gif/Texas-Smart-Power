@@ -6,24 +6,10 @@ import {
 } from "../lib/usage";
 import { formatAmount, formatKwh, formatRate } from "../lib/money";
 import { PriceCurveBadge } from "./PriceCurveBadge";
+import { ProviderLogo } from "./ProviderLogo";
 
 // Display-only. Ranking is computed by the ingestion pipeline; this card
 // renders plan details without showing the internal score.
-
-// The mockup puts a star rating here. Its source (upstream rating? a derived
-// score?) and scale are a BRIEF.md decision, so this is an inert placeholder —
-// it never shows a fabricated score.
-function RatingPlaceholder() {
-  return (
-    <span
-      className="text-sm text-brand-navy/25"
-      title="Rating not defined yet — pending BRIEF.md"
-      aria-label="Not rated yet"
-    >
-      ★★★★★
-    </span>
-  );
-}
 
 export function PlanCard({
   plan,
@@ -45,18 +31,7 @@ export function PlanCard({
             {plan.planName}
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            {plan.companyLogo ? (
-              <img
-                src={plan.companyLogo}
-                alt={plan.companyName}
-                className="h-5 w-auto max-w-[10rem] object-contain"
-              />
-            ) : (
-              <span className="text-sm text-brand-navy/70">
-                {plan.companyName}
-              </span>
-            )}
-            <RatingPlaceholder />
+            <ProviderLogo name={plan.companyName} src={plan.companyLogo} />
             {unranked && (
               <span className="inline-flex items-center rounded-full border border-brand-navy/30 bg-brand-lime-100 px-2 py-0.5 text-xs font-bold text-brand-navy">
                 Unranked · time-of-use

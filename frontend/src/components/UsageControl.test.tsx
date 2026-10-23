@@ -133,3 +133,21 @@ describe("locale formatting in the source", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("UsageControl tick labels by screen width", () => {
+  it("labels four ticks on wider screens and only the two ends on phones", () => {
+    render(<Harness />);
+
+    // wider screens (sm and up): the four ticks are shown, the end labels are not
+    for (const text of ["500 kWh", "1,000 kWh", "2,000 kWh", "2,500 kWh"]) {
+      expect(screen.getByText(text)).toHaveClass("hidden", "sm:block");
+    }
+    // phones: just the slider's two ends, which collide with nothing
+    const lowest = screen.getByText("100 kWh");
+    const highest = screen.getByText("4,000 kWh");
+    expect(lowest).toHaveClass("sm:hidden", "left-0");
+    expect(highest).toHaveClass("sm:hidden", "right-0");
+    expect(lowest).not.toHaveClass("hidden");
+    expect(highest).not.toHaveClass("hidden");
+  });
+});

@@ -1,5 +1,5 @@
-import type { Plan } from "../types/plan";
-import { estimatedMonthlyBill } from "./usage";
+import type { Plan } from "../types/plan.js";
+import { estimatedMonthlyBill } from "./usage.js";
 
 export type SortMode = "best" | "lowestBill";
 

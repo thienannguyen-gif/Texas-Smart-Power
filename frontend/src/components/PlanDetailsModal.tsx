@@ -3,6 +3,7 @@ import type { Plan } from "../types/plan";
 import { formatAmount, formatKwh, formatRate } from "../lib/money";
 import { parseCancellationFee } from "../lib/cancellationFee";
 import { PriceCurveBadge } from "./PriceCurveBadge";
+import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import {
   DEFAULT_USAGE_KWH,
   estimatedMonthlyBill,
@@ -137,6 +138,19 @@ export function PlanDetailsModal({
             </div>
           ))}
         </div>
+
+        {plan.isTimeOfUse && (
+          <p className="mt-3 rounded-xl bg-brand-lime-100 px-3 py-2 text-xs text-brand-navy/80">
+            <strong>Time-of-use plan, not ranked.</strong> {TOU_SECTION_INTRO}
+          </p>
+        )}
+
+        {plan.newCustomer === true && (
+          <p className="mt-3 rounded-xl bg-brand-lime-100 px-3 py-2 text-sm text-brand-navy/90">
+            <strong>Eligibility:</strong> New customers only — if you&apos;re
+            already with {plan.companyName}, you may not qualify for this rate.
+          </p>
+        )}
 
         <PriceCurveBadge plan={plan} explain className="mt-3" />
 

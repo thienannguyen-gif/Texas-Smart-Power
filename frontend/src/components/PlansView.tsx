@@ -6,7 +6,7 @@ import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import {
   activeFilterCount,
   EMPTY_FILTERS,
-  filterPlans,
+  splitForView,
   type PlanFilters,
 } from "../lib/filters";
 import { sortPlans, type SortMode } from "../lib/sort";
@@ -41,8 +41,18 @@ export function PlansView({
 }) {
   const state = useTduPlans(tdu);
   const isDesktop = useIsDesktop();
-  const allPlans = state.status === "success" ? state.data.plans : [];
-  const providers = [...new Set(allPlans.map((p) => p.companyName))].sort();
+  // Ranked plans and time-of-use plans are two separate lists. A data file
+  // written before they were split keeps its time-of-use plans inside `plans`
+  // (scored with the rest until the next ingestion run), so sort them out here.
+  const data = state.status === "success" ? state.data : null;
+  const allPlans = (data?.plans ?? []).filter((p) => !p.isTimeOfUse);
+  const timeOfUsePlans = [
+    ...(data?.timeOfUsePlans ?? []),
+    ...(data?.plans ?? []).filter((p) => p.isTimeOfUse),
+  ];
+  const providers = [
+    ...new Set([...allPlans, ...timeOfUsePlans].map((p) => p.companyName)),
+  ].sort();
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
@@ -81,12 +91,11 @@ export function PlansView({
 
   // Filter first, then order. "Best match" keeps the ranked order from
   // ingestion; "Lowest bill" re-sorts by the bill at the current usage, so it
-  // follows the usage field on every render.
-  const visiblePlans = sortPlans(
-    filterPlans(allPlans, filters),
-    sortMode,
-    usageKwh,
-  );
+  // follows the usage field on every render. The time-of-use section is always
+  // cheapest reference rate first, whatever the sort above it says.
+  const view = splitForView(allPlans, timeOfUsePlans, filters);
+  const visiblePlans = sortPlans(view.ranked, sortMode, usageKwh);
+  const visibleTimeOfUse = sortPlans(view.timeOfUse, "lowestBill", usageKwh);
   const activeCount = activeFilterCount(filters);
 
   function changeSort(next: SortMode) {
@@ -156,6 +165,7 @@ export function PlansView({
             >
               <FilterPanel
                 plans={allPlans}
+                timeOfUsePlans={timeOfUsePlans}
                 providers={providers}
                 value={filters}
                 onChange={changeFilters}
@@ -193,7 +203,9 @@ export function PlansView({
             {state.status === "success" && (
               <PlanList
                 plans={visiblePlans}
-                totalCount={state.data.plans.length}
+                totalCount={allPlans.length}
+                timeOfUsePlans={visibleTimeOfUse}
+                showRanked={!filters.onlyTimeOfUse}
                 generatedAt={state.data.generatedAt}
                 page={page}
                 onPageChange={setPage}
@@ -207,6 +219,7 @@ export function PlansView({
       {drawerOpen && !isDesktop && (
         <FilterDrawer
           plans={allPlans}
+          timeOfUsePlans={timeOfUsePlans}
           providers={providers}
           applied={filters}
           appliedSort={sortMode}

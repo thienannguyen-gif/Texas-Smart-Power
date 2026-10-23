@@ -73,6 +73,7 @@ interface IngestResult {
   tdu: TduId;
   source: string;
   planCount: number;
+  timeOfUseCount: number;
   url: string;
   removedOldFiles: number;
 }
@@ -128,9 +129,9 @@ async function ingestTdu(
     .map(normalizePlan)
     .filter((plan): plan is Plan => plan !== null);
 
-  const plans = applyPipeline(normalized);
+  const result = applyPipeline(normalized);
 
-  const file = buildTduDataFile(tdu, plans);
+  const file = buildTduDataFile(tdu, result);
 
   // New timestamped path every run: Blob URLs are edge-cached hard, so
   // overwriting a fixed path would keep serving stale data (blueprint §4).
@@ -152,7 +153,8 @@ async function ingestTdu(
   return {
     tdu,
     source,
-    planCount: plans.length,
+    planCount: result.ranked.length,
+    timeOfUseCount: result.timeOfUse.length,
     url,
     removedOldFiles: stale.length,
   };

@@ -24,7 +24,7 @@ Automated Pipeline & Data Refreshes
 The backend logic is designed to maintain data integrity in a market where prices fluctuate hourly:
 
 * Vercel Cron Scheduler: An automated job executes twice daily at /api/cron/fetch-plans to capture retail fluctuations [i].
-* Ranking Library Execution: The pipeline follows a Fetch \rightarrow Filter \rightarrow TOU Check \rightarrow Ranking Library sequence. Crucially, the weighted score (maximum 10 points) is calculated server-side during this phase rather than at the request level.
+* Ranking Library Execution: The pipeline follows a Fetch \rightarrow Filter \rightarrow TOU Check \rightarrow Ranking Library sequence. The TOU Check separates time-of-use plans from the ranked set before anything is scored (see "Time-of-use plans (not ranked)" below). Crucially, the weighted score (maximum 10 points) is calculated server-side during this phase rather than at the request level.
 * Blob Persistence: The engine generates six static plans/{tdu}.json files, uploading them to Vercel Blob Storage to serve as the application's read-only data source [i].
 
 This architecture ensures that the complex mathematical engine documented below is executed in a controlled, server-side environment to ensure score consistency across all user devices.
@@ -44,7 +44,9 @@ Component 1: Price Score (S_{price})
 
 The price score uses each eligible plan's price at 500 kWh and is normalized
 to a 0–10 scale based on the pricing floor (P_{min}) and ceiling (P_{max}) of
-all eligible plans for the specific ZIP code, before user-selected UI filters:
+all eligible plans for the specific ZIP code, before user-selected UI filters.
+Time-of-use plans are not eligible plans (see "Time-of-use plans (not ranked)"
+below), so they never set P_{min}, P_{max} or the maximum exit fee:
 
 S_{price} = 10 \times \frac{P_{max} - P_{current}}{P_{max} - P_{min}}
 
@@ -101,6 +103,16 @@ Component 4: Environmental Impact (S_{green})
 
 The renewable energy percentage (0–100%) is scaled linearly to a 0–10 point value, contributing to the final score as a secondary tie-breaker [i].
 
+Time-of-use plans (not ranked)
+
+Time-of-use (TOU) plans charge different rates at different times of day. Power to Choose publishes only a flat reference rate for them (the same three prices at 500, 1,000 and 2,000 kWh as for any plan), not the real time-dependent price. Scoring a TOU plan against fixed-rate plans would therefore compare a real number with a stand-in, so TOU plans are kept out of the ranking entirely:
+
+* Separation: the TOU Check step splits plans on the upstream `timeofuse` flag before scoring. A TOU plan gets no score and takes no part in P_{min}, P_{max} or the maximum exit fee, so the ranked plans' scores are the same whether or not the ZIP has TOU plans.
+* Their own section: TOU plans are stored in a separate list and shown in their own section below the ranked list, clearly marked as unranked, ordered by their flat reference rate, cheapest first. The order follows the user's usage level (the estimated bill is the reference rate times usage); a TOU plan missing an anchor price goes last.
+* Section intro, exact wording: "These plans charge different rates at different times of day. The price shown is Power to Choose's flat reference rate, not what you would actually pay — it depends on when you use electricity."
+* Filter: the sidebar's TIME-OF-USE PLANS filter ("Only time-of-use plans") switches the page to show only that section. It is greyed out, with "No plans available", when the ZIP's area has no TOU plans. Every other filter (contract length, renewable, provider) applies to the TOU section too.
+* Summary line: TOU plans are counted separately from the ranked plans, for example "129 plans · 6 time-of-use plans shown separately". The first number counts ranked plans only.
+
 Empirical Validation
 
 The following table demonstrates the formula applied to live market data from CenterPoint Energy (77002).
@@ -125,6 +137,7 @@ Finalized UI/UX Category List
 * Numeric Input Integration: Traditional horizontal sliders have been replaced with a direct numeric kWh input field. This allows users to test the formula against precise usage levels (e.g., 750 or 800 kWh) where gimmick rates often trigger [i].
 * Price Estimation: Between the 500, 1,000, and 2,000 kWh price anchors, linearly interpolate using the nearest pair. Below 500 kWh, hold the 500 kWh rate flat; above 2,000 kWh, hold the 2,000 kWh rate flat. Require all three anchor rates; if any is missing, do not estimate a rate or bill.
 * Visual Noise Reduction: Explicit removal of Pricing History Charts and the "Price per kWh" titles. These elements are frequently misinterpreted; they are replaced by the "Estimated Total Bill" to focus on the consumer's actual cash outlay [i].
+* Time-of-use Plans: Not scored or ranked. They appear in a separate, clearly unranked section below the ranked list, ordered by their flat reference rate (cheapest first); a TIME-OF-USE PLANS filter shows only that section; the results summary line counts them separately. See "Time-of-use plans (not ranked)" in section 3.
 * Future Features: Evaluation of a support Chatbot for real-time user assistance [i].
 
 5. UNRESOLVED QUESTIONS & OPEN RISKS

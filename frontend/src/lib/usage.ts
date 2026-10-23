@@ -1,4 +1,4 @@
-import type { Plan } from "../types/plan";
+import type { Plan } from "../types/plan.js";
 
 // The usage level the app prices plans at by default, and the ranking/display
 // anchor referenced in docs/student-build-guide.md §8.

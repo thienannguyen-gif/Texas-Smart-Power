@@ -119,6 +119,13 @@ export interface Plan {
   /** "Your Rights as a Customer" document (upstream `yrac_url`). Optional
    *  because data stored before this field was ingested does not have it. */
   yracUrl?: string | null;
+  /**
+   * Upstream `new_customer`. true: the plan's promo rate is for NEW customers
+   * only (an existing customer of the provider cannot get it when their plan
+   * expires). false: not restricted that way. null: unknown. Optional because
+   * data stored before this field was ingested does not have it.
+   */
+  newCustomer?: boolean | null;
   enrollPhone: string | null;
 }
 
@@ -127,6 +134,14 @@ export interface TduDataFile {
   tdu: TduId;
   /** ISO timestamp of the run that produced this file */
   generatedAt: string;
+  /** How many plans are in `plans` (the ranked ones; time-of-use plans are not counted). */
   planCount: number;
+  /** Scored and ranked, best first. Never contains a time-of-use plan. */
   plans: Plan[];
+  /**
+   * Time-of-use plans, kept out of the ranking (docs/BRIEF.md): sorted by their
+   * flat reference rate, cheapest first. Optional because files written before
+   * this existed have no such list (their time-of-use plans sit in `plans`).
+   */
+  timeOfUsePlans?: Plan[];
 }

@@ -9,6 +9,20 @@ function str(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
+// A true/false the upstream may send as a boolean, "true"/"false" or 1/0.
+// Anything else (missing, blank, some other text) is null — unknown — rather
+// than a guess either way.
+function bool(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (value === 1 || value === 0) return value === 1;
+  if (typeof value === "string") {
+    const text = value.trim().toLowerCase();
+    if (text === "true" || text === "1") return true;
+    if (text === "false" || text === "0") return false;
+  }
+  return null;
+}
+
 function num(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -54,6 +68,7 @@ export function normalizePlan(raw: RawPlan): Plan | null {
     factSheetUrl: str(raw.fact_sheet),
     termsUrl: str(raw.terms_of_service),
     yracUrl: str(raw.yrac_url),
+    newCustomer: bool(raw.new_customer),
     enrollPhone: str(raw.enroll_phone),
   };
 }

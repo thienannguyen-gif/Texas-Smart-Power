@@ -207,3 +207,48 @@ describe("PlanDetailsModal price-curve warning", () => {
     expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
   });
 });
+
+describe("PlanDetailsModal for a time-of-use plan", () => {
+  it("says it is not ranked and that the price is a reference rate", () => {
+    const { unmount } = render(
+      <PlanDetailsModal plan={plan({ isTimeOfUse: true })} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/time-of-use plan, not ranked/i)).toBeVisible();
+    expect(screen.getByText(/flat reference rate/i)).toBeVisible();
+    unmount();
+
+    render(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
+    expect(screen.queryByText(/not ranked/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("PlanDetailsModal eligibility line", () => {
+  it("says new customers only, naming the provider, when new_customer is true", () => {
+    render(
+      <PlanDetailsModal plan={plan({ newCustomer: true })} onClose={vi.fn()} />,
+    );
+    const line = screen.getByText(/new customers only/i).closest("p")!;
+    expect(line).toHaveTextContent(
+      "Eligibility: New customers only — if you're already with Example Energy, you may not qualify for this rate.",
+    );
+    expect(line).toBeVisible();
+  });
+
+  it("has no eligibility line when the plan is open to existing customers, or unknown", () => {
+    const { rerender } = render(
+      <PlanDetailsModal
+        plan={plan({ newCustomer: false })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/eligibility/i)).not.toBeInTheDocument();
+
+    rerender(
+      <PlanDetailsModal plan={plan({ newCustomer: null })} onClose={vi.fn()} />,
+    );
+    expect(screen.queryByText(/eligibility/i)).not.toBeInTheDocument();
+
+    rerender(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
+    expect(screen.queryByText(/eligibility/i)).not.toBeInTheDocument();
+  });
+});

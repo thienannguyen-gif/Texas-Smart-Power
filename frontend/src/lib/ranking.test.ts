@@ -213,3 +213,31 @@ describe("priceCurveWarning", () => {
     }
   });
 });
+
+describe("time-of-use plans", () => {
+  it("are not scored or ranked, and do not set the normalization range for the others", () => {
+    const cheapTou = makePlan({
+      id: 99,
+      isTimeOfUse: true,
+      pricePerKwh: { at500: 0.05, at1000: 0.05, at2000: 0.05 },
+    });
+    const a = makePlan({
+      id: 1,
+      pricePerKwh: { at500: 0.14, at1000: 0.14, at2000: 0.14 },
+    });
+    const b = makePlan({
+      id: 2,
+      pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 },
+    });
+
+    const withTou = scorePlans([a, b, cheapTou]);
+    const without = scorePlans([a, b]);
+
+    expect(withTou.map((s) => s.plan.id)).toEqual([2, 1]);
+    // identical scores: P_min is 0.12, not the time-of-use plan's 0.05
+    expect(withTou.map((s) => s.breakdown)).toEqual(
+      without.map((s) => s.breakdown),
+    );
+    expect(rankPlans([cheapTou]).length).toBe(0);
+  });
+});

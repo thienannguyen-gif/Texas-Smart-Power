@@ -37,7 +37,8 @@ function isTduDataFile(value: unknown): value is TduDataFile {
     typeof file.tdu === "string" &&
     typeof file.generatedAt === "string" &&
     typeof file.planCount === "number" &&
-    Array.isArray(file.plans)
+    Array.isArray(file.plans) &&
+    (file.timeOfUsePlans === undefined || Array.isArray(file.timeOfUsePlans))
   );
 }
 

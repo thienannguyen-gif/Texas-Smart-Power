@@ -22,10 +22,9 @@ Everything on this site is provided "as is," without warranty of any kind. Data 
 
 The ranking is this project’s own scoring formula. It weighs the price, how steady that price stays as usage changes, the cancellation fee, the contract length, and the renewable content. It is an opinion, not a recommendation — the plan at the top is the best by our formula, which may not be the best plan for you.
 
-Some plans are pushed down the list rather than hidden:
+Plans with an unstable price curve are pushed down the list rather than hidden: the rate per kWh dips or spikes at 1,000 kWh compared with 500 and 2,000. This is usually the signature of a usage-based bill credit, which rewards you only if your usage lands in a narrow window and can backfire if it doesn’t. These plans score zero on stability, so they fall to the bottom, but they remain visible.
 
-- Plans with an unstable price curve — where the rate per kWh dips or spikes at 1,000 kWh compared with 500 and 2,000. This is usually the signature of a usage-based bill credit, which rewards you only if your usage lands in a narrow window and can backfire if it doesn’t. These plans score zero on stability, so they fall to the bottom, but they remain visible.
-- Time-of-use plans, where the rate depends on the hour of the day. The prices shown for them come from Power to Choose’s flat reference rates, not from what you would actually pay, so treat their position in the list with caution.
+Time-of-use plans are not ranked at all. Their rate depends on the hour of the day, but Power to Choose publishes only a flat reference rate for them, so scoring them against fixed-rate plans would compare a real price with a stand-in. They appear in their own section below the ranked list, sorted by that reference rate (cheapest first) and clearly marked as unranked. The price shown is the reference rate, not what you would actually pay — it depends on when you use electricity.
 
 Bill amounts are estimates. Power to Choose publishes prices at only three usage levels — 500, 1,000 and 2,000 kWh — so any figure at another level is interpolated from those three points. Real pricing is often tiered rather than linear, and the estimate may not include every charge on an actual bill.
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeFilterCount,
+  countRenewable100,
   countTimeOfUse,
   EMPTY_FILTERS,
   filterPlans,
@@ -71,16 +72,57 @@ describe("filterPlans", () => {
   });
 
   it("filters by contract bucket", () => {
-    expect(
-      filterPlans(plans, withFilters({ contractBuckets: ["m12plus"] })).map(
+    const only = (bucket: PlanFilters["contractBuckets"][number]) =>
+      filterPlans(plans, withFilters({ contractBuckets: [bucket] })).map(
         (p) => p.id,
-      ),
-    ).toEqual([3]);
-    expect(
-      filterPlans(plans, withFilters({ contractBuckets: ["mtm"] })).map(
-        (p) => p.id,
-      ),
-    ).toEqual([2]);
+      );
+    expect(only("m1_6")).toEqual([2]); // 1 month
+    expect(only("m7_11")).toEqual([4]); // 9 months
+    expect(only("m12")).toEqual([1]); // exactly 12
+    expect(only("m13plus")).toEqual([3]); // 24 months
+  });
+
+  it("the four buckets never overlap and, between them, cover every plan that has a term", () => {
+    const terms = [1, 2, 6, 7, 11, 12, 13, 24, 36, 60];
+    const all = terms.map((term, i) => make({ id: i, termMonths: term }));
+    const buckets = ["m1_6", "m7_11", "m12", "m13plus"] as const;
+    const found = new Map<number, number>();
+    for (const bucket of buckets) {
+      for (const p of filterPlans(
+        all,
+        withFilters({ contractBuckets: [bucket] }),
+      )) {
+        found.set(p.id, (found.get(p.id) ?? 0) + 1);
+      }
+    }
+    // every plan is in exactly one bucket
+    expect([...found.values()].every((n) => n === 1)).toBe(true);
+    expect(found.size).toBe(terms.length);
+
+    // the edges land where they are labelled
+    const bucketOf = (term: number) =>
+      buckets.find(
+        (b) =>
+          filterPlans(
+            [make({ termMonths: term })],
+            withFilters({ contractBuckets: [b] }),
+          ).length === 1,
+      );
+    expect(bucketOf(6)).toBe("m1_6");
+    expect(bucketOf(7)).toBe("m7_11");
+    expect(bucketOf(11)).toBe("m7_11");
+    expect(bucketOf(12)).toBe("m12"); // the one the old "12+" label lost
+    expect(bucketOf(13)).toBe("m13plus");
+  });
+
+  it("a plan with no term is in no bucket", () => {
+    const none = [make({ termMonths: null })];
+    for (const bucket of ["m1_6", "m7_11", "m12", "m13plus"] as const) {
+      expect(
+        filterPlans(none, withFilters({ contractBuckets: [bucket] })),
+      ).toEqual([]);
+    }
+    expect(filterPlans(none, EMPTY_FILTERS)).toHaveLength(1);
   });
 
   it("filters by provider (exact company name)", () => {
@@ -93,7 +135,7 @@ describe("filterPlans", () => {
     expect(
       filterPlans(
         plans,
-        withFilters({ providers: ["Gexa"], contractBuckets: ["m12plus"] }),
+        withFilters({ providers: ["Gexa"], contractBuckets: ["m13plus"] }),
       ).map((p) => p.id),
     ).toEqual([3]);
   });
@@ -106,10 +148,40 @@ describe("filterPlans", () => {
     ).toEqual([2, 4]);
   });
 
-  it("drops plans below the renewable slider, and those with no % info", () => {
+  it("'100% renewable only' keeps exactly the plans at 100%, dropping lower ones and those with no % info", () => {
     expect(
-      filterPlans(plans, withFilters({ minRenewablePct: 50 })).map((p) => p.id),
+      filterPlans(plans, withFilters({ renewable100Only: true })).map(
+        (p) => p.id,
+      ),
     ).toEqual([4]);
+
+    const mixed = [
+      make({ id: 1, renewableDescription: "100% Renewable" }),
+      make({ id: 2, renewableDescription: "99% Renewable" }),
+      make({ id: 3, renewableDescription: "37% Renewable" }),
+      make({ id: 4, renewableDescription: null }),
+    ];
+    expect(
+      filterPlans(mixed, withFilters({ renewable100Only: true })).map(
+        (p) => p.id,
+      ),
+    ).toEqual([1]);
+    // off: nothing is dropped
+    expect(filterPlans(mixed, EMPTY_FILTERS)).toHaveLength(4);
+  });
+
+  it("countRenewable100 counts 100% plans that pass the other filters", () => {
+    const set = [
+      make({ id: 1, companyName: "A", renewableDescription: "100% Renewable" }),
+      make({ id: 2, companyName: "B", renewableDescription: "100% Renewable" }),
+      make({ id: 3, companyName: "B", renewableDescription: "22% Renewable" }),
+    ];
+    expect(countRenewable100(set, EMPTY_FILTERS)).toBe(2);
+    expect(countRenewable100(set, withFilters({ providers: ["B"] }))).toBe(1);
+    // the switch itself does not change the count
+    expect(
+      countRenewable100(set, withFilters({ renewable100Only: true })),
+    ).toBe(2);
   });
 });
 
@@ -125,7 +197,8 @@ describe("isFiltering", () => {
   it("is false only for the empty filter set", () => {
     expect(isFiltering(EMPTY_FILTERS)).toBe(false);
     expect(isFiltering(withFilters({ providers: ["Gexa"] }))).toBe(true);
-    expect(isFiltering(withFilters({ minRenewablePct: 10 }))).toBe(true);
+    expect(isFiltering(withFilters({ renewable100Only: true }))).toBe(true);
+    expect(activeFilterCount(withFilters({ renewable100Only: true }))).toBe(1);
   });
 });
 
@@ -133,19 +206,20 @@ describe("summarizePlans", () => {
   const mk = (term: number | null, renewable: string | null) =>
     make({ termMonths: term, renewableDescription: renewable });
 
-  it("counts 100% renewable and 7–12 month plans among those given", () => {
+  it("counts 100% renewable and exactly-12-month plans among those given", () => {
     const plans = [
       mk(12, "100% Renewable"), // both
-      mk(7, "22% Renewable"), // 7–12 only
+      mk(12, "22% Renewable"), // 12 months only
       mk(24, "100% Renewable"), // renewable only
       mk(3, null), // neither
-      mk(13, "100% Renewable"), // 13 is "12+", not 7–12
+      mk(13, "100% Renewable"), // 13 is not 12
+      mk(11, "100% Renewable"), // nor is 11
     ];
-    expect(summarizePlans(plans)).toEqual({ renewable100: 3, months7to12: 2 });
+    expect(summarizePlans(plans)).toEqual({ renewable100: 4, months12: 2 });
   });
 
   it("is all zeros for no plans", () => {
-    expect(summarizePlans([])).toEqual({ renewable100: 0, months7to12: 0 });
+    expect(summarizePlans([])).toEqual({ renewable100: 0, months12: 0 });
   });
 });
 

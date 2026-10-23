@@ -4,6 +4,7 @@ import { formatAmount, formatKwh, formatRate } from "../lib/money";
 import { parseCancellationFee } from "../lib/cancellationFee";
 import { PriceCurveBadge } from "./PriceCurveBadge";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
+import { httpUrl, telHref } from "../lib/links";
 import {
   DEFAULT_USAGE_KWH,
   estimatedMonthlyBill,
@@ -79,6 +80,9 @@ export function PlanDetailsModal({
   const bill = estimatedMonthlyBill(plan, usageKwh);
   const priceWhy =
     "A price cannot be estimated because one or more anchor rates are missing";
+  // Where "Sign up" goes: the plan's own sign-up page, else the provider's site.
+  const signUpUrl = httpUrl(plan.goToPlanUrl) ?? httpUrl(plan.website);
+  const phoneHref = telHref(plan.enrollPhone);
   const fee = parseCancellationFee(plan.pricingDetails);
   // Text under the grid: the full details, minus the fee sentence the box shows.
   const detailsNote = fee ? fee.remainder : plan.pricingDetails;
@@ -124,6 +128,39 @@ export function PlanDetailsModal({
             ✕
           </button>
         </div>
+
+        {(signUpUrl || plan.enrollPhone) && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {signUpUrl && (
+              <a
+                href={signUpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-green px-7 py-2 text-base font-bold text-white shadow hover:bg-brand-green-800"
+              >
+                Sign up{" "}
+                <span className="sr-only">
+                  with {plan.companyName} (opens in a new tab)
+                </span>
+              </a>
+            )}
+            {plan.enrollPhone &&
+              (phoneHref ? (
+                <a
+                  href={phoneHref}
+                  className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-green-800 underline"
+                >
+                  {signUpUrl ? "or call " : "Call "}
+                  {plan.enrollPhone}
+                </a>
+              ) : (
+                <span className="text-sm font-semibold text-brand-navy/80">
+                  {signUpUrl ? "or call " : "Call "}
+                  {plan.enrollPhone}
+                </span>
+              ))}
+          </div>
+        )}
 
         <h3 className="mt-6 text-sm font-bold tracking-wide text-brand-green-700">
           PLAN PRICING

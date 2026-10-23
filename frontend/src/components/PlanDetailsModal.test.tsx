@@ -252,3 +252,92 @@ describe("PlanDetailsModal eligibility line", () => {
     expect(screen.queryByText(/eligibility/i)).not.toBeInTheDocument();
   });
 });
+
+describe("PlanDetailsModal Sign up button", () => {
+  const signUp = () => screen.queryByRole("link", { name: /^sign up/i });
+
+  it("links to the plan's own sign-up page, with the phone number beside it", () => {
+    render(
+      <PlanDetailsModal
+        plan={plan({
+          goToPlanUrl: "https://example.com/enroll?plan=1",
+          website: "https://example.com/",
+          enrollPhone: "(800) 805-6580",
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    const link = signUp()!;
+    expect(link).toHaveAttribute("href", "https://example.com/enroll?plan=1");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(link).toHaveAccessibleName(
+      "Sign up with Example Energy (opens in a new tab)",
+    );
+    expect(link).toHaveClass("bg-brand-green", "text-white"); // the primary button
+
+    const phone = screen.getByRole("link", { name: "or call (800) 805-6580" });
+    expect(phone).toHaveAttribute("href", "tel:8008056580");
+    // beside it: the same row
+    expect(link.parentElement).toContainElement(phone);
+  });
+
+  it("falls back to the provider's website when the plan has no sign-up page", () => {
+    render(
+      <PlanDetailsModal
+        plan={plan({ goToPlanUrl: null, website: "https://provider.example/" })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(signUp()).toHaveAttribute("href", "https://provider.example/");
+  });
+
+  it("has no button when neither address exists, but still offers the phone", () => {
+    const { rerender } = render(
+      <PlanDetailsModal
+        plan={plan({ goToPlanUrl: null, website: null, enrollPhone: null })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(signUp()).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /call/i }),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <PlanDetailsModal
+        plan={plan({
+          goToPlanUrl: null,
+          website: null,
+          enrollPhone: "800-555-0100",
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(signUp()).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Call 800-555-0100" }),
+    ).toHaveAttribute("href", "tel:800-555-0100".replace(/-/g, ""));
+  });
+
+  it("only ever links to a web address: a javascript: or garbled one is ignored, and the next one is tried", () => {
+    const { rerender } = render(
+      <PlanDetailsModal
+        plan={plan({
+          goToPlanUrl: "javascript:alert(1)",
+          website: "https://safe.example/",
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(signUp()).toHaveAttribute("href", "https://safe.example/");
+
+    rerender(
+      <PlanDetailsModal
+        plan={plan({ goToPlanUrl: "not a url", website: "data:text/html,x" })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(signUp()).not.toBeInTheDocument();
+  });
+});

@@ -144,14 +144,31 @@ test("provider autocomplete filters the list; removing the chip restores it", as
 });
 
 test("a filter that matches nothing shows the empty-filter message", async () => {
-  mockPlans();
-  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  await screen.findByText("Gexa 12");
-
-  // both sample plans have no renewable info
-  fireEvent.change(screen.getByLabelText(/minimum renewable percentage/i), {
-    target: { value: "50" },
+  mockPlans({
+    ...file,
+    plans: [
+      mk({
+        id: 1,
+        planName: "Green A",
+        companyName: "Gexa",
+        renewableDescription: "100% Renewable",
+      }),
+      mk({
+        id: 2,
+        planName: "Plain B",
+        companyName: "APGE",
+        renewableDescription: "22% Renewable",
+      }),
+    ],
   });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("Green A");
+
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /100% renewable only/i }),
+  );
+  expect(screen.queryByText("Plain B")).not.toBeInTheDocument();
+  pickProvider("apg", "APGE"); // a provider with no 100% renewable plan
   expect(screen.getByText(/no plans match these filters/i)).toBeInTheDocument();
 });
 
@@ -231,7 +248,7 @@ test("arrow keys typed in the usage box or slider do not change the page", async
   fireEvent.keyDown(screen.getByLabelText(/monthly usage in kWh/i), {
     key: "ArrowRight",
   });
-  fireEvent.keyDown(screen.getByLabelText(/minimum renewable percentage/i), {
+  fireEvent.keyDown(screen.getByLabelText("Monthly usage slider"), {
     key: "ArrowRight",
   });
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
@@ -288,13 +305,13 @@ test("the sidebar has no PRODUCT TYPE section any more; the other sections are s
     "RENEWABLE ENERGY",
     "PROVIDER",
   ]);
-  // no product-type checkbox is left: the checkboxes are time-of-use + the contract lengths
+  // no product-type checkbox is left: time-of-use, the four contract lengths, 100% renewable
   const checkboxes = within(sidebar)
     .getAllByRole("checkbox")
     .map((box) => box.closest("label")?.textContent);
-  expect(checkboxes).toHaveLength(5);
+  expect(checkboxes).toHaveLength(6);
   expect(checkboxes.join(" ")).toMatch(/only time-of-use plans/i);
-  expect(checkboxes.join(" ")).toMatch(/month-to-month/i);
+  expect(checkboxes.join(" ")).toMatch(/100% renewable only/i);
 });
 
 test("plan cards have no hide-provider action; the sidebar has no Show All or hidden-provider chips, but provider search remains", async () => {
@@ -320,26 +337,23 @@ test("a contract length with no plans in the area is disabled and says so", asyn
   mockPlans(); // both sample plans are 12 months
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
-  expect(
-    screen.getByRole("checkbox", { name: /month-to-month/i }),
-  ).toBeDisabled();
-  expect(
-    screen.getByText(/month-to-month/i).closest("label"),
-  ).toHaveTextContent("No plans available");
-  expect(screen.getByRole("checkbox", { name: /7–12 months/i })).toBeEnabled();
+  const none = screen.getByRole("checkbox", { name: /^13\+ months/i });
+  expect(none).toBeDisabled();
+  expect(none.closest("label")).toHaveTextContent("No plans available");
+  expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeEnabled();
 });
 
-test("month-to-month is selectable when the area has such a plan", async () => {
+test("1–6 months becomes selectable when the area has a short plan", async () => {
   mockPlans({
     ...file,
-    plans: [mk({ id: 1, planName: "Flex 1", termMonths: 1 }), ...file.plans],
+    plans: [mk({ id: 1, planName: "Short 3", termMonths: 3 }), ...file.plans],
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  await screen.findByText("Flex 1");
-  const box = screen.getByRole("checkbox", { name: /month-to-month/i });
+  await screen.findByText("Short 3");
+  const box = screen.getByRole("checkbox", { name: /^1–6 months/i });
   expect(box).toBeEnabled();
   fireEvent.click(box);
-  expect(screen.getByText("Flex 1")).toBeInTheDocument();
+  expect(screen.getByText("Short 3")).toBeInTheDocument();
   expect(screen.queryByText("Gexa 12")).not.toBeInTheDocument();
 });
 
@@ -402,22 +416,22 @@ test("every option shows its match count, reflecting the other active filters; e
 
   const row = (name: RegExp) =>
     screen.getByRole("checkbox", { name }).closest("label")!;
-  expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (14)");
-  expect(row(/12\+ months/i)).toHaveTextContent("12+ months (0)");
+  expect(row(/^12 months/i)).toHaveTextContent("12 months (14)");
+  expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
 
   // choosing a provider narrows every count
   pickProvider("alp", "Alpha");
-  expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (6)");
+  expect(row(/^12 months/i)).toHaveTextContent("12 months (6)");
 
   // zero-match options stay on screen, greyed
-  expect(row(/12\+ months/i)).toHaveTextContent("12+ months (0)");
-  expect(row(/12\+ months/i)).toHaveClass("text-brand-navy/40");
-  expect(screen.getByRole("checkbox", { name: /12\+ months/i })).toBeDisabled();
+  expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
+  expect(row(/13\+ months/i)).toHaveClass("text-brand-navy/40");
+  expect(screen.getByRole("checkbox", { name: /13\+ months/i })).toBeDisabled();
 
   // a contract length is counted against the provider, ignoring its own group
-  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
   expect(row(/1–6 months/i)).toHaveTextContent("1–6 months (0)");
-  expect(row(/7–12 months/i)).toHaveTextContent("7–12 months (6)");
+  expect(row(/^12 months/i)).toHaveTextContent("12 months (6)");
 });
 
 test("provider suggestions show their counts", async () => {
@@ -496,7 +510,7 @@ test("phone: a Filters button under the header opens a drawer; Apply commits, an
   const drawer = screen.getByRole("dialog", { name: "Filters" });
   pickProvider("alp", "Alpha");
   fireEvent.click(
-    within(drawer).getByRole("checkbox", { name: /7–12 months/i }),
+    within(drawer).getByRole("checkbox", { name: /^12 months/i }),
   );
   expect(within(drawer).getByText("6 plans match")).toBeInTheDocument();
   // nothing applied until Apply: the list behind is unchanged
@@ -543,7 +557,7 @@ test("phone drawer: Clear empties the draft only; closing without Apply discards
 
   // Escape also discards
   fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
   fireEvent.keyDown(document, { key: "Escape" });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
@@ -578,23 +592,21 @@ test("a one-line summary above the list counts what is showing and follows the f
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
   expect(
-    await screen.findByText(
-      "4 plans · 2 are 100% renewable · 2 are 7–12 months",
-    ),
+    await screen.findByText("4 plans · 2 are 100% renewable · 2 are 12 months"),
   ).toBeInTheDocument();
 
-  // at least 100% renewable: A and C remain; only A is 7–12 months
-  fireEvent.change(screen.getByLabelText(/minimum renewable percentage/i), {
-    target: { value: "100" },
-  });
+  // at least 100% renewable: A and C remain; only A is 12 months
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /100% renewable only/i }),
+  );
   expect(
     screen.getByText(
-      "Showing 2 of 4 plans · 2 are 100% renewable · 1 is 7–12 months",
+      "Showing 2 of 4 plans · 2 are 100% renewable · 1 is 12 months",
     ),
   ).toBeInTheDocument();
 
   // parts that would say "0" are left out
-  fireEvent.click(screen.getByRole("checkbox", { name: /12\+ months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /13\+ months/i }));
   expect(
     screen.getByText("Showing 1 of 4 plans · 1 is 100% renewable"),
   ).toBeInTheDocument();
@@ -873,10 +885,10 @@ test("phone: closing the drawer discards a sort change; Clear empties filters bu
   // Clear leaves the sort alone
   fireEvent.click(screen.getByRole("button", { name: "Filters" }));
   fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
   fireEvent.click(screen.getByRole("button", { name: "Clear" }));
   expect(
-    screen.getByRole("checkbox", { name: /7–12 months/i }),
+    screen.getByRole("checkbox", { name: /^12 months/i }),
   ).not.toBeChecked();
   expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: "Apply" }));
@@ -1118,7 +1130,7 @@ test("the summary counts time-of-use plans separately from the ranked plans", as
   await screen.findByText("Ranked A");
   expect(
     screen.getByText(
-      "2 plans · 2 are 7–12 months · 3 time-of-use plans shown separately",
+      "2 plans · 2 are 12 months · 3 time-of-use plans shown separately",
     ),
   ).toBeInTheDocument();
 });
@@ -1193,7 +1205,7 @@ test("with no time-of-use plans in the area the filter is greyed out and says so
   expect(
     screen.queryByRole("region", { name: /time-of-use plans/i }),
   ).not.toBeInTheDocument();
-  expect(screen.getByText("2 plans · 2 are 7–12 months")).toBeInTheDocument();
+  expect(screen.getByText("2 plans · 2 are 12 months")).toBeInTheDocument();
 });
 
 test("data written before the split (time-of-use plans inside plans) is still shown separately", async () => {
@@ -1207,7 +1219,7 @@ test("data written before the split (time-of-use plans inside plans) is still sh
   expect(sectionNames()).toEqual(["Night Owl"]);
   expect(
     screen.getByText(
-      "2 plans · 2 are 7–12 months · 1 time-of-use plan shown separately",
+      "2 plans · 2 are 12 months · 1 time-of-use plan shown separately",
     ),
   ).toBeInTheDocument();
 });
@@ -1259,4 +1271,171 @@ test("the existing-customers badge marks only the plans with new_customer false,
     .filter((card) => within(card).queryByText("Open to existing customers"))
     .map((card) => within(card).getByRole("heading").textContent);
   expect(withBadge).toEqual(["Open B"]);
+});
+
+// ---- Contract length buckets: 1–6 | 7–11 | 12 | 13+
+
+test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-month plans can be found", async () => {
+  mockPlans({
+    ...file,
+    planCount: 7,
+    plans: [3, 3, 9, 12, 12, 12, 24].map((term, i) =>
+      mk({ id: i + 1, planName: `Term ${term} #${i + 1}`, termMonths: term }),
+    ),
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("Term 3 #1");
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+  const row = (name: RegExp) =>
+    within(sidebar).getByRole("checkbox", { name }).closest("label")!;
+
+  expect(row(/^1–6 months/)).toHaveTextContent("1–6 months (2)");
+  expect(row(/^7–11 months/)).toHaveTextContent("7–11 months (1)");
+  expect(row(/^12 months/)).toHaveTextContent("12 months (3)");
+  expect(row(/^13\+ months/)).toHaveTextContent("13+ months (1)");
+  // the old labels are gone
+  expect(
+    within(sidebar).queryByText(/month-to-month/i),
+  ).not.toBeInTheDocument();
+  expect(within(sidebar).queryByText(/^12\+ months/)).not.toBeInTheDocument();
+  expect(within(sidebar).queryByText(/7–12 months/)).not.toBeInTheDocument();
+
+  // someone looking for a 12-month plan ticks "12 months" and gets exactly those
+  fireEvent.click(
+    within(sidebar).getByRole("checkbox", { name: /^12 months/ }),
+  );
+  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
+  expect(
+    screen.getByText(/Showing 3 of 7 plans · 3 are 12 months/),
+  ).toBeInTheDocument();
+});
+
+const cardNamesOnPage = () =>
+  screen
+    .getAllByRole("article")
+    .map((card) => within(card).getByRole("heading").textContent);
+
+// ---- Renewable: one honest toggle instead of a slider
+
+test("renewable is a single '100% renewable only' toggle with a count; there is no slider", async () => {
+  mockPlans({
+    ...file,
+    planCount: 4,
+    plans: [
+      mk({
+        id: 1,
+        planName: "R100 a",
+        companyName: "Alpha",
+        renewableDescription: "100% Renewable",
+      }),
+      mk({
+        id: 2,
+        planName: "R100 b",
+        companyName: "Beta",
+        renewableDescription: "100% Renewable",
+      }),
+      mk({
+        id: 3,
+        planName: "R37",
+        companyName: "Alpha",
+        renewableDescription: "37% Renewable",
+      }),
+      mk({
+        id: 4,
+        planName: "R22",
+        companyName: "Beta",
+        renewableDescription: "22% Renewable",
+      }),
+    ],
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("R100 a");
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+
+  expect(
+    screen.queryByLabelText(/minimum renewable percentage/i),
+  ).not.toBeInTheDocument();
+  expect(
+    within(sidebar).queryByText(/at least \d+% renewable/i),
+  ).not.toBeInTheDocument();
+  expect(
+    within(sidebar).getByRole("heading", { name: "RENEWABLE ENERGY" }),
+  ).toBeInTheDocument();
+
+  const toggle = within(sidebar).getByRole("checkbox", {
+    name: /100% renewable only/i,
+  });
+  expect(toggle.closest("label")).toHaveTextContent("100% renewable only (2)");
+  expect(toggle).not.toBeChecked();
+
+  fireEvent.click(toggle);
+  expect(cardNamesOnPage()).toEqual(["R100 a", "R100 b"]);
+  expect(screen.getByText(/Showing 2 of 4 plans/)).toBeInTheDocument();
+
+  // the count follows the other filters
+  fireEvent.click(toggle);
+  pickProvider("alp", "Alpha");
+  expect(toggle.closest("label")).toHaveTextContent("100% renewable only (1)");
+});
+
+test("phone: the 100% renewable toggle is in the drawer, applies with Apply, and counts on the Filters button", async () => {
+  stubPhone();
+  mockPlans({
+    ...file,
+    planCount: 2,
+    plans: [
+      mk({ id: 1, planName: "Green", renewableDescription: "100% Renewable" }),
+      mk({ id: 2, planName: "Greyish", renewableDescription: "22% Renewable" }),
+    ],
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("Green");
+
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  const drawer = screen.getByRole("dialog", { name: "Filters" });
+  fireEvent.click(
+    within(drawer).getByRole("checkbox", { name: /100% renewable only/i }),
+  );
+  expect(within(drawer).getByText("1 plan matches")).toBeInTheDocument();
+  expect(screen.getByText("Greyish")).toBeInTheDocument(); // not applied yet
+
+  fireEvent.click(within(drawer).getByRole("button", { name: "Apply" }));
+  expect(screen.queryByText("Greyish")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Filters (1)" }),
+  ).toBeInTheDocument();
+});
+
+// ---- Logos on the cards that fail to load
+
+test("a card whose logo fails to load shows the provider's initials in a circle instead of a broken image", async () => {
+  mockPlans({
+    ...file,
+    plans: [
+      mk({
+        id: 1,
+        planName: "With logo",
+        companyName: "GEXA ENERGY",
+        companyLogo: "https://example.com/blocked.png",
+      }),
+      mk({
+        id: 2,
+        planName: "Fine logo",
+        companyName: "Octopus Energy",
+        companyLogo: "https://example.com/ok.png",
+      }),
+    ],
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("With logo");
+
+  fireEvent.error(screen.getByRole("img", { name: "GEXA ENERGY" }));
+  expect(
+    screen.queryByRole("img", { name: "GEXA ENERGY" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("GE")).toBeInTheDocument();
+  // the other card keeps its working logo
+  expect(
+    screen.getByRole("img", { name: "Octopus Energy" }),
+  ).toBeInTheDocument();
 });

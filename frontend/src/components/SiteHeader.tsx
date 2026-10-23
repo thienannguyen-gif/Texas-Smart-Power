@@ -1,10 +1,9 @@
 import { BrandMark } from "./BrandMark";
 
 // Navy top bar from the mockup: logo + wordmark left, nav right.
-// Home and About are still placeholders; MORE opens the disclaimer page.
+// HOME is the app; MORE opens the disclaimer page. (There is no About page, so no About link.)
 const NAV = [
   { label: "Home", href: "/" },
-  { label: "About", href: "/" },
   { label: "More", href: "#disclaimer" },
 ];
 

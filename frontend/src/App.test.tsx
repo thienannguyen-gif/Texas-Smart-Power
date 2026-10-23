@@ -340,7 +340,7 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
   fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
     target: { value: "750" },
   });
-  fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
 
   fireEvent.click(changeArea());
   fireEvent.click(within(areaPicker()!).getByRole("button", { name: "TNMP" }));
@@ -351,7 +351,7 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
   expect(areaPicker()).not.toBeInTheDocument();
   expect(screen.getByLabelText("ZIP code")).toHaveValue("75067");
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
-  expect(screen.getByRole("checkbox", { name: /7–12 months/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeChecked();
 
   // and back again
   fireEvent.click(changeArea());
@@ -451,6 +451,24 @@ describe("disclaimer page", () => {
   });
   afterEach(() => goToHash(""));
 
+  test("the header has no dead About link: just Home and More", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    render(<App />);
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    expect(
+      within(nav).queryByRole("link", { name: /about/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(nav)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["HOME", "MORE"]);
+    expect(within(nav).getByRole("link", { name: "MORE" })).toHaveAttribute(
+      "href",
+      "#disclaimer",
+    );
+  });
+
   test("every page has a footer link, and the header's MORE item opens the disclaimer", () => {
     vi.stubGlobal("fetch", vi.fn());
     render(<App />);
@@ -491,7 +509,7 @@ describe("disclaimer page", () => {
     fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
       target: { value: "750" },
     });
-    fireEvent.click(screen.getByRole("checkbox", { name: /7–12 months/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
 
     goToHash("#disclaimer");
     await screen.findByRole("article");
@@ -501,9 +519,7 @@ describe("disclaimer page", () => {
       expect(screen.getByLabelText(/monthly usage in kWh/i)).toBeVisible(),
     );
     expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
-    expect(
-      screen.getByRole("checkbox", { name: /7–12 months/i }),
-    ).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeChecked();
     expect(screen.getByLabelText("ZIP code")).toHaveValue("75201");
     expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
   });

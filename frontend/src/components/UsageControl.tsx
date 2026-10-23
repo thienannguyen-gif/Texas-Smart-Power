@@ -72,15 +72,23 @@ export function UsageControl({
           className="block h-6 w-full accent-brand-green"
         />
         <div aria-hidden="true" className="relative h-4">
+          {/* Wide screens: four ticks along the track. */}
           {TICKS.map((tick) => (
             <span
               key={tick}
               style={{ left: tickLeft(tick) }}
-              className="absolute top-0 -translate-x-1/2 text-[9px] leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:text-xs"
+              className="absolute top-0 hidden -translate-x-1/2 text-xs leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:block"
             >
               {formatKwh(tick)} kWh
             </span>
           ))}
+          {/* Phones: they collide there, so only the two ends are labelled. */}
+          <span className="absolute top-0 left-0 text-[10px] leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:hidden">
+            {formatKwh(MIN_USAGE_KWH)} kWh
+          </span>
+          <span className="absolute top-0 right-0 text-[10px] leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:hidden">
+            {formatKwh(MAX_USAGE_KWH)} kWh
+          </span>
         </div>
       </div>
     </div>

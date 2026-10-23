@@ -60,9 +60,10 @@ describe("PlanCard", () => {
     expect(screen.queryByText("Example Energy")).not.toBeInTheDocument();
   });
 
-  it("never shows a fabricated rating", () => {
+  it("has no star rating: there is no rating data behind one", () => {
     render(<PlanCard plan={plan()} />);
-    expect(screen.getByLabelText(/not rated yet/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/not rated yet/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("★");
   });
 
   it("fires onMoreDetails from the button, and hides it without a handler", () => {
@@ -161,5 +162,43 @@ describe("PlanCard customer-eligibility badge", () => {
 
     rerender(<PlanCard plan={plan()} />); // stored before the field existed
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("PlanCard provider logo", () => {
+  const withLogo = plan({
+    companyName: "SMARTENERGY HOLDINGS LLC",
+    companyLogo: "https://example.com/logo.svg",
+  });
+
+  it("shows the logo while it loads fine", () => {
+    render(<PlanCard plan={withLogo} />);
+    expect(
+      screen.getByRole("img", { name: "SMARTENERGY HOLDINGS LLC" }),
+    ).toHaveAttribute("src", "https://example.com/logo.svg");
+    expect(screen.queryByText("SM")).not.toBeInTheDocument();
+  });
+
+  it("swaps a logo that fails to load for the provider's initials and name, with no broken image left", () => {
+    render(<PlanCard plan={withLogo} />);
+    fireEvent.error(
+      screen.getByRole("img", { name: "SMARTENERGY HOLDINGS LLC" }),
+    );
+
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("SM")).toBeInTheDocument(); // initials in the circle
+    expect(screen.getByText("SMARTENERGY HOLDINGS LLC")).toBeInTheDocument();
+    expect(screen.getByText("SM")).toHaveClass("rounded-full");
+  });
+
+  it("uses the same initials-and-name look when the plan has no logo at all", () => {
+    render(
+      <PlanCard
+        plan={plan({ companyName: "Gexa Energy", companyLogo: null })}
+      />,
+    );
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("GE")).toBeInTheDocument();
+    expect(screen.getByText("Gexa Energy")).toBeInTheDocument();
   });
 });

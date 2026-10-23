@@ -207,3 +207,17 @@ describe("PlanDetailsModal price-curve warning", () => {
     expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
   });
 });
+
+describe("PlanDetailsModal for a time-of-use plan", () => {
+  it("says it is not ranked and that the price is a reference rate", () => {
+    const { unmount } = render(
+      <PlanDetailsModal plan={plan({ isTimeOfUse: true })} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/time-of-use plan, not ranked/i)).toBeVisible();
+    expect(screen.getByText(/flat reference rate/i)).toBeVisible();
+    unmount();
+
+    render(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
+    expect(screen.queryByText(/not ranked/i)).not.toBeInTheDocument();
+  });
+});

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
-import { EMPTY_FILTERS, filterPlans, type PlanFilters } from "../lib/filters";
+import { EMPTY_FILTERS, splitForView, type PlanFilters } from "../lib/filters";
 import type { SortMode } from "../lib/sort";
 import { FilterPanel } from "./FilterPanel";
 
@@ -10,6 +10,7 @@ import { FilterPanel } from "./FilterPanel";
 // Escape) throws it away.
 export function FilterDrawer({
   plans,
+  timeOfUsePlans,
   providers,
   applied,
   appliedSort,
@@ -17,6 +18,7 @@ export function FilterDrawer({
   onClose,
 }: {
   plans: Plan[];
+  timeOfUsePlans: Plan[];
   providers: string[];
   /** The filters currently in effect; the draft starts as a copy. */
   applied: PlanFilters;
@@ -28,7 +30,8 @@ export function FilterDrawer({
   const [draft, setDraft] = useState(applied);
   const [draftSort, setDraftSort] = useState(appliedSort);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const matching = filterPlans(plans, draft).length;
+  const view = splitForView(plans, timeOfUsePlans, draft);
+  const matching = view.ranked.length + view.timeOfUse.length;
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -75,6 +78,7 @@ export function FilterDrawer({
         <div className="overflow-y-auto px-4 pb-4">
           <FilterPanel
             plans={plans}
+            timeOfUsePlans={timeOfUsePlans}
             providers={providers}
             value={draft}
             onChange={setDraft}

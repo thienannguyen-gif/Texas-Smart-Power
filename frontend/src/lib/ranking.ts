@@ -103,6 +103,12 @@ function eligiblePlans(plans: Plan[]): EligiblePlan[] {
   const eligible: EligiblePlan[] = [];
 
   for (const plan of plans) {
+    // Time-of-use plans are never scored (docs/BRIEF.md): Power to Choose only
+    // publishes a flat reference rate for them, so ranking them against
+    // fixed-rate plans would compare a real price with a stand-in. They also
+    // stay out of P_min / P_max / max_fee, which come from eligible plans only.
+    if (plan.isTimeOfUse) continue;
+
     const price = plan.pricePerKwh.at500;
     const slope = slopeScore(plan);
     if (price === null || !Number.isFinite(price) || slope === null) {

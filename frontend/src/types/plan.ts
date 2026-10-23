@@ -127,6 +127,14 @@ export interface TduDataFile {
   tdu: TduId;
   /** ISO timestamp of the run that produced this file */
   generatedAt: string;
+  /** How many plans are in `plans` (the ranked ones; time-of-use plans are not counted). */
   planCount: number;
+  /** Scored and ranked, best first. Never contains a time-of-use plan. */
   plans: Plan[];
+  /**
+   * Time-of-use plans, kept out of the ranking (docs/BRIEF.md): sorted by their
+   * flat reference rate, cheapest first. Optional because files written before
+   * this existed have no such list (their time-of-use plans sit in `plans`).
+   */
+  timeOfUsePlans?: Plan[];
 }

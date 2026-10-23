@@ -24,7 +24,7 @@ export function useTduPlans(tdu: TduId): PlansState {
       .then((data) => {
         if (controller.signal.aborted) return;
         setState(
-          data.plans.length === 0
+          data.plans.length + (data.timeOfUsePlans?.length ?? 0) === 0
             ? { status: "empty", tdu }
             : { status: "success", data },
         );

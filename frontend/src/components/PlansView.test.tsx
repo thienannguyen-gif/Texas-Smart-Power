@@ -283,15 +283,17 @@ test("the sidebar has no PRODUCT TYPE section any more; the other sections are s
     .map((h) => h.textContent);
   expect(headings).toEqual([
     "SORT BY",
+    "TIME-OF-USE PLANS",
     "CONTRACT LENGTH",
     "RENEWABLE ENERGY",
     "PROVIDER",
   ]);
-  // no product-type checkbox is left: the only checkboxes are the contract lengths
+  // no product-type checkbox is left: the checkboxes are time-of-use + the contract lengths
   const checkboxes = within(sidebar)
     .getAllByRole("checkbox")
     .map((box) => box.closest("label")?.textContent);
-  expect(checkboxes).toHaveLength(4);
+  expect(checkboxes).toHaveLength(5);
+  expect(checkboxes.join(" ")).toMatch(/only time-of-use plans/i);
   expect(checkboxes.join(" ")).toMatch(/month-to-month/i);
 });
 
@@ -775,7 +777,11 @@ test("desktop: SORT BY is the first section of the left sidebar, styled like the
   const headings = within(sidebar)
     .getAllByRole("heading", { level: 3 })
     .map((h) => h.textContent);
-  expect(headings.slice(0, 2)).toEqual(["SORT BY", "CONTRACT LENGTH"]);
+  expect(headings.slice(0, 3)).toEqual([
+    "SORT BY",
+    "TIME-OF-USE PLANS",
+    "CONTRACT LENGTH",
+  ]);
   const sortHeading = within(sidebar).getByRole("heading", { name: "SORT BY" });
   const contractHeading = within(sidebar).getByRole("heading", {
     name: "CONTRACT LENGTH",
@@ -988,4 +994,249 @@ test("once the full header has scrolled away, a slim bar keeps the ZIP, area and
   expect(
     screen.queryByLabelText("Monthly usage in kWh (top bar)"),
   ).not.toBeInTheDocument();
+});
+
+// ---- Time-of-use plans: unranked, in their own section
+
+const rankedA = mk({
+  id: 1,
+  planName: "Ranked A",
+  companyName: "Alpha",
+  pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 },
+});
+const rankedB = mk({
+  id: 2,
+  planName: "Ranked B",
+  companyName: "Alpha",
+  pricePerKwh: { at500: 0.14, at1000: 0.14, at2000: 0.14 },
+});
+// bills at 500 / 1000 / 2000 kWh:  Night Owl 50/100/200,  Day Saver 75/150/300,  Cross 150/80/160
+const touNight = mk({
+  id: 10,
+  planName: "Night Owl",
+  companyName: "Night Co",
+  isTimeOfUse: true,
+  pricePerKwh: { at500: 0.1, at1000: 0.1, at2000: 0.1 },
+});
+const touDay = mk({
+  id: 11,
+  planName: "Day Saver",
+  companyName: "Night Co",
+  isTimeOfUse: true,
+  pricePerKwh: { at500: 0.15, at1000: 0.15, at2000: 0.15 },
+});
+const touCross = mk({
+  id: 12,
+  planName: "Cross",
+  companyName: "Alpha",
+  isTimeOfUse: true,
+  termMonths: 3,
+  pricePerKwh: { at500: 0.3, at1000: 0.08, at2000: 0.08 },
+});
+
+const touFile: TduDataFile = {
+  ...file,
+  planCount: 2,
+  plans: [rankedA, rankedB],
+  // stored cheapest-reference-rate-first, as the pipeline writes it
+  timeOfUsePlans: [touCross, touNight, touDay],
+};
+
+function renderTou(data: TduDataFile = touFile) {
+  mockPlans(data);
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+}
+
+const touSection = () =>
+  screen.getByRole("region", { name: /time-of-use plans/i });
+const sectionNames = () =>
+  within(touSection())
+    .getAllByRole("article")
+    .map((card) => within(card).getByRole("heading").textContent);
+const rankedNames = () =>
+  within(screen.getByRole("region", { name: "Plans" }))
+    .getAllByRole("article")
+    .filter((card) => !touSection().contains(card))
+    .map((card) => within(card).getByRole("heading").textContent);
+
+test("time-of-use plans are in their own unranked section below the ranked list, not in it", async () => {
+  renderTou();
+  await screen.findByText("Ranked A");
+
+  expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
+  expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]);
+
+  // the section comes after the ranked list and its pagination
+  const section = touSection();
+  const pagination = screen.getByRole("navigation", {
+    name: "Plan pagination",
+  });
+  expect(
+    pagination.compareDocumentPosition(section) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+
+  // clearly marked, with the exact intro
+  expect(
+    within(section).getByRole("heading", { name: /time-of-use plans/i }),
+  ).toHaveTextContent(/unranked/i);
+  expect(
+    within(section).getByText(
+      "These plans charge different rates at different times of day. The price shown is Power to Choose's flat reference rate, not what you would actually pay — it depends on when you use electricity.",
+    ),
+  ).toBeInTheDocument();
+  expect(within(section).getAllByText(/unranked · time-of-use/i)).toHaveLength(
+    3,
+  );
+  // and no ordinary card carries that mark
+  expect(
+    within(screen.getByRole("region", { name: "Plans" })).getAllByText(
+      /unranked · time-of-use/i,
+    ),
+  ).toHaveLength(3);
+});
+
+test("the section is ordered by reference rate, cheapest first, follows the usage, and ignores the sort choice", async () => {
+  renderTou();
+  await screen.findByText("Ranked A");
+  const usage = screen.getByLabelText(/monthly usage in kWh/i);
+
+  expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]); // 80, 100, 150 at 1,000 kWh
+
+  fireEvent.change(usage, { target: { value: "500" } }); // 50, 75, 150
+  expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
+
+  // Lowest bill re-sorts the ranked list only; the section is always cheapest first
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
+});
+
+test("the summary counts time-of-use plans separately from the ranked plans", async () => {
+  renderTou();
+  await screen.findByText("Ranked A");
+  expect(
+    screen.getByText(
+      "2 plans · 2 are 7–12 months · 3 time-of-use plans shown separately",
+    ),
+  ).toBeInTheDocument();
+});
+
+test("the TIME-OF-USE PLANS filter shows its count and note, and switches to only that section", async () => {
+  renderTou();
+  await screen.findByText("Ranked A");
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+
+  const box = within(sidebar).getByRole("checkbox", {
+    name: /only time-of-use plans/i,
+  });
+  expect(box.closest("label")).toHaveTextContent("Only time-of-use plans (3)");
+  expect(
+    within(sidebar).getByText(
+      "Rates vary by time of day, so these aren't scored the same way. The price shown is Power to Choose's flat reference rate, not what you would actually pay.",
+    ),
+  ).toBeInTheDocument();
+  expect(box).not.toBeChecked();
+
+  fireEvent.click(box);
+  // only the section: no ranked cards, no pagination
+  expect(
+    screen.queryByRole("navigation", { name: "Plan pagination" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText("Ranked A")).not.toBeInTheDocument();
+  expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]);
+  expect(screen.getByText("3 time-of-use plans")).toBeInTheDocument();
+
+  // and back
+  fireEvent.click(box);
+  expect(screen.getByText("Ranked A")).toBeInTheDocument();
+  expect(
+    screen.getByRole("navigation", { name: "Plan pagination" }),
+  ).toBeInTheDocument();
+});
+
+test("the other filters apply to the time-of-use section too, and its count follows them", async () => {
+  renderTou();
+  await screen.findByText("Ranked A");
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+
+  pickProvider("night", "Night Co"); // Night Owl, Day Saver
+  expect(sectionNames()).toEqual(["Night Owl", "Day Saver"]);
+  expect(
+    within(sidebar)
+      .getByRole("checkbox", { name: /only time-of-use plans/i })
+      .closest("label"),
+  ).toHaveTextContent("Only time-of-use plans (2)");
+  // that provider has no ranked plans, so the ranked list is empty but the section is not
+  expect(
+    screen.getByText(/no ranked plans match these filters/i),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Showing 0 of 2 plans · 2 time-of-use plans shown separately",
+    ),
+  ).toBeInTheDocument();
+});
+
+test("with no time-of-use plans in the area the filter is greyed out and says so, and there is no section", async () => {
+  renderTou({ ...touFile, timeOfUsePlans: [] });
+  await screen.findByText("Ranked A");
+  const sidebar = screen.getByRole("complementary", { name: "Filters" });
+
+  const box = within(sidebar).getByRole("checkbox", {
+    name: /only time-of-use plans/i,
+  });
+  expect(box).toBeDisabled();
+  expect(box.closest("label")).toHaveTextContent("No plans available");
+  expect(box.closest("label")).toHaveClass("text-brand-navy/40");
+  expect(
+    screen.queryByRole("region", { name: /time-of-use plans/i }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("2 plans · 2 are 7–12 months")).toBeInTheDocument();
+});
+
+test("data written before the split (time-of-use plans inside plans) is still shown separately", async () => {
+  renderTou({
+    ...file,
+    planCount: 3,
+    plans: [rankedA, touNight, rankedB],
+  });
+  await screen.findByText("Ranked A");
+  expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
+  expect(sectionNames()).toEqual(["Night Owl"]);
+  expect(
+    screen.getByText(
+      "2 plans · 2 are 7–12 months · 1 time-of-use plan shown separately",
+    ),
+  ).toBeInTheDocument();
+});
+
+test("a ZIP whose only plans are time-of-use still shows them", async () => {
+  renderTou({ ...touFile, planCount: 0, plans: [] });
+  expect(await screen.findByText("Night Owl")).toBeInTheDocument();
+  expect(
+    screen.getByText(/no ranked plans match these filters/i),
+  ).toBeInTheDocument();
+});
+
+test("phone: the drawer has the time-of-use filter; Apply switches the page, and it counts on the Filters button", async () => {
+  stubPhone();
+  renderTou();
+  await screen.findByText("Ranked A");
+
+  fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+  const drawer = screen.getByRole("dialog", { name: "Filters" });
+  fireEvent.click(
+    within(drawer).getByRole("checkbox", { name: /only time-of-use plans/i }),
+  );
+  expect(within(drawer).getByText("3 plans match")).toBeInTheDocument();
+  expect(screen.getByText("Ranked A")).toBeInTheDocument(); // not applied yet
+
+  fireEvent.click(within(drawer).getByRole("button", { name: "Apply" }));
+  expect(screen.queryByText("Ranked A")).not.toBeInTheDocument();
+  expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]);
+  expect(
+    screen.getByRole("button", { name: "Filters (1)" }),
+  ).toBeInTheDocument();
 });

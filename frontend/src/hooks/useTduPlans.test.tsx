@@ -88,3 +88,37 @@ describe("useTduPlans state transitions", () => {
     expect(result.current.error).toMatch(/shape/i);
   });
 });
+
+describe("useTduPlans with time-of-use plans", () => {
+  const touPlan = { ...samplePlan, id: 2, isTimeOfUse: true };
+
+  it("a file whose only plans are time-of-use is data, not 'empty'", async () => {
+    mockFetch(() => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...file([]), timeOfUsePlans: [touPlan] }),
+    }));
+    const { result } = renderHook(() => useTduPlans("oncor"));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+  });
+
+  it("a file with no plans of either kind is still 'empty'", async () => {
+    mockFetch(() => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...file([]), timeOfUsePlans: [] }),
+    }));
+    const { result } = renderHook(() => useTduPlans("oncor"));
+    await waitFor(() => expect(result.current.status).toBe("empty"));
+  });
+
+  it("refuses a file whose timeOfUsePlans is not a list", async () => {
+    mockFetch(() => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...file([samplePlan]), timeOfUsePlans: "nope" }),
+    }));
+    const { result } = renderHook(() => useTduPlans("oncor"));
+    await waitFor(() => expect(result.current.status).toBe("error"));
+  });
+});

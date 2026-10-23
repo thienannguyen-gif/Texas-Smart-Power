@@ -125,3 +125,20 @@ describe("PlanCard price-curve warning", () => {
     expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
   });
 });
+
+describe("PlanCard for an unranked time-of-use plan", () => {
+  it("is marked unranked and calls its price a reference rate", () => {
+    render(<PlanCard plan={plan({ isTimeOfUse: true })} unranked />);
+    expect(screen.getByText(/unranked · time-of-use/i)).toBeInTheDocument();
+    expect(screen.getByText("Reference rate")).toBeInTheDocument();
+    expect(screen.getByText("at reference rate")).toBeInTheDocument();
+    expect(screen.queryByText("Price per kWh")).not.toBeInTheDocument();
+  });
+
+  it("an ordinary card has none of that", () => {
+    render(<PlanCard plan={plan()} />);
+    expect(screen.queryByText(/unranked/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Price per kWh")).toBeInTheDocument();
+    expect(screen.getByText("per month")).toBeInTheDocument();
+  });
+});

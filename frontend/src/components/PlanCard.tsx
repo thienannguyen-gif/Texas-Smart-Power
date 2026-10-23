@@ -29,10 +29,13 @@ export function PlanCard({
   plan,
   onMoreDetails,
   usageKwh = DEFAULT_USAGE_KWH,
+  unranked = false,
 }: {
   plan: Plan;
   onMoreDetails?: () => void;
   usageKwh?: number;
+  /** A time-of-use plan in its own section: marked as unranked, and its price is a reference rate. */
+  unranked?: boolean;
 }) {
   return (
     <article className="rounded-2xl border-2 border-brand-navy bg-white p-4 sm:p-5">
@@ -54,6 +57,11 @@ export function PlanCard({
               </span>
             )}
             <RatingPlaceholder />
+            {unranked && (
+              <span className="inline-flex items-center rounded-full border border-brand-navy/30 bg-brand-lime-100 px-2 py-0.5 text-xs font-bold text-brand-navy">
+                Unranked · time-of-use
+              </span>
+            )}
             <PriceCurveBadge plan={plan} />
           </div>
         </div>
@@ -73,14 +81,16 @@ export function PlanCard({
           <dt className="text-sm font-semibold text-brand-navy/80">
             Est. monthly bill
           </dt>
-          <p className="text-xs text-brand-navy/50">per month</p>
+          <p className="text-xs text-brand-navy/50">
+            {unranked ? "at reference rate" : "per month"}
+          </p>
           <dd className="mt-1 text-2xl font-extrabold">
             {formatAmount(estimatedMonthlyBill(plan, usageKwh))}
           </dd>
         </div>
         <div className="rounded-xl bg-brand-lime-100 px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
           <dt className="text-sm font-semibold text-brand-navy/80">
-            Price per kWh
+            {unranked ? "Reference rate" : "Price per kWh"}
           </dt>
           <p className="text-xs text-brand-navy/50">
             at {formatKwh(usageKwh)} kWh

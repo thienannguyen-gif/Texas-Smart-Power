@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  activeFilterCount,
+  countTimeOfUse,
   EMPTY_FILTERS,
   filterPlans,
   isFiltering,
+  plansInScope,
   renewablePct,
   selectProvider,
+  splitForView,
   summarizePlans,
   type PlanFilters,
 } from "./filters";
@@ -142,5 +146,68 @@ describe("summarizePlans", () => {
 
   it("is all zeros for no plans", () => {
     expect(summarizePlans([])).toEqual({ renewable100: 0, months7to12: 0 });
+  });
+});
+
+describe("time-of-use lists", () => {
+  const ranked = [
+    make({ id: 1, companyName: "Alpha", termMonths: 12 }),
+    make({ id: 2, companyName: "Beta", termMonths: 24 }),
+  ];
+  const tou = [
+    make({ id: 10, companyName: "Alpha", termMonths: 12, isTimeOfUse: true }),
+    make({ id: 11, companyName: "Beta", termMonths: 3, isTimeOfUse: true }),
+  ];
+  const ids = (list: Plan[]) => list.map((p) => p.id);
+
+  it("splitForView applies the ordinary filters to both lists", () => {
+    const view = splitForView(ranked, tou, {
+      ...EMPTY_FILTERS,
+      providers: ["Alpha"],
+    });
+    expect(ids(view.ranked)).toEqual([1]);
+    expect(ids(view.timeOfUse)).toEqual([10]);
+  });
+
+  it("splitForView empties the ranked list, and only it, for 'only time-of-use'", () => {
+    const view = splitForView(ranked, tou, {
+      ...EMPTY_FILTERS,
+      onlyTimeOfUse: true,
+    });
+    expect(view.ranked).toEqual([]);
+    expect(ids(view.timeOfUse)).toEqual([10, 11]);
+  });
+
+  it("filterPlans itself ignores the time-of-use switch", () => {
+    expect(
+      filterPlans(ranked, { ...EMPTY_FILTERS, onlyTimeOfUse: true }),
+    ).toHaveLength(2);
+  });
+
+  it("the option counts are taken over what the lists could show", () => {
+    expect(ids(plansInScope(ranked, tou, EMPTY_FILTERS))).toEqual([
+      1, 2, 10, 11,
+    ]);
+    expect(
+      ids(plansInScope(ranked, tou, { ...EMPTY_FILTERS, onlyTimeOfUse: true })),
+    ).toEqual([10, 11]);
+  });
+
+  it("countTimeOfUse counts time-of-use plans passing the other filters", () => {
+    expect(countTimeOfUse(tou, EMPTY_FILTERS)).toBe(2);
+    expect(
+      countTimeOfUse(tou, { ...EMPTY_FILTERS, contractBuckets: ["m1_6"] }),
+    ).toBe(1);
+    // the switch itself does not change the count
+    expect(countTimeOfUse(tou, { ...EMPTY_FILTERS, onlyTimeOfUse: true })).toBe(
+      2,
+    );
+  });
+
+  it("'only time-of-use' counts as an active filter", () => {
+    const on = { ...EMPTY_FILTERS, onlyTimeOfUse: true };
+    expect(activeFilterCount(on)).toBe(1);
+    expect(isFiltering(on)).toBe(true);
+    expect(activeFilterCount(EMPTY_FILTERS)).toBe(0);
   });
 });

@@ -2,12 +2,15 @@ import type { Plan } from "../types/plan";
 import {
   countForBucket,
   countForProvider,
+  countTimeOfUse,
+  plansInScope,
   EMPTY_FILTERS,
   type ContractBucket,
   type PlanFilters,
   selectProvider,
 } from "../lib/filters";
 import type { SortMode } from "../lib/sort";
+import { TOU_FILTER_NOTE } from "../lib/timeOfUse";
 import { ProviderPicker } from "./ProviderPicker";
 
 // User-preference filters are applied after the ingestion pipeline ranks plans.
@@ -129,24 +132,44 @@ function SortSection({
 // phone drawer each wrap this in their own container.
 export function FilterPanel({
   plans,
+  timeOfUsePlans,
   providers,
   value,
   onChange,
   sort,
   onSortChange,
 }: {
-  /** Every plan in the area, before any filter (used for the option counts). */
+  /** Every ranked plan in the area, before any filter (used for the option counts). */
   plans: Plan[];
+  /** Every time-of-use plan in the area (they are not ranked). */
+  timeOfUsePlans: Plan[];
   providers: string[];
   value: PlanFilters;
   onChange: (next: PlanFilters) => void;
   sort: SortMode;
   onSortChange: (next: SortMode) => void;
 }) {
-  const hasPlans = plans.length > 0;
+  const allPlans = [...plans, ...timeOfUsePlans];
+  const hasPlans = allPlans.length > 0;
+  // counts are taken over the plans the lists could show right now
+  const scope = plansInScope(plans, timeOfUsePlans, value);
   return (
     <div className="space-y-6">
       <SortSection value={sort} onChange={onSortChange} />
+
+      <div className="space-y-2">
+        <GroupHeading>TIME-OF-USE PLANS</GroupHeading>
+        <OptionRow
+          label="Only time-of-use plans"
+          count={hasPlans ? countTimeOfUse(timeOfUsePlans, value) : null}
+          noneInArea={hasPlans && timeOfUsePlans.length === 0}
+          checked={value.onlyTimeOfUse}
+          onToggle={() =>
+            onChange({ ...value, onlyTimeOfUse: !value.onlyTimeOfUse })
+          }
+        />
+        <p className="text-xs text-brand-navy/60">{TOU_FILTER_NOTE}</p>
+      </div>
 
       <div className="space-y-2">
         <GroupHeading>CONTRACT LENGTH</GroupHeading>
@@ -154,9 +177,9 @@ export function FilterPanel({
           <OptionRow
             key={key}
             label={label}
-            count={hasPlans ? countForBucket(plans, value, key) : null}
+            count={hasPlans ? countForBucket(scope, value, key) : null}
             noneInArea={
-              hasPlans && countForBucket(plans, EMPTY_FILTERS, key) === 0
+              hasPlans && countForBucket(allPlans, EMPTY_FILTERS, key) === 0
             }
             checked={value.contractBuckets.includes(key)}
             onToggle={() =>
@@ -193,7 +216,7 @@ export function FilterPanel({
           <GroupHeading>PROVIDER</GroupHeading>
           <ProviderPicker
             providers={providers}
-            countFor={(name) => countForProvider(plans, value, name)}
+            countFor={(name) => countForProvider(scope, value, name)}
             selected={value.providers}
             onSelect={(name) => onChange(selectProvider(value, name))}
             onUnselect={(name) =>

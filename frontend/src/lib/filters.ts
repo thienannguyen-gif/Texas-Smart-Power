@@ -12,12 +12,19 @@ export interface PlanFilters {
   providers: string[];
   /** From the renewable slider (0 = off). */
   minRenewablePct: number;
+  /**
+   * Show only the time-of-use section. Not a per-plan test (see filterPlans):
+   * time-of-use plans live in their own unranked list, and this switches the
+   * ranked list off.
+   */
+  onlyTimeOfUse: boolean;
 }
 
 export const EMPTY_FILTERS: PlanFilters = {
   contractBuckets: [],
   providers: [],
   minRenewablePct: 0,
+  onlyTimeOfUse: false,
 };
 
 /** Add `name` to the selected providers (no duplicates). */
@@ -81,6 +88,39 @@ export function filterPlans(plans: Plan[], filters: PlanFilters): Plan[] {
 }
 
 /**
+ * The two lists the page shows, after the filters. Every filter except
+ * "only time-of-use" applies to both lists; "only time-of-use" empties the
+ * ranked one.
+ */
+export function splitForView(
+  ranked: Plan[],
+  timeOfUse: Plan[],
+  filters: PlanFilters,
+): { ranked: Plan[]; timeOfUse: Plan[] } {
+  return {
+    ranked: filters.onlyTimeOfUse ? [] : filterPlans(ranked, filters),
+    timeOfUse: filterPlans(timeOfUse, filters),
+  };
+}
+
+/** The plans the option counts are taken over: whatever the lists could show. */
+export function plansInScope(
+  ranked: Plan[],
+  timeOfUse: Plan[],
+  filters: PlanFilters,
+): Plan[] {
+  return filters.onlyTimeOfUse ? timeOfUse : [...ranked, ...timeOfUse];
+}
+
+/** Time-of-use plans that pass the other active filters. */
+export function countTimeOfUse(
+  timeOfUse: Plan[],
+  filters: PlanFilters,
+): number {
+  return filterPlans(timeOfUse, filters).length;
+}
+
+/**
  * How many plans a contract-length option would show. Counts honour every
  * other active filter; the contract-length group itself is replaced by just
  * this option (selected options in the group are OR'd, so the other ticks in
@@ -122,7 +162,8 @@ export function activeFilterCount(filters: PlanFilters): number {
   return (
     filters.contractBuckets.length +
     filters.providers.length +
-    (filters.minRenewablePct > 0 ? 1 : 0)
+    (filters.minRenewablePct > 0 ? 1 : 0) +
+    (filters.onlyTimeOfUse ? 1 : 0)
   );
 }
 
@@ -130,6 +171,7 @@ export function isFiltering(filters: PlanFilters): boolean {
   return (
     filters.contractBuckets.length > 0 ||
     filters.providers.length > 0 ||
-    filters.minRenewablePct > 0
+    filters.minRenewablePct > 0 ||
+    filters.onlyTimeOfUse
   );
 }

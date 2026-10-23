@@ -145,6 +145,13 @@ export function PlanDetailsModal({
           </p>
         )}
 
+        {plan.newCustomer === true && (
+          <p className="mt-3 rounded-xl bg-brand-lime-100 px-3 py-2 text-sm text-brand-navy/90">
+            <strong>Eligibility:</strong> New customers only — if you&apos;re
+            already with {plan.companyName}, you may not qualify for this rate.
+          </p>
+        )}
+
         <PriceCurveBadge plan={plan} explain className="mt-3" />
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

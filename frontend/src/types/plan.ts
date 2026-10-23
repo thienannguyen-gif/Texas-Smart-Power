@@ -119,6 +119,13 @@ export interface Plan {
   /** "Your Rights as a Customer" document (upstream `yrac_url`). Optional
    *  because data stored before this field was ingested does not have it. */
   yracUrl?: string | null;
+  /**
+   * Upstream `new_customer`. true: the plan's promo rate is for NEW customers
+   * only (an existing customer of the provider cannot get it when their plan
+   * expires). false: not restricted that way. null: unknown. Optional because
+   * data stored before this field was ingested does not have it.
+   */
+  newCustomer?: boolean | null;
   enrollPhone: string | null;
 }
 

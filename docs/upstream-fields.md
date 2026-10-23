@@ -61,10 +61,10 @@ Limits of this observation:
 `price_kwh500`, `price_kwh1000`, `price_kwh2000`, `pricing_details`,
 `timeofuse`, `renewable_energy_description`, `prepaid`, `company_logo`,
 `website`, `go_to_plan`, `fact_sheet`, `terms_of_service`, `yrac_url`,
-`enroll_phone`.
+`new_customer`, `enroll_phone`.
 
 Observed but **not read**: `special_terms`, `promotions`, `prepaid_url`,
-`new_customer`, `minimum_usage`, and the 13 fields above.
+`minimum_usage`, and the 13 fields above.
 
 ## Confirmed by this observation
 
@@ -74,5 +74,12 @@ Observed but **not read**: `special_terms`, `promotions`, `prepaid_url`,
   plans (127 aep-central, 123 aep-north, 132 centerpoint, 79 lubbock, 132
   oncor, 261 tnmp). Not every value is a direct PDF: the lubbock sample is a
   viewer page (`eflviewer.gexaenergy.com/eflviewer.aspx?...prodcode=YRAC`).
-- **Customer eligibility:** `new_customer` exists (index 39). Its value type
-  and population are not yet known.
+- **Customer eligibility:** `new_customer` exists (index 39). Meaning,
+  confirmed by the course instructor: `true` = the plan's promo rate is
+  available to NEW customers only; an existing customer of that provider cannot
+  get it when their current plan expires. In the instructor's reference app's
+  data (a different pipeline, so not a raw capture) it is a plain boolean:
+  119 of 139 Oncor plans true, 20 false. The raw upstream type has not been
+  observed here, so the normalizer accepts a boolean, "true"/"false" or 1/0 and
+  treats anything else as unknown (null). Our own stored plans carry it after
+  the first ingestion run that follows this change.

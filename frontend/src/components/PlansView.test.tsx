@@ -1240,3 +1240,23 @@ test("phone: the drawer has the time-of-use filter; Apply switches the page, and
     screen.getByRole("button", { name: "Filters (1)" }),
   ).toBeInTheDocument();
 });
+
+test("the existing-customers badge marks only the plans with new_customer false, not the rest", async () => {
+  mockPlans({
+    ...file,
+    planCount: 3,
+    plans: [
+      mk({ id: 1, planName: "Promo A", newCustomer: true }),
+      mk({ id: 2, planName: "Open B", newCustomer: false }),
+      mk({ id: 3, planName: "Promo C", newCustomer: true }),
+    ],
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  await screen.findByText("Promo A");
+
+  const withBadge = screen
+    .getAllByRole("article")
+    .filter((card) => within(card).queryByText("Open to existing customers"))
+    .map((card) => within(card).getByRole("heading").textContent);
+  expect(withBadge).toEqual(["Open B"]);
+});

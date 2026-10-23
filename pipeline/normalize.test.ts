@@ -39,6 +39,7 @@ describe("normalizePlan", () => {
       factSheetUrl: "https://example.com/efl.pdf",
       termsUrl: null,
       yracUrl: null,
+      newCustomer: null,
       enrollPhone: null,
     });
   });
@@ -51,6 +52,27 @@ describe("normalizePlan", () => {
     ).toBe("https://example.com/yrac.pdf");
     expect(normalizePlan(base)?.yracUrl).toBeNull();
     expect(normalizePlan({ ...base, yrac_url: "  " })?.yracUrl).toBeNull();
+  });
+
+  it("types new_customer as true / false / null, whatever form the upstream sends", () => {
+    const base = { plan_id: 1, plan_name: "P", company_name: "Co" };
+    const flag = (value: unknown) =>
+      normalizePlan({ ...base, new_customer: value as boolean })?.newCustomer;
+
+    expect(flag(true)).toBe(true);
+    expect(flag(false)).toBe(false);
+    // text and numbers some APIs use for booleans
+    expect(flag("true")).toBe(true);
+    expect(flag(" False ")).toBe(false);
+    expect(flag(1)).toBe(true);
+    expect(flag(0)).toBe(false);
+    // unknown stays unknown: no guess either way
+    expect(flag(undefined)).toBeNull();
+    expect(flag(null)).toBeNull();
+    expect(flag("")).toBeNull();
+    expect(flag("maybe")).toBeNull();
+    expect(flag(2)).toBeNull();
+    expect(normalizePlan(base)?.newCustomer).toBeNull();
   });
 
   it("represents absent optional fields as null / false", () => {

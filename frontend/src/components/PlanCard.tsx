@@ -62,6 +62,13 @@ export function PlanCard({
                 Unranked · time-of-use
               </span>
             )}
+            {plan.newCustomer === false && (
+              // Only the rarer case gets a badge: most plans are new-customer
+              // only, so marking those would mark nearly every card.
+              <span className="inline-flex items-center rounded-full border border-brand-green bg-brand-green/15 px-2 py-0.5 text-xs font-bold text-brand-green-800">
+                Open to existing customers
+              </span>
+            )}
             <PriceCurveBadge plan={plan} />
           </div>
         </div>

@@ -142,3 +142,24 @@ describe("PlanCard for an unranked time-of-use plan", () => {
     expect(screen.getByText("per month")).toBeInTheDocument();
   });
 });
+
+describe("PlanCard customer-eligibility badge", () => {
+  it("shows 'Open to existing customers' only when new_customer is false", () => {
+    render(<PlanCard plan={plan({ newCustomer: false })} />);
+    expect(screen.getByText("Open to existing customers")).toBeInTheDocument();
+  });
+
+  it("shows nothing for new-customer-only plans (nearly every plan), unknown, or old data", () => {
+    const { rerender } = render(
+      <PlanCard plan={plan({ newCustomer: true })} />,
+    );
+    expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/new customers/i)).not.toBeInTheDocument();
+
+    rerender(<PlanCard plan={plan({ newCustomer: null })} />);
+    expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
+
+    rerender(<PlanCard plan={plan()} />); // stored before the field existed
+    expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
+  });
+});

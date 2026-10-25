@@ -252,19 +252,17 @@ describe("PlanCard customer-eligibility badge", () => {
     expect(screen.getByText("Open to existing customers")).toBeInTheDocument();
   });
 
-  it("shows 'New customers only' when new_customer is true, and neither chip for unknown or old data", () => {
+  it("shows no chip for new-customer-only plans (nearly every plan), unknown, or old data", () => {
     const { rerender } = render(
       <PlanCard plan={plan({ newCustomer: true })} />,
     );
-    expect(screen.getByText("New customers only")).toBeInTheDocument();
+    expect(screen.queryByText(/new customers/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
 
     rerender(<PlanCard plan={plan({ newCustomer: null })} />);
-    expect(screen.queryByText(/new customers only/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
 
     rerender(<PlanCard plan={plan()} />); // stored before the field existed
-    expect(screen.queryByText(/new customers only/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
   });
 });

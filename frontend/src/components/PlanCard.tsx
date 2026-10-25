@@ -82,9 +82,8 @@ export function PlanCard({
             {unranked && (
               <span className={CHIP_OUTLINE}>Unranked · time-of-use</span>
             )}
-            {plan.newCustomer === true && (
-              <span className={CHIP_OUTLINE}>New customers only</span>
-            )}
+            {/* Only the rarer case gets a chip: most plans are new-customer only,
+                so marking those would mark nearly every row. */}
             {plan.newCustomer === false && (
               <span className={CHIP_OUTLINE}>Open to existing customers</span>
             )}

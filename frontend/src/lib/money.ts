@@ -25,12 +25,6 @@ export function formatRate(dollarsPerKwh: number | null): string {
   return `${(dollarsPerKwh * 100).toFixed(1)}¢/kWh`;
 }
 
-/** Dollars per kWh -> "11.4¢", for a column whose header already says "per kWh". */
-export function formatRateShort(dollarsPerKwh: number | null): string {
-  if (dollarsPerKwh === null || Number.isNaN(dollarsPerKwh)) return EM_DASH;
-  return `${(dollarsPerKwh * 100).toFixed(1)}¢`;
-}
-
 /** Dollar total -> "$1,668" (rounded to whole dollars). */
 export function formatAmount(dollars: number | null): string {
   if (dollars === null || Number.isNaN(dollars)) return EM_DASH;

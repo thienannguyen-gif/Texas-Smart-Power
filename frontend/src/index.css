@@ -1,130 +1,69 @@
 @import "tailwindcss";
 
-/* One light theme, white page. Every colour is a custom property on :root;
-   components use the Tailwind names mapped in @theme inline (text-ink,
-   bg-surface, bg-brand, bg-bar ...), never a literal colour. Page and cards are
-   both white, so structure comes from 1px lines. color-scheme: light keeps
-   inputs, selects and scrollbars light for people whose OS is in dark mode. */
-:root {
-  color-scheme: light;
-
-  --paper: #ffffff; /* page background */
-  --surface: #ffffff; /* cards, search band, modal */
-  --surface-alt: #f5f8f6; /* hover rows, inset blocks */
-  --field: #eeeeee; /* the search band's input fields */
-
-  --ink: #0d2b25; /* headings, plan names, figures */
-  --ink-soft: #466b61; /* secondary text, rate and term */
-  --ink-faint: #7d9a90; /* captions, counts, low renewable % */
-
-  --line: #d9dedb; /* input borders, card borders */
-  --line-soft: #e7ebe8; /* row dividers, hairlines */
-
-  --brand: #176b57; /* buttons, active filters, best-match stripe */
-  --brand-ink: #ffffff; /* text on --brand */
-  --brand-soft: #e1f1ea; /* chip background */
-
-  --warn: #9c5a24; /* unstable-price stripe and chip text */
-  --warn-soft: #f8ece1; /* that chip's background */
-
-  --sage: #2fa084; /* 100% renewable figures only */
-
-  /* Header band: the one filled area on the page. */
-  --bar: #11443a;
-  --bar-fg: #eef6f2;
-  --bar-fg-soft: #9cc4b7;
-  --bar-line: #2d6b5b;
-  --bar-accent: #6fcf97;
-
-  /* Not in the supplied palette: error boxes and the modal's dimmed backdrop. */
-  --danger: #a12d2d;
-  --danger-soft: #fbeaea;
-  --danger-line: #e0a3a3;
-  --scrim: rgb(0 0 0 / 0.4);
-
-  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --font-body:
-    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-}
-
-/* Tailwind names for the tokens. "inline" makes the utilities read the live
-   variable. */
-@theme inline {
-  --breakpoint-row: 47.5rem; /* 760px: plan rows become a table */
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
-  --font-mono: var(--font-mono);
-
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-ink-faint: var(--ink-faint);
-  --color-paper: var(--paper);
-  --color-surface: var(--surface);
-  --color-surface-alt: var(--surface-alt);
-  --color-field: var(--field);
-  --color-line: var(--line);
-  --color-line-soft: var(--line-soft);
-  --color-brand: var(--brand);
-  --color-brand-ink: var(--brand-ink);
-  --color-brand-soft: var(--brand-soft);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-sage: var(--sage);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
-  --color-danger-line: var(--danger-line);
-  --color-scrim: var(--scrim);
-  --color-bar: var(--bar);
-  --color-bar-fg: var(--bar-fg);
-  --color-bar-fg-soft: var(--bar-fg-soft);
-  --color-bar-line: var(--bar-line);
-  --color-bar-accent: var(--bar-accent);
+/* Brand palette from the approved mockup (Texas Power .pdf). */
+@theme {
+  --color-brand-navy: #1f2b3a;
+  --color-brand-navy-600: #2b3a4d;
+  --color-brand-lime: #dcefaa;
+  --color-brand-lime-100: #eef7d2;
+  --color-brand-lime-200: #e4f3bf;
+  --color-brand-green: #5c9e30;
+  --color-brand-green-700: #3f7d2e;
+  --color-brand-green-800: #356b27;
+  --color-brand-gold: #f5b301;
 }
 
 body {
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-body);
+  background-color: var(--color-brand-lime);
+  color: var(--color-brand-navy);
   overflow-x: clip;
 }
 
-/* Digits are all one width, so columns of figures line up. */
-.font-mono,
-.label-mono {
-  font-variant-numeric: tabular-nums;
+/* The search band at the top of the plans page has its own colours and fonts,
+   so nothing here touches the rest of the page. */
+:root {
+  --band-ink: #0d2b25;
+  --band-ink-soft: #466b61;
+  --band-ink-faint: #7d9a90;
+  --band-line: #d9dedb;
+  --band-line-soft: #e7ebe8;
+  --band-surface: #ffffff;
+  --band-field: #eeeeee;
+  --band-brand: #176b57;
+  --band-brand-ink: #ffffff;
+  --band-soft: #e1f1ea;
+  --font-band-sans:
+    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-band-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* Small monospace section / column label: "ZIP CODE", "SORT BY", "TERM". */
-@utility label-mono {
-  font-family: var(--font-mono);
+@theme inline {
+  --color-band-ink: var(--band-ink);
+  --color-band-ink-soft: var(--band-ink-soft);
+  --color-band-ink-faint: var(--band-ink-faint);
+  --color-band-line: var(--band-line);
+  --color-band-line-soft: var(--band-line-soft);
+  --color-band-surface: var(--band-surface);
+  --color-band-field: var(--band-field);
+  --color-band-brand: var(--band-brand);
+  --color-band-brand-ink: var(--band-brand-ink);
+  --color-band-soft: var(--band-soft);
+  --font-band-sans: var(--font-band-sans);
+  --font-band-mono: var(--font-band-mono);
+}
+
+/* Small monospace caption in the band: "ZIP CODE", "YOUR MONTHLY USAGE". */
+@utility band-caption {
+  font-family: var(--font-band-mono);
   font-size: 0.6875rem;
   line-height: 1rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  color: var(--band-ink-faint);
 }
-
-/* A plan row's figure. On a phone its label is printed above it from the
-   data-label attribute; from 760px the column header carries the labels. The
-   empty alt text after the slash keeps screen readers from reading it twice
-   (the label is also in the markup, visually hidden). */
-.row-cell::before {
-  content: attr(data-label);
-  content: attr(data-label) / "";
-  display: block;
-  margin-bottom: 0.25rem;
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  line-height: 1rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-@media (min-width: 47.5rem) {
-  .row-cell::before {
-    display: none;
-  }
+.font-band-mono {
+  font-variant-numeric: tabular-nums;
 }
 
 /* The usage slider: a thin track filled up to the thumb (--pct is set inline). */
@@ -140,11 +79,11 @@ body {
 .usage-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 9999px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--band-line);
   background: linear-gradient(
     to right,
-    var(--brand) var(--pct, 0%),
-    var(--line) var(--pct, 0%)
+    var(--band-brand) var(--pct, 0%),
+    var(--band-line) var(--pct, 0%)
   );
 }
 .usage-range::-webkit-slider-thumb {
@@ -154,28 +93,28 @@ body {
   height: 18px;
   margin-top: -7px;
   border-radius: 9999px;
-  background: var(--brand);
-  border: 3px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--ink-faint);
+  background: var(--band-brand);
+  border: 3px solid var(--band-surface);
+  box-shadow: 0 0 0 1px var(--band-ink-faint);
 }
 .usage-range::-moz-range-track {
   height: 6px;
   border-radius: 9999px;
-  border: 1px solid var(--line);
-  background: var(--line);
+  border: 1px solid var(--band-line);
+  background: var(--band-line);
 }
 .usage-range::-moz-range-progress {
   height: 6px;
   border-radius: 9999px;
-  background: var(--brand);
+  background: var(--band-brand);
 }
 .usage-range::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 9999px;
-  background: var(--brand);
-  border: 3px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--ink-faint);
+  background: var(--band-brand);
+  border: 3px solid var(--band-surface);
+  box-shadow: 0 0 0 1px var(--band-ink-faint);
 }
 /* Keyboard focus: a ring on the thumb only, so it never traces the track. */
 .usage-range:focus-visible {
@@ -183,13 +122,13 @@ body {
 }
 .usage-range:focus-visible::-webkit-slider-thumb {
   box-shadow:
-    0 0 0 3px var(--brand-soft),
-    0 0 0 4px var(--brand);
+    0 0 0 3px var(--band-soft),
+    0 0 0 4px var(--band-brand);
 }
 .usage-range:focus-visible::-moz-range-thumb {
   box-shadow:
-    0 0 0 3px var(--brand-soft),
-    0 0 0 4px var(--brand);
+    0 0 0 3px var(--band-soft),
+    0 0 0 4px var(--band-brand);
 }
 
 /* Phone filter drawer slides up from the bottom edge. */

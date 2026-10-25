@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { Plan } from "../types/plan";
 import {
   countForBucket,
@@ -17,26 +16,21 @@ import { ProviderPicker } from "./ProviderPicker";
 
 // User-preference filters are applied after the ingestion pipeline ranks plans.
 
-const SORT_OPTIONS: {
-  value: SortMode;
-  label: string;
-  description: string;
-  /** Shows the small "rec." tag beside the label. */
-  recommended?: boolean;
-}[] = [
-  {
-    value: "best",
-    label: "Best match",
-    recommended: true,
-    description:
-      "Our score: price, price stability, flexibility and renewable content.",
-  },
-  {
-    value: "lowestBill",
-    label: "Lowest bill",
-    description: "Cheapest estimated bill at your usage, nothing else.",
-  },
-];
+const SORT_OPTIONS: { value: SortMode; label: string; description: string }[] =
+  [
+    {
+      value: "best",
+      label: "Best match",
+      description:
+        "Sorted by our score: price, price stability, flexibility and renewable content.",
+    },
+    {
+      value: "lowestBill",
+      label: "Lowest bill",
+      description:
+        "Sorted by estimated monthly bill at your usage level. Cheapest first.",
+    },
+  ];
 
 const CONTRACT_BUCKETS: { key: ContractBucket; label: string }[] = [
   { key: "m1_6", label: "1–6 months" },
@@ -49,30 +43,17 @@ function toggle<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
-// A sidebar section: a small monospace label over a hairline.
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h3 className="label-mono border-b border-line-soft pb-3">{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-// One checkbox row with its match count on the right. An option with no
-// matches is greyed, never hidden; a ticked one stays clickable so the user can
-// always untick it. `count` is null until the plans have loaded.
+// One checkbox with its match count, e.g. "7–12 months (84)". An option
+// with no matches is greyed, never hidden; a ticked one stays clickable so the
+// user can always untick it. `count` is null until the plans have loaded.
 function OptionRow({
   label,
-  ariaLabel,
   count,
   noneInArea,
   checked,
   onToggle,
 }: {
   label: string;
-  /** Spoken name, when the visible label only makes sense under its heading. */
-  ariaLabel?: string;
   count: number | null;
   /** No plan in the whole area matches (before any filter). */
   noneInArea: boolean;
@@ -82,32 +63,36 @@ function OptionRow({
   const empty = count === 0;
   return (
     <label
-      className={`flex items-center gap-3 py-1 text-[15px] ${
-        empty ? "text-ink-faint" : "text-ink"
+      className={`flex items-center gap-2 py-1.5 text-sm md:py-0 ${
+        empty ? "text-brand-navy/40" : "text-brand-navy/80"
       }`}
     >
       <input
         type="checkbox"
-        aria-label={ariaLabel}
         disabled={empty && !checked}
         checked={checked}
         onChange={onToggle}
-        className="h-4 w-4 shrink-0 rounded-sm accent-brand"
+        className="h-5 w-5 rounded border-brand-navy/40 accent-brand-green md:h-4 md:w-4"
       />
-      <span className="flex-1">{label}</span>
-      {noneInArea ? (
-        <span className="text-xs">No plans available</span>
-      ) : (
-        count !== null && (
-          <span className="font-mono text-xs text-ink-faint">{count}</span>
-        )
-      )}
+      <span>
+        {label}
+        {count !== null && ` (${count})`}
+      </span>
+      {noneInArea && <span className="text-xs">No plans available</span>}
     </label>
   );
 }
 
-// Two clean modes as radio rows (native inputs, so the arrow keys work), each
-// with its own one-line description.
+function GroupHeading({ children }: { children: string }) {
+  return (
+    <h3 className="text-center text-sm font-bold tracking-wide text-brand-green-700">
+      {children}
+    </h3>
+  );
+}
+
+// Two clean modes, drawn like the other sections: radio rows (native inputs, so
+// the arrow keys work) and the chosen mode's description underneath.
 function SortSection({
   value,
   onChange,
@@ -115,47 +100,31 @@ function SortSection({
   value: SortMode;
   onChange: (next: SortMode) => void;
 }) {
+  const current =
+    SORT_OPTIONS.find((option) => option.value === value) ?? SORT_OPTIONS[0];
   return (
-    <fieldset>
+    <fieldset className="space-y-2">
       <legend className="sr-only">Sort plans</legend>
-      <Section title="SORT BY">
-        {SORT_OPTIONS.map((option) => {
-          const descriptionId = `sort-description-${option.value}`;
-          return (
-            <div key={option.value} className="space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <label className="flex items-center gap-3 py-1 text-[15px]">
-                  <input
-                    type="radio"
-                    name="sort-plans"
-                    value={option.value}
-                    checked={option.value === value}
-                    onChange={() => onChange(option.value)}
-                    aria-describedby={descriptionId}
-                    className="h-4 w-4 shrink-0 accent-brand"
-                  />
-                  {option.label}
-                </label>
-                {option.recommended && (
-                  <span
-                    aria-hidden="true"
-                    title="Recommended"
-                    className="font-mono text-xs text-ink-faint"
-                  >
-                    rec.
-                  </span>
-                )}
-              </div>
-              <p
-                id={descriptionId}
-                className="pl-7 text-sm leading-snug text-ink-soft"
-              >
-                {option.description}
-              </p>
-            </div>
-          );
-        })}
-      </Section>
+      <GroupHeading>SORT BY</GroupHeading>
+      {SORT_OPTIONS.map((option) => (
+        <label
+          key={option.value}
+          className="flex items-center gap-2 py-1.5 text-sm text-brand-navy/80 md:py-0"
+        >
+          <input
+            type="radio"
+            name="sort-plans"
+            value={option.value}
+            checked={option.value === value}
+            onChange={() => onChange(option.value)}
+            className="h-5 w-5 border-brand-navy/40 accent-brand-green md:h-4 md:w-4"
+          />
+          {option.label}
+        </label>
+      ))}
+      <p className="text-center text-xs text-brand-navy/60">
+        {current.description}
+      </p>
     </fieldset>
   );
 }
@@ -186,10 +155,25 @@ export function FilterPanel({
   // counts are taken over the plans the lists could show right now
   const scope = plansInScope(plans, timeOfUsePlans, value);
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <SortSection value={sort} onChange={onSortChange} />
 
-      <Section title="CONTRACT LENGTH">
+      <div className="space-y-2">
+        <GroupHeading>TIME-OF-USE PLANS</GroupHeading>
+        <OptionRow
+          label="Only time-of-use plans"
+          count={hasPlans ? countTimeOfUse(timeOfUsePlans, value) : null}
+          noneInArea={hasPlans && timeOfUsePlans.length === 0}
+          checked={value.onlyTimeOfUse}
+          onToggle={() =>
+            onChange({ ...value, onlyTimeOfUse: !value.onlyTimeOfUse })
+          }
+        />
+        <p className="text-xs text-brand-navy/60">{TOU_FILTER_NOTE}</p>
+      </div>
+
+      <div className="space-y-2">
+        <GroupHeading>CONTRACT LENGTH</GroupHeading>
         {CONTRACT_BUCKETS.map(({ key, label }) => (
           <OptionRow
             key={key}
@@ -207,9 +191,10 @@ export function FilterPanel({
             }
           />
         ))}
-      </Section>
+      </div>
 
-      <Section title="ENERGY">
+      <div className="space-y-2">
+        <GroupHeading>RENEWABLE ENERGY</GroupHeading>
         <OptionRow
           label="100% renewable only"
           count={hasPlans ? countRenewable100(scope, value) : null}
@@ -221,24 +206,11 @@ export function FilterPanel({
             onChange({ ...value, renewable100Only: !value.renewable100Only })
           }
         />
-      </Section>
-
-      <Section title="TIME OF USE">
-        <OptionRow
-          label="Only these plans"
-          ariaLabel="Only time-of-use plans"
-          count={hasPlans ? countTimeOfUse(timeOfUsePlans, value) : null}
-          noneInArea={hasPlans && timeOfUsePlans.length === 0}
-          checked={value.onlyTimeOfUse}
-          onToggle={() =>
-            onChange({ ...value, onlyTimeOfUse: !value.onlyTimeOfUse })
-          }
-        />
-        <p className="text-sm leading-snug text-ink-soft">{TOU_FILTER_NOTE}</p>
-      </Section>
+      </div>
 
       {providers.length > 0 && (
-        <Section title="PROVIDER">
+        <div className="space-y-2">
+          <GroupHeading>PROVIDER</GroupHeading>
           <ProviderPicker
             providers={providers}
             countFor={(name) => countForProvider(scope, value, name)}
@@ -251,7 +223,7 @@ export function FilterPanel({
               })
             }
           />
-        </Section>
+        </div>
       )}
     </div>
   );

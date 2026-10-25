@@ -34,7 +34,7 @@ describe("PlanCard", () => {
     expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 0.139 * 100, 1dp
     expect(screen.getByText("$139")).toBeInTheDocument(); // 0.139 * 1000 kWh
     expect(screen.getByText("12 mos")).toBeInTheDocument();
-    expect(screen.getByText("6% renewable")).toBeInTheDocument();
+    expect(screen.getByText("6%")).toBeInTheDocument();
   });
 
   it("shows an em dash for missing term / price / bill / renewable", () => {
@@ -200,5 +200,40 @@ describe("PlanCard provider logo", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("GE")).toBeInTheDocument();
     expect(screen.getByText("Gexa Energy")).toBeInTheDocument();
+  });
+});
+
+describe("PlanCard renewable cell", () => {
+  it("shows the number alone, with the word only in the % Renewable label", () => {
+    const { rerender } = render(<PlanCard plan={plan()} />);
+    expect(screen.getByText("% Renewable")).toBeInTheDocument();
+    expect(screen.getByText("6%")).toBeInTheDocument();
+    expect(screen.queryByText(/6% renewable/i)).not.toBeInTheDocument();
+
+    for (const [description, shown] of [
+      ["100% Renewable", "100%"],
+      ["15% Renewable", "15%"],
+      ["6% renewable", "6%"],
+    ]) {
+      rerender(<PlanCard plan={plan({ renewableDescription: description })} />);
+      expect(screen.getByText(shown)).toBeInTheDocument();
+      expect(screen.getByText(shown).textContent).toBe(shown);
+    }
+  });
+
+  it("is sage at 100% and muted below it, and a dash when unknown", () => {
+    const { rerender } = render(
+      <PlanCard plan={plan({ renewableDescription: "100% Renewable" })} />,
+    );
+    expect(screen.getByText("100%")).toHaveClass("text-sage");
+    rerender(
+      <PlanCard plan={plan({ renewableDescription: "15% Renewable" })} />,
+    );
+    expect(screen.getByText("15%")).toHaveClass("text-ink-faint");
+    expect(screen.getByText("15%")).not.toHaveClass("text-sage");
+    rerender(<PlanCard plan={plan({ renewableDescription: null })} />);
+    expect(screen.getByText("—", { selector: "dd" })).toHaveClass(
+      "text-ink-faint",
+    );
   });
 });

@@ -16,21 +16,27 @@ import { ProviderPicker } from "./ProviderPicker";
 
 // User-preference filters are applied after the ingestion pipeline ranks plans.
 
-const SORT_OPTIONS: { value: SortMode; label: string; description: string }[] =
-  [
-    {
-      value: "best",
-      label: "Best match",
-      description:
-        "Sorted by our score: price, price stability, flexibility and renewable content.",
-    },
-    {
-      value: "lowestBill",
-      label: "Lowest bill",
-      description:
-        "Sorted by estimated monthly bill at your usage level. Cheapest first.",
-    },
-  ];
+const SORT_OPTIONS: {
+  value: SortMode;
+  label: string;
+  /** Adds "(recommended)" after the label, inside the same <label>. */
+  recommended?: boolean;
+  description: string;
+}[] = [
+  {
+    value: "best",
+    label: "Best match",
+    recommended: true,
+    description:
+      "Sorted by our score: price, price stability, flexibility and renewable content.",
+  },
+  {
+    value: "lowestBill",
+    label: "Lowest bill",
+    description:
+      "Sorted by estimated monthly bill at your usage level. Cheapest first.",
+  },
+];
 
 const CONTRACT_BUCKETS: { key: ContractBucket; label: string }[] = [
   { key: "m1_6", label: "1–6 months" },
@@ -120,6 +126,12 @@ function SortSection({
             className="h-5 w-5 border-line accent-brand md:h-4 md:w-4"
           />
           {option.label}
+          {option.recommended && (
+            <>
+              {" "}
+              <span className="text-xs text-ink-faint">(recommended)</span>
+            </>
+          )}
         </label>
       ))}
       <p className="text-center text-xs text-ink-soft">{current.description}</p>

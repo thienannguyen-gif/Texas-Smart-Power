@@ -1,13 +1,21 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import { formatKwh } from "../lib/money";
 import {
   clampUsage,
   MAX_USAGE_KWH,
   MIN_USAGE_KWH,
+  snapToAnchor,
   snapToSlider,
+  USAGE_ANCHORS_KWH,
+  USAGE_PAGE_KWH,
   USAGE_STEP_KWH,
   usageBand,
 } from "../lib/usage";
+
+// Where an anchor sits along the track: the thumb's centre travels from half a
+// thumb (9px) in from each end, so the notches use the same offset.
+const notchLeft = (kwh: number) =>
+  `calc(9px + (100% - 18px) * ${(kwh - MIN_USAGE_KWH) / (MAX_USAGE_KWH - MIN_USAGE_KWH)})`;
 
 // "YOUR MONTHLY USAGE" with the band name on the right, a number box for an
 // exact value, and a slider spanning the full width with its two ends labelled.
@@ -25,6 +33,24 @@ export function UsageControl({
   // how far along the track the thumb is, so the track can be filled up to it
   const filled =
     ((position - MIN_USAGE_KWH) / (MAX_USAGE_KWH - MIN_USAGE_KWH)) * 100;
+
+  // Arrow keys use the slider's own 50 kWh step. PageUp / PageDown move 500,
+  // Home / End jump to the ends.
+  const onSliderKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    const target =
+      e.key === "PageUp"
+        ? position + USAGE_PAGE_KWH
+        : e.key === "PageDown"
+          ? position - USAGE_PAGE_KWH
+          : e.key === "Home"
+            ? MIN_USAGE_KWH
+            : e.key === "End"
+              ? MAX_USAGE_KWH
+              : null;
+    if (target === null) return;
+    e.preventDefault();
+    onChange(clampUsage(target));
+  };
 
   return (
     <div className="w-full">
@@ -54,18 +80,37 @@ export function UsageControl({
       </label>
 
       <div className="mt-4">
-        <input
-          type="range"
-          min={MIN_USAGE_KWH}
-          max={MAX_USAGE_KWH}
-          step={USAGE_STEP_KWH}
-          value={position}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label="Monthly usage slider"
-          aria-valuetext={`${formatKwh(position)} kWh, ${band}`}
-          style={{ "--pct": `${filled}%` } as CSSProperties}
-          className="usage-range"
-        />
+        <div className="relative">
+          <input
+            type="range"
+            min={MIN_USAGE_KWH}
+            max={MAX_USAGE_KWH}
+            step={USAGE_STEP_KWH}
+            value={position}
+            onChange={(e) => onChange(Number(e.target.value))}
+            onKeyDown={onSliderKey}
+            // letting go within 25 kWh of an anchor lands exactly on it
+            onPointerUp={(e) =>
+              onChange(snapToAnchor(Number(e.currentTarget.value)))
+            }
+            aria-label="Monthly usage slider"
+            aria-valuetext={`${formatKwh(position)} kWh, ${band}`}
+            style={{ "--pct": `${filled}%` } as CSSProperties}
+            className="usage-range"
+          />
+          {/* Notches at the three levels Power to Choose publishes a price for. */}
+          {USAGE_ANCHORS_KWH.map((anchor) => (
+            <span
+              key={anchor}
+              data-testid="usage-notch"
+              aria-hidden="true"
+              style={{ left: notchLeft(anchor) }}
+              className={`pointer-events-none absolute top-2.5 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-line ${
+                position === anchor ? "invisible" : ""
+              }`}
+            />
+          ))}
+        </div>
         <div
           aria-hidden="true"
           className="mt-1 flex justify-between font-mono text-xs text-ink-faint"

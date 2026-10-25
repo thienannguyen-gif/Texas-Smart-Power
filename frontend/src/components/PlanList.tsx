@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
+import type { AwardPick } from "../lib/awards";
+import { OurPicks } from "./OurPicks";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
 
@@ -28,6 +30,7 @@ export function PlanList({
   totalCount,
   timeOfUsePlans = [],
   showRanked = true,
+  picks = [],
   generatedAt,
   page,
   onPageChange,
@@ -37,6 +40,8 @@ export function PlanList({
   totalCount: number;
   timeOfUsePlans?: Plan[];
   showRanked?: boolean;
+  /** The "Our picks" winners, from the ranked plans being shown. */
+  picks?: AwardPick[];
   generatedAt: string;
   page: number;
   onPageChange: (next: number) => void;
@@ -103,6 +108,11 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
+      {/* Above the list, on its first page only, like the time-of-use section. */}
+      {showRanked && current === 1 && (
+        <OurPicks picks={picks} usageKwh={usageKwh} onOpen={setSelected} />
+      )}
+
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <p
           ref={summaryRef}

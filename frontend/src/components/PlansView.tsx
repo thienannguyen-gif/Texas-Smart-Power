@@ -9,6 +9,7 @@ import {
   splitForView,
   type PlanFilters,
 } from "../lib/filters";
+import { computeAwards } from "../lib/awards";
 import { sortPlans, type SortMode } from "../lib/sort";
 import { PlanList } from "./PlanList";
 import { PlansHeader } from "./PlansHeader";
@@ -98,6 +99,9 @@ export function PlansView({
   // cheapest reference rate first, whatever the sort above it says.
   const view = splitForView(allPlans, timeOfUsePlans, filters);
   const visiblePlans = sortPlans(view.ranked, sortMode, usageKwh);
+  // Our picks come from the ranked plans being shown, in score order (view.ranked
+  // keeps the order from ingestion), priced at the current usage.
+  const picks = computeAwards(view.ranked, usageKwh);
   const visibleTimeOfUse = sortPlans(view.timeOfUse, "lowestBill", usageKwh);
   const activeCount = activeFilterCount(filters);
 
@@ -209,6 +213,7 @@ export function PlansView({
                 plans={visiblePlans}
                 totalCount={allPlans.length}
                 timeOfUsePlans={visibleTimeOfUse}
+                picks={picks}
                 showRanked={!filters.onlyTimeOfUse}
                 generatedAt={state.data.generatedAt}
                 page={page}

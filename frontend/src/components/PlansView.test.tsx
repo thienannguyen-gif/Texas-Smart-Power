@@ -3,6 +3,10 @@ import { afterEach, expect, test, vi } from "vitest";
 import { PlansView } from "./PlansView";
 import type { Plan, TduDataFile } from "../types/plan";
 
+// These tests are about the plan list; the Our picks cards repeat plan names, so
+// they are switched off here and covered in ourPicks.test.tsx.
+vi.mock("./OurPicks", () => ({ OurPicks: () => null }));
+
 const mk = (over: Partial<Plan>): Plan =>
   ({
     id: 0,

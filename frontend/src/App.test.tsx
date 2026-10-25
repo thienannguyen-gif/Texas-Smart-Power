@@ -13,6 +13,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// These tests are about the plan list; the Our picks cards repeat plan names, so
+// they are switched off here and covered in ourPicks.test.tsx.
+vi.mock("./components/OurPicks", () => ({ OurPicks: () => null }));
+
 const ok = (body: unknown): Partial<Response> => ({
   ok: true,
   status: 200,

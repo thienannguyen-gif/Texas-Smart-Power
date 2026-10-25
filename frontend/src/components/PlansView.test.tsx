@@ -425,7 +425,7 @@ test("every option shows its match count, reflecting the other active filters; e
 
   // zero-match options stay on screen, greyed
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
-  expect(row(/13\+ months/i)).toHaveClass("text-brand-navy/40");
+  expect(row(/13\+ months/i)).toHaveClass("text-ink-faint");
   expect(screen.getByRole("checkbox", { name: /13\+ months/i })).toBeDisabled();
 
   // a contract length is counted against the provider, ignoring its own group
@@ -1200,7 +1200,7 @@ test("with no time-of-use plans in the area the filter is greyed out and says so
   });
   expect(box).toBeDisabled();
   expect(box.closest("label")).toHaveTextContent("No plans available");
-  expect(box.closest("label")).toHaveClass("text-brand-navy/40");
+  expect(box.closest("label")).toHaveClass("text-ink-faint");
   expect(
     screen.queryByRole("region", { name: /time-of-use plans/i }),
   ).not.toBeInTheDocument();

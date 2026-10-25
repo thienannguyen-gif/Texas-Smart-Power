@@ -121,10 +121,7 @@ function renderInline(text: string): ReactNode[] {
       out.push(<em key={key++}>{renderInline(match[3])}</em>);
     } else if (match[4] !== undefined) {
       out.push(
-        <code
-          key={key++}
-          className="rounded bg-brand-lime-100 px-1 text-[0.95em]"
-        >
+        <code key={key++} className="rounded bg-surface-alt px-1 text-[0.95em]">
           {match[4]}
         </code>,
       );
@@ -139,7 +136,7 @@ function renderInline(text: string): ReactNode[] {
             {...(external
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
-            className="break-words text-brand-green-800 underline"
+            className="break-words text-brand underline"
           >
             {label}
           </a>,
@@ -155,10 +152,10 @@ function renderInline(text: string): ReactNode[] {
 }
 
 const HEADING_CLASS: Record<1 | 2 | 3 | 4, string> = {
-  1: "text-3xl font-extrabold tracking-tight text-brand-green-700 sm:text-4xl",
-  2: "mt-10 text-xl font-bold text-brand-green-700 sm:text-2xl",
-  3: "mt-8 text-lg font-bold text-brand-green-700",
-  4: "mt-6 text-base font-bold text-brand-navy",
+  1: "text-3xl font-extrabold tracking-tight text-brand sm:text-4xl",
+  2: "mt-10 text-xl font-bold text-brand sm:text-2xl",
+  3: "mt-8 text-lg font-bold text-brand",
+  4: "mt-6 text-base font-bold text-ink",
 };
 
 export function renderBlocks(blocks: Block[]): ReactNode[] {
@@ -197,13 +194,13 @@ export function renderBlocks(blocks: Block[]): ReactNode[] {
         return (
           <blockquote
             key={index}
-            className="mt-4 border-l-4 border-brand-green bg-brand-lime-100 px-4 py-3 text-brand-navy/90"
+            className="mt-4 border-l-4 border-brand bg-surface-alt px-4 py-3 text-ink"
           >
             {renderInline(block.text)}
           </blockquote>
         );
       case "rule":
-        return <hr key={index} className="my-8 border-brand-navy/20" />;
+        return <hr key={index} className="my-8 border-line" />;
     }
   });
 }

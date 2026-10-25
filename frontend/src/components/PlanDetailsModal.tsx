@@ -26,13 +26,13 @@ function Stat({
 }) {
   return (
     <div>
-      <p className="rounded-full bg-brand-lime-200 px-4 py-1 text-center text-sm font-bold tracking-wide text-brand-green-800">
+      <p className="rounded-full bg-brand-soft px-4 py-1 text-center text-sm font-bold tracking-wide text-brand">
         {label}
       </p>
       <p className="mt-1 break-words text-center text-xl font-extrabold">
         {value}
       </p>
-      {note && <p className="text-center text-xs text-brand-navy/60">{note}</p>}
+      {note && <p className="text-center text-xs text-ink-soft">{note}</p>}
     </div>
   );
 }
@@ -40,10 +40,10 @@ function Stat({
 function Unavailable({ label, why }: { label: string; why: string }) {
   return (
     <div>
-      <p className="rounded-full bg-brand-lime-200 px-4 py-1 text-center text-sm font-bold tracking-wide text-brand-green-800">
+      <p className="rounded-full bg-brand-soft px-4 py-1 text-center text-sm font-bold tracking-wide text-brand">
         {label}
       </p>
-      <p className="mt-1 text-center text-sm text-brand-navy/50" title={why}>
+      <p className="mt-1 text-center text-sm text-ink-soft" title={why}>
         not available
       </p>
     </div>
@@ -98,23 +98,20 @@ export function PlanDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim p-0 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="plan-details-title"
-        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-h-[90dvh] sm:rounded-3xl sm:p-8"
+        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-h-[90dvh] sm:rounded-3xl sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
-          <h2
-            id="plan-details-title"
-            className="text-xl font-bold text-brand-green-700"
-          >
+          <h2 id="plan-details-title" className="text-xl font-bold text-brand">
             {plan.planName}
-            <span className="block text-sm font-normal text-brand-navy/70">
+            <span className="block text-sm font-normal text-ink-soft">
               {plan.companyName}
             </span>
           </h2>
@@ -122,7 +119,7 @@ export function PlanDetailsModal({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="min-h-11 min-w-11 shrink-0 rounded-full px-3 py-1 text-brand-navy/70 hover:bg-brand-lime-100"
+            className="min-h-11 min-w-11 shrink-0 rounded-full px-3 py-1 text-ink-soft hover:bg-surface-alt"
             aria-label="Close"
           >
             ✕
@@ -136,7 +133,7 @@ export function PlanDetailsModal({
                 href={signUpUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-green px-7 py-2 text-base font-bold text-white shadow hover:bg-brand-green-800"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand px-7 py-2 text-base font-bold text-brand-ink shadow hover:bg-brand/90"
               >
                 Sign up{" "}
                 <span className="sr-only">
@@ -148,13 +145,13 @@ export function PlanDetailsModal({
               (phoneHref ? (
                 <a
                   href={phoneHref}
-                  className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-green-800 underline"
+                  className="inline-flex min-h-11 items-center text-sm font-semibold text-brand underline"
                 >
                   {signUpUrl ? "or call " : "Call "}
                   {plan.enrollPhone}
                 </a>
               ) : (
-                <span className="text-sm font-semibold text-brand-navy/80">
+                <span className="text-sm font-semibold text-ink-soft">
                   {signUpUrl ? "or call " : "Call "}
                   {plan.enrollPhone}
                 </span>
@@ -162,14 +159,14 @@ export function PlanDetailsModal({
           </div>
         )}
 
-        <h3 className="mt-6 text-sm font-bold tracking-wide text-brand-green-700">
+        <h3 className="mt-6 text-sm font-bold tracking-wide text-brand">
           PLAN PRICING
         </h3>
         <div className="mt-2 grid grid-cols-3 gap-3">
           {tiers.map((tier) => (
             <div key={tier.label} className="text-center">
-              <p className="text-xs text-brand-navy/60">{tier.label}</p>
-              <p className="rounded-full bg-brand-lime-200 px-2 py-1 text-sm font-extrabold">
+              <p className="text-xs text-ink-soft">{tier.label}</p>
+              <p className="rounded-full bg-brand-soft px-2 py-1 text-sm font-extrabold">
                 {formatRate(tier.value)}
               </p>
             </div>
@@ -177,13 +174,13 @@ export function PlanDetailsModal({
         </div>
 
         {plan.isTimeOfUse && (
-          <p className="mt-3 rounded-xl bg-brand-lime-100 px-3 py-2 text-xs text-brand-navy/80">
+          <p className="mt-3 rounded-xl bg-surface-alt px-3 py-2 text-xs text-ink-soft">
             <strong>Time-of-use plan, not ranked.</strong> {TOU_SECTION_INTRO}
           </p>
         )}
 
         {plan.newCustomer === true && (
-          <p className="mt-3 rounded-xl bg-brand-lime-100 px-3 py-2 text-sm text-brand-navy/90">
+          <p className="mt-3 rounded-xl bg-surface-alt px-3 py-2 text-sm text-ink">
             <strong>Eligibility:</strong> New customers only — if you&apos;re
             already with {plan.companyName}, you may not qualify for this rate.
           </p>
@@ -231,7 +228,7 @@ export function PlanDetailsModal({
 
         {(plan.factSheetUrl || plan.termsUrl || plan.yracUrl) && (
           <>
-            <h3 className="mt-6 text-sm font-bold tracking-wide text-brand-green-700">
+            <h3 className="mt-6 text-sm font-bold tracking-wide text-brand">
               DOCUMENTS
             </h3>
             <ul className="mt-1 space-y-1 text-sm">
@@ -241,7 +238,7 @@ export function PlanDetailsModal({
                     href={plan.factSheetUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block py-2 text-brand-green-800 underline"
+                    className="inline-block py-2 text-brand underline"
                   >
                     Electricity Facts Label (EFL)
                   </a>
@@ -253,7 +250,7 @@ export function PlanDetailsModal({
                     href={plan.termsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block py-2 text-brand-green-800 underline"
+                    className="inline-block py-2 text-brand underline"
                   >
                     Terms of Service
                   </a>
@@ -265,7 +262,7 @@ export function PlanDetailsModal({
                     href={plan.yracUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block py-2 text-brand-green-800 underline"
+                    className="inline-block py-2 text-brand underline"
                   >
                     Your Rights as a Customer
                   </a>
@@ -276,7 +273,7 @@ export function PlanDetailsModal({
         )}
 
         {detailsNote && (
-          <p className="mt-4 text-xs text-brand-navy/50">{detailsNote}</p>
+          <p className="mt-4 text-xs text-ink-soft">{detailsNote}</p>
         )}
       </div>
     </div>

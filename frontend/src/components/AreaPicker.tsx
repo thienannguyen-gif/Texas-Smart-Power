@@ -10,7 +10,7 @@ export function AreaPicker({
 }) {
   return (
     <div role="group" aria-label="Choose your utility area">
-      <p className="mb-2 text-sm text-slate-700">
+      <p className="mb-2 text-sm text-ink-soft">
         That ZIP is served by more than one utility. Which is yours?
       </p>
       <ul className="space-y-2">
@@ -19,7 +19,7 @@ export function AreaPicker({
             <button
               type="button"
               onClick={() => onSelect(area.code)}
-              className="w-full rounded border border-slate-300 px-3 py-2 text-left hover:bg-slate-50"
+              className="w-full rounded border border-line px-3 py-2 text-left hover:bg-surface-alt"
             >
               {area.name}
             </button>

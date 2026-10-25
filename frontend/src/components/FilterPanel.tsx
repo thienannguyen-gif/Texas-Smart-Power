@@ -64,7 +64,7 @@ function OptionRow({
   return (
     <label
       className={`flex items-center gap-2 py-1.5 text-sm md:py-0 ${
-        empty ? "text-brand-navy/40" : "text-brand-navy/80"
+        empty ? "text-ink-faint" : "text-ink-soft"
       }`}
     >
       <input
@@ -72,7 +72,7 @@ function OptionRow({
         disabled={empty && !checked}
         checked={checked}
         onChange={onToggle}
-        className="h-5 w-5 rounded border-brand-navy/40 accent-brand-green md:h-4 md:w-4"
+        className="h-5 w-5 rounded border-line accent-brand md:h-4 md:w-4"
       />
       <span>
         {label}
@@ -85,7 +85,7 @@ function OptionRow({
 
 function GroupHeading({ children }: { children: string }) {
   return (
-    <h3 className="text-center text-sm font-bold tracking-wide text-brand-green-700">
+    <h3 className="text-center text-sm font-bold tracking-wide text-brand">
       {children}
     </h3>
   );
@@ -109,7 +109,7 @@ function SortSection({
       {SORT_OPTIONS.map((option) => (
         <label
           key={option.value}
-          className="flex items-center gap-2 py-1.5 text-sm text-brand-navy/80 md:py-0"
+          className="flex items-center gap-2 py-1.5 text-sm text-ink-soft md:py-0"
         >
           <input
             type="radio"
@@ -117,14 +117,12 @@ function SortSection({
             value={option.value}
             checked={option.value === value}
             onChange={() => onChange(option.value)}
-            className="h-5 w-5 border-brand-navy/40 accent-brand-green md:h-4 md:w-4"
+            className="h-5 w-5 border-line accent-brand md:h-4 md:w-4"
           />
           {option.label}
         </label>
       ))}
-      <p className="text-center text-xs text-brand-navy/60">
-        {current.description}
-      </p>
+      <p className="text-center text-xs text-ink-soft">{current.description}</p>
     </fieldset>
   );
 }
@@ -169,7 +167,7 @@ export function FilterPanel({
             onChange({ ...value, onlyTimeOfUse: !value.onlyTimeOfUse })
           }
         />
-        <p className="text-xs text-brand-navy/60">{TOU_FILTER_NOTE}</p>
+        <p className="text-xs text-ink-soft">{TOU_FILTER_NOTE}</p>
       </div>
 
       <div className="space-y-2">

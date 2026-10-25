@@ -72,14 +72,14 @@ export function ProviderPicker({
           {selected.map((name) => (
             <li
               key={`in-${name}`}
-              className="flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-navy"
+              className="flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-semibold text-ink"
             >
               {name}
               <button
                 type="button"
                 onClick={() => onUnselect(name)}
                 aria-label={`Remove ${name}`}
-                className="text-brand-navy/60 hover:text-brand-navy"
+                className="text-ink-soft hover:text-ink"
               >
                 ✕
               </button>
@@ -105,14 +105,14 @@ export function ProviderPicker({
         }}
         onKeyDown={onKeyDown}
         onBlur={() => setOpen(false)}
-        className="min-h-10 w-full rounded border border-brand-navy/30 bg-white px-2 py-1 text-base sm:min-h-0 sm:text-sm"
+        className="min-h-10 w-full rounded border border-line bg-surface px-2 py-1 text-base sm:min-h-0 sm:text-sm"
       />
 
       {showList && (
         <ul
           id={listId}
           role="listbox"
-          className="max-h-56 overflow-y-auto rounded border border-brand-navy/30 bg-white text-sm shadow"
+          className="max-h-56 overflow-y-auto rounded border border-line bg-surface text-sm shadow"
         >
           {matches.map((name, i) => (
             <li
@@ -126,8 +126,8 @@ export function ProviderPicker({
                 choose(name);
               }}
               className={`cursor-pointer px-2 py-2 sm:py-1 ${
-                i === activeIndex ? "bg-brand-lime-100" : ""
-              } ${countFor?.(name) === 0 ? "text-brand-navy/40" : ""}`}
+                i === activeIndex ? "bg-surface-alt" : ""
+              } ${countFor?.(name) === 0 ? "text-ink-faint" : ""}`}
             >
               {name}
               {countFor && ` (${countFor(name)})`}

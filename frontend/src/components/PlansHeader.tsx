@@ -40,7 +40,7 @@ export function PlansHeader({
   return (
     <section
       aria-label="Your search"
-      className="border-b border-band-line-soft bg-band-surface font-band-sans text-band-ink"
+      className="border-b border-line-soft bg-surface font-sans text-ink"
     >
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:items-end md:gap-14 md:py-8">
         <div>
@@ -65,21 +65,18 @@ export function PlansHeader({
                 placeholder="ZIP code"
                 aria-invalid={touched && !valid}
                 aria-describedby={touched && !valid ? errorId : undefined}
-                className="w-32 min-w-0 rounded-md border border-band-line bg-band-field px-3 py-2.5 font-band-mono text-lg focus:border-band-brand focus:outline-none"
+                className="w-32 min-w-0 rounded-md border border-line bg-field px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={zipBusy}
-                className="rounded-md bg-band-brand px-5 py-2.5 text-base font-semibold text-band-brand-ink hover:bg-band-brand/90 disabled:opacity-50 sm:px-6"
+                className="rounded-md bg-brand px-5 py-2.5 text-base font-semibold text-brand-ink hover:bg-brand/90 disabled:opacity-50 sm:px-6"
               >
                 {zipBusy ? "…" : "Find plans"}
               </button>
             </div>
             {touched && !valid && (
-              <p
-                id={errorId}
-                className="mt-2 text-sm font-medium text-band-brand"
-              >
+              <p id={errorId} className="mt-2 text-sm font-medium text-brand">
                 Enter a 5-digit ZIP code.
               </p>
             )}

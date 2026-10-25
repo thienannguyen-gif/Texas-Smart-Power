@@ -32,7 +32,7 @@ export function UsageControl({
         <span className="band-caption">Your monthly usage</span>
         <span
           aria-live="polite"
-          className="band-caption rounded bg-band-soft px-2.5 py-1.5 whitespace-nowrap text-band-brand"
+          className="band-caption rounded bg-brand-soft px-2.5 py-1.5 whitespace-nowrap text-brand"
         >
           {band}
         </span>
@@ -48,9 +48,9 @@ export function UsageControl({
           onChange={(e) => onChange(Number(e.target.value))}
           onBlur={(e) => onChange(clampUsage(Number(e.target.value)))}
           aria-label="Monthly usage in kWh"
-          className="w-28 rounded-md border border-band-line bg-band-field px-3 py-2.5 font-band-mono text-lg focus:border-band-brand focus:outline-none"
+          className="w-28 rounded-md border border-line bg-field px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
         />
-        <span className="font-band-mono text-sm text-band-ink-faint">kWh</span>
+        <span className="font-mono text-sm text-ink-faint">kWh</span>
       </label>
 
       <div className="mt-4">
@@ -68,7 +68,7 @@ export function UsageControl({
         />
         <div
           aria-hidden="true"
-          className="mt-1 flex justify-between font-band-mono text-xs text-band-ink-faint"
+          className="mt-1 flex justify-between font-mono text-xs text-ink-faint"
         >
           <span>{formatKwh(MIN_USAGE_KWH)} kWh</span>
           <span>{formatKwh(MAX_USAGE_KWH)} kWh</span>

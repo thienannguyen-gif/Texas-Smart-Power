@@ -54,7 +54,7 @@ export default function App() {
   const lookupMessages = (
     <>
       {lookup.status === "loading" && (
-        <p role="status" className="text-brand-navy/80">
+        <p role="status" className="text-ink-soft">
           Looking up your area…
         </p>
       )}
@@ -62,7 +62,7 @@ export default function App() {
       {lookup.status === "error" && (
         <div
           role="alert"
-          className="rounded-2xl border-2 border-red-300 bg-red-50 p-4 text-red-800"
+          className="rounded-2xl border-2 border-danger-line bg-danger-soft p-4 text-danger"
         >
           <p className="font-bold">Couldn’t look up that ZIP.</p>
           <p className="mt-1 text-sm">{lookup.error}</p>
@@ -70,7 +70,7 @@ export default function App() {
       )}
 
       {lookup.status === "notFound" && (
-        <p className="rounded-2xl bg-white/70 p-4 text-brand-navy/80">
+        <p className="rounded-2xl bg-surface/70 p-4 text-ink-soft">
           No Texas utility area found for ZIP{" "}
           <span className="font-semibold">{lookup.zip}</span>. Double-check the
           digits.
@@ -83,7 +83,7 @@ export default function App() {
         lookup.status === "ready" &&
         lookup.areas.length > 1 &&
         lookup.zip !== activeZip && (
-          <div className="rounded-2xl bg-white/80 p-4">
+          <div className="rounded-2xl bg-surface/80 p-4">
             <AreaPicker
               areas={lookup.areas}
               onSelect={(code) => {
@@ -100,7 +100,7 @@ export default function App() {
       {lookup.status === "ready" &&
         lookup.areas.length === 1 &&
         !isTduId(lookup.areas[0].code) && (
-          <p className="rounded-2xl bg-white/70 p-4 text-brand-navy/80">
+          <p className="rounded-2xl bg-surface/70 p-4 text-ink-soft">
             That ZIP didn’t match a utility area this app supports.
           </p>
         )}

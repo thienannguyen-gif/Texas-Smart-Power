@@ -952,7 +952,7 @@ test("usage block: band pill on the left, number box on the right, the slider fu
   ).toBeTruthy();
   expect(firstRow).not.toContainElement(slider);
   // the slider spans the block and comes after that row
-  expect(slider).toHaveClass("w-full");
+  expect(slider).toHaveClass("usage-range", "inset-0");
   expect(
     firstRow.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();

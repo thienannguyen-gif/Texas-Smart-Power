@@ -70,6 +70,57 @@ body {
   overflow-x: clip;
 }
 
+/* The usage slider: the track and the notches are drawn by the markup around it,
+   so the input itself shows only the thumb. A white disc with a brand ring and a
+   soft halo; keyboard focus widens the halo into a clear brand ring. */
+.usage-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.usage-range::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 100%;
+}
+.usage-range::-moz-range-track {
+  background: transparent;
+}
+.usage-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 3px solid var(--brand);
+  box-shadow: 0 0 0 5px var(--brand-soft);
+}
+.usage-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 3px solid var(--brand);
+  box-shadow: 0 0 0 5px var(--brand-soft);
+}
+.usage-range:focus-visible {
+  outline: none;
+}
+.usage-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 5px var(--brand);
+}
+.usage-range:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 5px var(--brand);
+}
+
 /* Phone filter drawer slides up from the bottom edge. */
 @keyframes slide-up {
   from {

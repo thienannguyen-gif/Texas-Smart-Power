@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
-import { summarizePlans } from "../lib/filters";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
@@ -55,27 +54,12 @@ export function PlanList({
   const modalOpen = selected !== null;
   const touCount = timeOfUsePlans.length;
 
-  // One line: how many ranked plans are showing, how many of those are 100%
-  // renewable and 12 months (parts that would say "0" are left out), and how
-  // many time-of-use plans are shown separately.
-  const { renewable100, months12 } = summarizePlans(plans);
+  // The plan count: all of them, or "Showing N of M" under a filter. In the
+  // time-of-use-only view the count is of those plans.
   const summaryLine = showRanked
-    ? [
-        filtered
-          ? `Showing ${plans.length} of ${totalCount} ${plural(totalCount, "plan", "plans")}`
-          : `${totalCount} ${plural(totalCount, "plan", "plans")}`,
-        renewable100 > 0
-          ? `${renewable100} ${renewable100 === 1 ? "is" : "are"} 100% renewable`
-          : null,
-        months12 > 0
-          ? `${months12} ${months12 === 1 ? "is" : "are"} 12 months`
-          : null,
-        touCount > 0
-          ? `${touCount} time-of-use ${plural(touCount, "plan", "plans")} shown separately`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(" · ")
+    ? filtered
+      ? `Showing ${plans.length} of ${totalCount} ${plural(totalCount, "plan", "plans")}`
+      : `${totalCount} ${plural(totalCount, "plan", "plans")}`
     : `${touCount} time-of-use ${plural(touCount, "plan", "plans")}`;
 
   useEffect(() => {
@@ -99,10 +83,12 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
-      <p className="text-xs text-ink-soft sm:text-sm">{summaryLine}</p>
-      <p className="mb-2 text-xs text-ink-faint">
-        Updated {new Date(generatedAt).toLocaleString("en-US")}
-      </p>
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <p className="text-xs text-ink-soft sm:text-sm">{summaryLine}</p>
+        <p className="text-xs text-ink-faint">
+          Updated {new Date(generatedAt).toLocaleString("en-US")}
+        </p>
+      </div>
 
       {showRanked &&
         (plans.length === 0 ? (

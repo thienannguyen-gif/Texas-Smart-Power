@@ -1,22 +1,103 @@
 @import "tailwindcss";
 
-/* Brand palette from the approved mockup (Texas Power .pdf). */
+/* Palette and type for the results-page design: deep green header, white
+   panels on a light grey page, one dark green accent, monospace for labels and
+   numbers. System fonts only, so nothing is downloaded; if Inter / JetBrains
+   Mono are added later they slot in first in these stacks. The token names are
+   older than this palette ("lime" is now the page grey / mint tint). */
 @theme {
-  --color-brand-navy: #1f2b3a;
-  --color-brand-navy-600: #2b3a4d;
-  --color-brand-lime: #dcefaa;
-  --color-brand-lime-100: #eef7d2;
-  --color-brand-lime-200: #e4f3bf;
-  --color-brand-green: #5c9e30;
-  --color-brand-green-700: #3f7d2e;
-  --color-brand-green-800: #356b27;
-  --color-brand-gold: #f5b301;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas,
+    monospace;
+
+  --color-brand-navy: #10302b; /* ink: text, borders */
+  --color-brand-navy-600: #1d4a42;
+  --color-brand-pine: #11453f; /* header bar */
+  --color-brand-muted: #6a7f79; /* small labels */
+  --color-brand-lime: #eeeeee; /* page background */
+  --color-brand-lime-100: #f4f6f5; /* soft panel */
+  --color-brand-lime-200: #dff0e8; /* mint tint: pills, badges */
+  --color-brand-green: #1a6b57;
+  --color-brand-green-700: #15594a;
+  --color-brand-green-800: #0f4a3d;
+  --color-brand-amber: #b5651d; /* flagged plans */
+  --color-brand-amber-100: #f8e7d7;
+  --color-brand-amber-800: #8a4310;
 }
 
 body {
   background-color: var(--color-brand-lime);
   color: var(--color-brand-navy);
   overflow-x: clip;
+}
+
+/* Small monospace section / column label: "ZIP CODE", "SORT BY", "TERM". */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand-muted);
+}
+
+/* The usage slider: a thin track filled up to the thumb (--pct is set inline). */
+.usage-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+.usage-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  border: 1px solid rgb(16 48 43 / 0.15);
+  background: linear-gradient(
+    to right,
+    var(--color-brand-green) var(--pct, 0%),
+    #dfe3e1 var(--pct, 0%)
+  );
+}
+.usage-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 9999px;
+  background: var(--color-brand-green);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgb(16 48 43 / 0.25);
+}
+.usage-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  border: 1px solid rgb(16 48 43 / 0.15);
+  background: #dfe3e1;
+}
+.usage-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-brand-green);
+}
+.usage-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-brand-green);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgb(16 48 43 / 0.25);
+}
+.usage-range:focus-visible {
+  outline: 2px solid var(--color-brand-green);
+  outline-offset: 4px;
+  border-radius: 9999px;
 }
 
 /* Phone filter drawer slides up from the bottom edge. */

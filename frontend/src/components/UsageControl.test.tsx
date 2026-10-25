@@ -72,17 +72,23 @@ describe("UsageControl", () => {
     expect(screen.queryByText("High Usage")).not.toBeInTheDocument();
   });
 
-  it("labels the ticks 500, 1,000, 2,000 and 2,500 kWh, in order along the track", () => {
+  it("labels the two ends of the slider, 100 kWh and 4,000 kWh, and nothing in between", () => {
     render(<Harness />);
-    const labels = ["500 kWh", "1,000 kWh", "2,000 kWh", "2,500 kWh"].map(
-      (text) => screen.getByText(text),
-    );
-    const lefts = labels.map((el) => el.style.left);
-    // positions grow with the value; 500 is a tenth of the way in, 2,500 about 61%
-    expect(lefts[0]).toMatch(/^calc\(10\.25/);
-    expect(lefts[3]).toMatch(/^calc\(61\.53/);
-    const pct = lefts.map((l) => Number(/calc\(([\d.]+)%/.exec(l)?.[1]));
-    expect([...pct].sort((a, b) => a - b)).toEqual(pct);
+    const ends = screen.getAllByText(/^[\d,]+ kWh$/);
+    expect(ends.map((el) => el.textContent)).toEqual(["100 kWh", "4,000 kWh"]);
+    expect(screen.queryByText("1,000 kWh")).not.toBeInTheDocument();
+    expect(screen.queryByText("2,500 kWh")).not.toBeInTheDocument();
+  });
+
+  it("shows the band name, 'Your monthly usage' and the filled slider track", () => {
+    render(<Harness />);
+    expect(screen.getByText("Your monthly usage")).toBeInTheDocument();
+    // 1,000 kWh is (1000-100)/(4000-100) of the way along
+    expect(slider().style.getPropertyValue("--pct")).toMatch(/^23\.07/);
+    fireEvent.change(slider(), { target: { value: "4000" } });
+    expect(slider().style.getPropertyValue("--pct")).toBe("100%");
+    fireEvent.change(slider(), { target: { value: "100" } });
+    expect(slider().style.getPropertyValue("--pct")).toBe("0%");
   });
 
   it("writes numbers with an explicit en-US locale, so the machine's locale cannot turn 1,000 into 1.000", () => {
@@ -97,8 +103,7 @@ describe("UsageControl", () => {
     });
 
     render(<Harness />);
-    expect(screen.getByText("1,000 kWh")).toBeInTheDocument();
-    expect(screen.getByText("2,000 kWh")).toBeInTheDocument();
+    expect(screen.getByText("4,000 kWh")).toBeInTheDocument();
     expect(slider()).toHaveAttribute(
       "aria-valuetext",
       "1,000 kWh, Average Home",
@@ -131,23 +136,5 @@ describe("locale formatting in the source", () => {
       ),
     );
     expect(offenders).toEqual([]);
-  });
-});
-
-describe("UsageControl tick labels by screen width", () => {
-  it("labels four ticks on wider screens and only the two ends on phones", () => {
-    render(<Harness />);
-
-    // wider screens (sm and up): the four ticks are shown, the end labels are not
-    for (const text of ["500 kWh", "1,000 kWh", "2,000 kWh", "2,500 kWh"]) {
-      expect(screen.getByText(text)).toHaveClass("hidden", "sm:block");
-    }
-    // phones: just the slider's two ends, which collide with nothing
-    const lowest = screen.getByText("100 kWh");
-    const highest = screen.getByText("4,000 kWh");
-    expect(lowest).toHaveClass("sm:hidden", "left-0");
-    expect(highest).toHaveClass("sm:hidden", "right-0");
-    expect(lowest).not.toHaveClass("hidden");
-    expect(highest).not.toHaveClass("hidden");
   });
 });

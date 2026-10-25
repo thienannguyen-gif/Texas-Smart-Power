@@ -1,27 +1,43 @@
-import { BrandMark } from "./BrandMark";
-
-// Navy top bar from the mockup: logo + wordmark left, nav right.
+// Deep green top bar: bolt mark and spaced wordmark on the left, nav on the right.
 // HOME is the app; MORE opens the disclaimer page. (There is no About page, so no About link.)
 const NAV = [
   { label: "Home", href: "/" },
   { label: "More", href: "#disclaimer" },
 ];
 
+function Bolt({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      role="img"
+      aria-label="Texas Smart Power"
+    >
+      <path d="M13.5 2.5 5.5 13.5h5.2l-1.2 8 8-11h-5.2z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SiteHeader() {
   return (
-    <header className="bg-brand-navy text-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
-        <a href="/" className="flex min-w-0 items-center gap-2">
-          <BrandMark className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
-          <span className="whitespace-nowrap text-xs font-bold tracking-wide sm:text-base">
-            TEXAS SMART POWER
+    <header className="bg-brand-pine text-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+        <a href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/25 bg-white/5 text-emerald-300">
+            <Bolt className="h-5 w-5" />
+          </span>
+          <span className="text-xs font-semibold tracking-[0.12em] whitespace-nowrap uppercase sm:text-base sm:tracking-[0.18em]">
+            Texas Smart Power
           </span>
         </a>
         <nav aria-label="Primary">
-          <ul className="flex gap-3 text-[10px] font-bold tracking-wide sm:gap-10 sm:text-sm">
+          <ul className="flex gap-4 text-xs font-medium tracking-[0.14em] sm:gap-10 sm:text-sm sm:tracking-[0.18em]">
             {NAV.map((item) => (
               <li key={item.label}>
-                <a href={item.href} className="hover:text-brand-lime">
+                <a
+                  href={item.href}
+                  className="text-white/80 transition-colors hover:text-white"
+                >
                   {item.label.toUpperCase()}
                 </a>
               </li>

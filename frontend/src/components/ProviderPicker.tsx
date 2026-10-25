@@ -95,7 +95,7 @@ export function ProviderPicker({
         aria-controls={listId}
         aria-autocomplete="list"
         aria-label="Search providers"
-        placeholder="Search provider..."
+        placeholder="Search…"
         autoComplete="off"
         value={query}
         onChange={(e) => {
@@ -105,14 +105,14 @@ export function ProviderPicker({
         }}
         onKeyDown={onKeyDown}
         onBlur={() => setOpen(false)}
-        className="min-h-10 w-full rounded border border-brand-navy/30 bg-white px-2 py-1 text-base sm:min-h-0 sm:text-sm"
+        className="min-h-10 w-full rounded-md border border-brand-navy/15 bg-brand-lime px-3 py-2 font-mono text-base sm:min-h-0 sm:text-sm"
       />
 
       {showList && (
         <ul
           id={listId}
           role="listbox"
-          className="max-h-56 overflow-y-auto rounded border border-brand-navy/30 bg-white text-sm shadow"
+          className="max-h-56 overflow-y-auto rounded-md border border-brand-navy/15 bg-white text-sm shadow"
         >
           {matches.map((name, i) => (
             <li

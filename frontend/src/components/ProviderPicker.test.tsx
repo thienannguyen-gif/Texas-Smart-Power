@@ -115,9 +115,9 @@ describe("ProviderPicker", () => {
     ).toBeVisible();
   });
 
-  it("has the 'Search provider...' placeholder", () => {
+  it("has the 'Search…' placeholder", () => {
     render(<Harness />);
-    expect(screen.getByPlaceholderText("Search provider...")).toBe(box());
+    expect(screen.getByPlaceholderText("Search…")).toBe(box());
   });
 
   it("shows chips above the input", () => {

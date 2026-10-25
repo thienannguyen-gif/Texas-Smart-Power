@@ -661,7 +661,7 @@ test("sort control: Best match is the default and keeps the ranked order, with i
   renderSortable();
   await screen.findByText("A Flat");
 
-  expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
+  expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
   expect(screen.getByRole("radio", { name: "Lowest bill" })).not.toBeChecked();
   expect(cardNames()).toEqual([
     "A Flat",
@@ -727,7 +727,7 @@ test("in Lowest bill mode, changing the usage re-sorts the list", async () => {
   expect(within(first).getByText("$200")).toBeInTheDocument();
 
   // and back to Best match: the ranked order again, whatever the usage
-  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
   expect(cardNames()).toEqual([
     "A Flat",
     "B Credit",
@@ -779,7 +779,7 @@ test("desktop: SORT BY is the first section of the left sidebar, styled like the
 
   // both options are in the sidebar, none above the plan list
   expect(
-    within(sidebar).getByRole("radio", { name: "Best match" }),
+    within(sidebar).getByRole("radio", { name: /^Best match/ }),
   ).toBeInTheDocument();
   expect(
     within(sidebar).getByRole("radio", { name: "Lowest bill" }),
@@ -844,7 +844,7 @@ test("phone: the drawer opens on Sort by, and Apply applies the sort choice with
     .map((h) => h.textContent);
   expect(headings[0]).toBe("SORT BY");
   expect(within(drawer).getAllByRole("radio")[0]).toHaveAccessibleName(
-    "Best match",
+    "Best match (recommended)",
   );
 
   fireEvent.click(within(drawer).getByRole("radio", { name: "Lowest bill" }));
@@ -1121,7 +1121,7 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
   // Lowest bill re-sorts the ranked list only; the section is always cheapest first
   fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
   expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
-  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
 });
 
@@ -1522,4 +1522,25 @@ test("with prefers-reduced-motion the scroll is instant", async () => {
   await screen.findByText("Page 1 of 3");
   fireEvent.click(next());
   expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+});
+
+test("the first sort option reads 'Best match (recommended)' in one label, so clicking the word selects it", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+
+  const tag = screen.getByText("(recommended)");
+  expect(tag).toHaveClass("text-xs", "text-ink-faint");
+  // inside the same <label> as the radio and "Best match", not a second line
+  const label = tag.closest("label")!;
+  expect(label).toHaveTextContent("Best match (recommended)");
+  expect(label.querySelector("input[type=radio]")).toBe(
+    screen.getByRole("radio", { name: "Best match (recommended)" }),
+  );
+  fireEvent.click(tag);
+  expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
+  // only the first option carries it, and the spelling is "recommended"
+  expect(screen.getAllByText(/\(recommend/)).toHaveLength(1);
+  expect(screen.queryByText(/\(recommend\)/)).toBeNull();
 });

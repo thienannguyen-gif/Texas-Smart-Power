@@ -27,7 +27,6 @@ export function PlansView({
   onSubmitZip,
   zipBusy = false,
   zipStatus,
-  serviceArea,
   areaChoice,
 }: {
   tdu: TduId;
@@ -37,8 +36,6 @@ export function PlansView({
   zipBusy?: boolean;
   /** Lookup feedback (loading / error) shown under the header. */
   zipStatus?: ReactNode;
-  /** Name of the utility area whose plans are showing. */
-  serviceArea?: string;
   /** Set only when this ZIP returned several utilities. */
   areaChoice?: AreaChoice;
 }) {
@@ -111,9 +108,6 @@ export function PlansView({
     setPage(1);
   }
 
-  // The top plan under "Best match" gets the Best match mark.
-  const bestMatchId = sortMode === "best" ? visiblePlans[0]?.id : undefined;
-
   const chosenArea = areaChoice?.options.find(
     (option) => option.code === areaChoice.currentCode,
   );
@@ -124,7 +118,7 @@ export function PlansView({
         type="button"
         onClick={() => setDrawerOpen(true)}
         aria-haspopup="dialog"
-        className={`min-h-10 rounded-md bg-brand px-4 py-1.5 text-sm font-semibold text-brand-ink ${extraClass}`}
+        className={`min-h-10 rounded-full bg-brand-green px-4 py-1.5 text-sm font-bold text-white ${extraClass}`}
       >
         {activeCount > 0 ? `Filters (${activeCount})` : "Filters"}
       </button>
@@ -139,7 +133,6 @@ export function PlansView({
           zipBusy={zipBusy}
           usageKwh={usageKwh}
           onUsageChange={setUsageKwh}
-          serviceArea={serviceArea}
           areaChoice={areaChoice}
         />
       </div>
@@ -154,19 +147,21 @@ export function PlansView({
         />
       )}
 
-      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
-        {!isDesktop && <div className="mt-6">{filtersButton("w-full")}</div>}
+      <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
+        {!isDesktop && (
+          <div className="mx-auto mb-4 max-w-xl">{filtersButton("w-full")}</div>
+        )}
 
-        {zipStatus && <div className="mt-6 space-y-3">{zipStatus}</div>}
+        {zipStatus && <div className="space-y-3">{zipStatus}</div>}
 
-        <div className="mt-8 grid gap-8 md:gap-10 md:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="mt-4 grid gap-6 md:grid-cols-[260px_1fr]">
           {isDesktop && (
             // Sticks below the slim bar (about 3.25rem tall) with a small gap,
             // and scrolls inside itself when taller than the screen, so the
             // provider search at the bottom stays reachable.
             <aside
               aria-label="Filters"
-              className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto pr-1"
+              className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl bg-brand-lime-200 p-5"
             >
               <FilterPanel
                 plans={allPlans}
@@ -182,7 +177,7 @@ export function PlansView({
 
           <main>
             {state.status === "loading" && (
-              <p role="status" className="text-ink-soft">
+              <p role="status" className="text-brand-navy/70">
                 Loading plans…
               </p>
             )}
@@ -190,7 +185,7 @@ export function PlansView({
             {state.status === "error" && (
               <div
                 role="alert"
-                className="rounded-2xl border-2 border-danger-line bg-danger-soft p-4 text-danger"
+                className="rounded-2xl border-2 border-red-300 bg-red-50 p-4 text-red-800"
               >
                 <p className="font-bold">Couldn’t load plans.</p>
                 <p className="mt-1 text-sm">{state.error}</p>
@@ -198,7 +193,7 @@ export function PlansView({
             )}
 
             {state.status === "empty" && (
-              <p className="text-ink-soft">
+              <p className="text-brand-navy/70">
                 No plans available for{" "}
                 <span className="font-semibold">{state.tdu}</span> right now.
                 Check back after the next data refresh.
@@ -211,7 +206,6 @@ export function PlansView({
                 totalCount={allPlans.length}
                 timeOfUsePlans={visibleTimeOfUse}
                 showRanked={!filters.onlyTimeOfUse}
-                bestMatchId={bestMatchId}
                 generatedAt={state.data.generatedAt}
                 page={page}
                 onPageChange={setPage}

@@ -19,7 +19,7 @@ export function CompactBar({
   trailing?: ReactNode;
 }) {
   return (
-    <div className="fixed inset-x-0 top-0 z-30 border-b border-line-soft bg-paper/95 backdrop-blur">
+    <div className="fixed inset-x-0 top-0 z-30 border-b border-brand-navy/10 bg-brand-lime/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6">
         <span className="min-w-0 truncate text-xs font-bold sm:text-sm">
           ZIP {zip}
@@ -28,7 +28,7 @@ export function CompactBar({
         <button
           type="button"
           onClick={() => window.scrollTo?.({ top: 0, behavior: "smooth" })}
-          className="shrink-0 px-2 py-2 text-xs text-ink-soft underline sm:text-sm"
+          className="shrink-0 px-2 py-2 text-xs text-brand-navy/70 underline sm:text-sm"
         >
           Edit
         </button>
@@ -40,7 +40,7 @@ export function CompactBar({
             onChange={(e) => onUsageChange(Number(e.target.value))}
             onBlur={(e) => onUsageChange(clampUsage(Number(e.target.value)))}
             aria-label="Monthly usage in kWh (top bar)"
-            className="w-20 rounded border border-line bg-surface px-2 py-1 text-right text-base font-normal sm:text-sm"
+            className="w-20 rounded border border-brand-navy/30 bg-white px-2 py-1 text-right text-base font-normal sm:text-sm"
           />
           kWh
         </label>

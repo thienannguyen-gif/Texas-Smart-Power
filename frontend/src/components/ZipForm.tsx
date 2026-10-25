@@ -42,18 +42,21 @@ export function ZipForm({
           onBlur={() => setTouched(true)}
           aria-invalid={showError}
           aria-describedby={showError ? errorId : undefined}
-          className="min-w-0 flex-1 rounded-2xl bg-bar px-5 py-4 text-base text-bar-fg placeholder:text-bar-fg-soft focus:outline-none focus:ring-2 focus:ring-brand sm:px-6 sm:text-lg"
+          className="min-w-0 flex-1 rounded-2xl bg-brand-navy-600/80 px-5 py-4 text-base text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-brand-green sm:px-6 sm:text-lg"
         />
         <button
           type="submit"
           disabled={busy}
-          className="rounded-2xl bg-brand px-8 py-4 text-base font-bold text-brand-ink shadow hover:bg-brand-deep disabled:opacity-50 sm:text-lg"
+          className="rounded-2xl bg-brand-green px-8 py-4 text-base font-bold text-white shadow hover:bg-brand-green-800 disabled:opacity-50 sm:text-lg"
         >
           {busy ? "…" : "GO"}
         </button>
       </div>
       {showError && (
-        <p id={errorId} className="mt-2 text-sm font-medium text-brand-deep">
+        <p
+          id={errorId}
+          className="mt-2 text-sm font-medium text-brand-green-800"
+        >
           Enter a 5-digit ZIP code.
         </p>
       )}

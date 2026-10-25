@@ -42,20 +42,20 @@ export function DisclaimerPage({
 
   return (
     <main className="px-4 py-6 sm:px-6 sm:py-10">
-      <article className="mx-auto w-full max-w-[75ch] rounded-2xl bg-surface p-5 text-base leading-7 text-ink sm:p-10 sm:leading-8">
+      <article className="mx-auto w-full max-w-[75ch] rounded-2xl bg-white p-5 text-base leading-7 text-brand-navy sm:p-10 sm:leading-8">
         <a
           href="#"
-          className="inline-block py-2 text-sm text-brand-deep underline"
+          className="inline-block py-2 text-sm text-brand-green-800 underline"
         >
           ← Back to plans
         </a>
 
         {title && (
-          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-brand-deep sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-green-700 sm:text-4xl">
             {title.text}
           </h1>
         )}
-        <p className="mt-3 text-sm font-semibold text-ink-soft">
+        <p className="mt-3 text-sm font-semibold text-brand-navy/80">
           Last updated: {date ?? "not available in this build"}
         </p>
 

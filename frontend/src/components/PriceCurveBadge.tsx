@@ -25,15 +25,18 @@ export function PriceCurveBadge({
     <div className={className}>
       <span
         title={PRICE_CURVE_EXPLANATION}
-        className="inline-flex items-center rounded-sm border border-warn bg-warn-soft px-1.5 py-0.5 font-mono text-[10px] leading-4 font-medium tracking-[0.1em] text-ink uppercase"
+        className="inline-flex items-center gap-1 rounded-full border border-brand-gold bg-brand-gold/20 px-2 py-0.5 text-xs font-bold text-brand-navy"
       >
+        <span aria-hidden="true">⚠</span>
         Unstable price
         {!explain && (
           <span className="sr-only">. {PRICE_CURVE_EXPLANATION}</span>
         )}
       </span>
       {explain && (
-        <p className="mt-1 text-xs text-ink-soft">{PRICE_CURVE_EXPLANATION}</p>
+        <p className="mt-1 text-xs text-brand-navy/70">
+          {PRICE_CURVE_EXPLANATION}
+        </p>
       )}
     </div>
   );

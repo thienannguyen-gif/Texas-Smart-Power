@@ -12,12 +12,11 @@ const CHIP =
 const CHIP_PLAIN = `${CHIP} border-line bg-surface-alt text-ink-soft`;
 const CHIP_GREEN = `${CHIP} border-brand-soft bg-brand-soft text-brand`;
 
-// Columns on a wide screen follow the number of cards, so a missing award
-// lets the others expand. Written out so Tailwind can see the class names.
+// Columns on a wide screen follow the number of cards (one or two), so a single
+// card takes the full width. Written out so Tailwind can see the class names.
 const COLUMNS: Record<number, string> = {
   1: "min-[760px]:grid-cols-1",
   2: "min-[760px]:grid-cols-2",
-  3: "min-[760px]:grid-cols-3",
 };
 
 // The plan facts as chips, in this order. A chip is left out when the fact is
@@ -119,7 +118,7 @@ function PickCard({
   );
 }
 
-// "OUR PICKS": up to three plans, one per award, above the plan list. Each card
+// "OUR PICKS": up to two plans, one per award, above the plan list. Each card
 // opens the same details modal as the list.
 export function OurPicks({
   picks,

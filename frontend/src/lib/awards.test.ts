@@ -85,30 +85,27 @@ describe("computeAwards", () => {
     expect(lowest(2000)).toBe(2);
   });
 
-  it("gives best 100% green to the best-scored plan at 100% renewable, any term", () => {
-    const picks = computeAwards(
-      [
-        plan({ id: 1 }),
-        plan({ id: 2, renewableDescription: "99% renewable" }),
-        plan({ id: 3, termMonths: 24, renewableDescription: "100% Renewable" }),
-        plan({ id: 4, renewableDescription: "100% Renewable" }),
-      ],
+  it("has no green award: renewable content plays no part in the picks", () => {
+    const plans = [
+      plan({ id: 1, termMonths: 24 }),
+      plan({ id: 2, termMonths: 24, renewableDescription: "100% Renewable" }),
+    ];
+    const awards = computeAwards(plans, 1000).flatMap((p) => p.awards);
+    expect(awards).toEqual(["lowest-bill"]);
+    // a 100% plan does not win anything for being 100%
+    const withGreen = computeAwards(
+      [plan({ id: 3, renewableDescription: "100% Renewable" })],
       1000,
     );
-    const green = picks.find((p) => p.awards.includes("best-green"));
-    expect(green?.plan.id).toBe(3);
+    expect(withGreen[0].awards).toEqual(["best-overall", "lowest-bill"]);
   });
 
-  it("puts a plan that wins several awards on one card, never two", () => {
-    const winner = plan({ id: 1, renewableDescription: "100% Renewable" });
+  it("puts a plan that wins both awards on one card, never two", () => {
+    const winner = plan({ id: 1 });
     const picks = computeAwards([winner, plan({ id: 2 })], 1000);
     expect(picks).toHaveLength(1);
     expect(picks[0].plan.id).toBe(1);
-    expect(picks[0].awards).toEqual([
-      "best-overall",
-      "lowest-bill",
-      "best-green",
-    ]);
+    expect(picks[0].awards).toEqual(["best-overall", "lowest-bill"]);
   });
 
   it("never lets an unstable price curve win: a V-trap or a hump is skipped", () => {

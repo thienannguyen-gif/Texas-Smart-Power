@@ -77,14 +77,12 @@ describe("OurPicks cards", () => {
     expect(open.mock.calls[0][0].id).toBe(7);
   });
 
-  it("shows several award chips on one card for a multiple winner, never two cards", () => {
-    renderPicks([
-      mk({ id: 1, planName: "Double", renewableDescription: "100% Renewable" }),
-    ]);
+  it("shows both award chips on one card for a plan that wins both, never two cards", () => {
+    renderPicks([mk({ id: 1, planName: "Double" })]);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByText("Best overall")).toBeInTheDocument();
-    expect(screen.getByText("Best 100% green")).toBeInTheDocument();
     expect(screen.getByText("Lowest bill")).toBeInTheDocument();
+    expect(screen.queryByText(/green/i)).toBeNull();
   });
 
   it("shows term, renewable and cancellation chips, with the 100% one in green", () => {
@@ -149,6 +147,31 @@ describe("OurPicks cards", () => {
     expect(initials).toHaveClass("bg-brand-soft", "text-brand");
   });
 
+  it("lays two cards out as two equal columns from 760px, and one card as the full width", () => {
+    const { container, unmount } = renderPicks([
+      mk({ id: 1, planName: "Twelve" }),
+      mk({
+        id: 2,
+        planName: "Cheap",
+        pricePerKwh: { at500: 0.1, at1000: 0.08, at2000: 0.07 },
+        termMonths: 24,
+      }),
+    ]);
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+    const grid = container.querySelector(".grid")!;
+    expect(grid).toHaveClass("grid-cols-1", "min-[760px]:grid-cols-2");
+    unmount();
+
+    const single = renderPicks([mk({ id: 1 })]);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(single.container.querySelector(".grid")).toHaveClass(
+      "min-[760px]:grid-cols-1",
+    );
+    expect(single.container.querySelector(".grid")).not.toHaveClass(
+      "min-[760px]:grid-cols-2",
+    );
+  });
+
   it("renders nothing, not an empty card, when there are no picks", () => {
     const { container } = render(
       <OurPicks picks={[]} usageKwh={1000} onOpen={open} />,
@@ -208,7 +231,7 @@ describe("OurPicks in the page", () => {
     expect(within(picks).queryByText("Plan 1")).toBeNull();
     expect(within(picks).queryByText("Plan 2")).toBeNull();
     expect(within(picks).getByText("Lowest bill")).toBeInTheDocument();
-    expect(within(picks).getByText("Best 100% green")).toBeInTheDocument();
+    expect(within(picks).queryByText(/green/i)).toBeNull();
     expect(within(picks).queryByText("Cheapest 12-month")).toBeNull();
 
     fireEvent.click(cards[0]);

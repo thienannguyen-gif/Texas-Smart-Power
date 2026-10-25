@@ -61,12 +61,12 @@ export function PlansHeader({
             placeholder="Enter your ZIP code"
             aria-invalid={touched && !valid}
             aria-describedby={touched && !valid ? errorId : undefined}
-            className="min-w-0 flex-1 rounded-2xl border-2 border-brand-navy/20 bg-white px-4 py-3 text-base focus:border-brand-green focus:outline-none sm:px-5"
+            className="min-w-0 flex-1 rounded-2xl border-2 border-line bg-surface px-4 py-3 text-base focus:border-brand focus:outline-none sm:px-5"
           />
           <button
             type="submit"
             disabled={zipBusy}
-            className="shrink-0 rounded-2xl bg-brand-green px-5 py-3 text-base font-bold text-white shadow hover:bg-brand-green-800 disabled:opacity-50 sm:px-7"
+            className="shrink-0 rounded-2xl bg-brand px-5 py-3 text-base font-bold text-brand-ink shadow hover:bg-brand/90 disabled:opacity-50 sm:px-7"
           >
             {zipBusy ? "…" : "Find plans"}
           </button>
@@ -74,14 +74,14 @@ export function PlansHeader({
         {touched && !valid && (
           <p
             id={errorId}
-            className="mt-2 text-center text-sm font-medium text-brand-green-800"
+            className="mt-2 text-center text-sm font-medium text-brand"
           >
             Enter a 5-digit ZIP code.
           </p>
         )}
       </form>
 
-      <div className="w-full max-w-xl rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+      <div className="w-full max-w-xl rounded-2xl bg-surface p-4 shadow-sm sm:p-5">
         <UsageControl value={usageKwh} onChange={onUsageChange} />
       </div>
 

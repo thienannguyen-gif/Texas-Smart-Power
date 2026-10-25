@@ -45,11 +45,11 @@ export function ProviderLogo({
       <span className="inline-flex items-center gap-2">
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-lime-200 text-xs font-bold text-brand-green-800"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand"
         >
           {providerInitials(name)}
         </span>
-        <span className="text-sm text-brand-navy/70">{name}</span>
+        <span className="text-sm text-ink-soft">{name}</span>
       </span>
     );
   }

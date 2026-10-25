@@ -21,7 +21,7 @@ export function AreaCard({ choice }: { choice: AreaChoice }) {
 
   if (!open) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-full bg-white px-4 py-1.5 text-sm shadow-sm">
+      <div className="flex items-center justify-between gap-3 rounded-full bg-surface px-4 py-1.5 text-sm shadow-sm">
         <span className="min-w-0 truncate">
           <span aria-hidden="true">📍 </span>
           Utility area:{" "}
@@ -33,7 +33,7 @@ export function AreaCard({ choice }: { choice: AreaChoice }) {
           type="button"
           onClick={() => setReopened(true)}
           aria-label="Change utility area"
-          className="shrink-0 px-2 py-2 text-brand-navy/70 underline"
+          className="shrink-0 px-2 py-2 text-ink-soft underline"
         >
           Change
         </button>
@@ -42,7 +42,7 @@ export function AreaCard({ choice }: { choice: AreaChoice }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <div className="flex flex-col gap-3 rounded-2xl bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <p className="text-sm font-bold sm:text-base">
         <span aria-hidden="true">📍 </span>
         Choose your utility service area
@@ -64,10 +64,10 @@ export function AreaCard({ choice }: { choice: AreaChoice }) {
                 choice.onSelect(option.code);
                 setReopened(false);
               }}
-              className={`min-h-10 rounded-full border-2 border-brand-green px-4 py-1.5 text-sm font-bold ${
+              className={`min-h-10 rounded-full border-2 border-brand px-4 py-1.5 text-sm font-bold ${
                 selected
-                  ? "bg-brand-green text-white"
-                  : "bg-white text-brand-green-800 hover:bg-brand-lime-100"
+                  ? "bg-brand text-brand-ink"
+                  : "bg-surface text-brand hover:bg-surface-alt"
               }`}
             >
               {option.label}
@@ -78,7 +78,7 @@ export function AreaCard({ choice }: { choice: AreaChoice }) {
           <button
             type="button"
             onClick={() => setReopened(false)}
-            className="px-2 py-2 text-sm text-brand-navy/70 underline"
+            className="px-2 py-2 text-sm text-ink-soft underline"
           >
             Cancel
           </button>

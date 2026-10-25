@@ -9,7 +9,7 @@ import { PlanDetailsModal } from "./PlanDetailsModal";
 export const PLANS_PER_PAGE = 6;
 
 const PAGE_BUTTON =
-  "min-h-11 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold text-brand-navy hover:bg-brand-lime-100 disabled:opacity-40 disabled:hover:bg-brand-lime-200";
+  "min-h-11 rounded-full bg-brand-soft px-4 py-2 text-sm font-bold text-ink hover:bg-surface-alt disabled:opacity-40 disabled:hover:bg-brand-soft";
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
@@ -99,14 +99,14 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
-      <p className="text-xs text-brand-navy/70 sm:text-sm">{summaryLine}</p>
-      <p className="mb-2 text-xs text-brand-navy/50">
+      <p className="text-xs text-ink-soft sm:text-sm">{summaryLine}</p>
+      <p className="mb-2 text-xs text-ink-faint">
         Updated {new Date(generatedAt).toLocaleString("en-US")}
       </p>
 
       {showRanked &&
         (plans.length === 0 ? (
-          <p className="text-brand-navy/70">
+          <p className="text-ink-soft">
             {touCount === 0
               ? "No plans match these filters."
               : "No ranked plans match these filters."}
@@ -137,10 +137,7 @@ export function PlanList({
               >
                 ← Previous
               </button>
-              <p
-                aria-live="polite"
-                className="text-sm font-bold text-brand-navy"
-              >
+              <p aria-live="polite" className="text-sm font-bold text-ink">
                 Page {current} of {pageCount}
               </p>
               <button
@@ -158,20 +155,15 @@ export function PlanList({
       {touCount > 0 && (
         <section
           aria-labelledby="tou-heading"
-          className={
-            showRanked ? "mt-10 border-t-2 border-brand-navy/15 pt-6" : ""
-          }
+          className={showRanked ? "mt-10 border-t-2 border-line pt-6" : ""}
         >
-          <h2
-            id="tou-heading"
-            className="text-xl font-bold text-brand-green-700"
-          >
+          <h2 id="tou-heading" className="text-xl font-bold text-brand">
             Time-of-use plans{" "}
-            <span className="text-sm font-semibold text-brand-navy/60">
+            <span className="text-sm font-semibold text-ink-soft">
               (unranked)
             </span>
           </h2>
-          <p className="mt-2 text-sm text-brand-navy/80">{TOU_SECTION_INTRO}</p>
+          <p className="mt-2 text-sm text-ink-soft">{TOU_SECTION_INTRO}</p>
           <ul className="mt-4 space-y-4">
             {timeOfUsePlans.map((plan) => (
               <li key={plan.id}>
@@ -188,7 +180,7 @@ export function PlanList({
       )}
 
       {!showRanked && touCount === 0 && (
-        <p className="text-brand-navy/70">
+        <p className="text-ink-soft">
           No time-of-use plans match these filters.
         </p>
       )}

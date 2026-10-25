@@ -39,7 +39,7 @@ export function UsageControl({
       <div className="flex items-center justify-between gap-3">
         <span
           aria-live="polite"
-          className="rounded-full bg-brand-lime-200 px-4 py-1.5 text-sm font-bold text-brand-navy"
+          className="rounded-full bg-brand-soft px-4 py-1.5 text-sm font-bold text-ink"
         >
           {band}
         </span>
@@ -53,7 +53,7 @@ export function UsageControl({
             onChange={(e) => onChange(Number(e.target.value))}
             onBlur={(e) => onChange(clampUsage(Number(e.target.value)))}
             aria-label="Monthly usage in kWh"
-            className="w-24 rounded-lg border-2 border-brand-navy/20 bg-white px-2 py-1.5 text-right text-base font-normal focus:border-brand-green focus:outline-none"
+            className="w-24 rounded-lg border-2 border-line bg-surface px-2 py-1.5 text-right text-base font-normal focus:border-brand focus:outline-none"
           />
           kWh
         </label>
@@ -69,7 +69,7 @@ export function UsageControl({
           onChange={(e) => onChange(Number(e.target.value))}
           aria-label="Monthly usage slider"
           aria-valuetext={`${formatKwh(snapToSlider(value))} kWh, ${band}`}
-          className="block h-6 w-full accent-brand-green"
+          className="block h-6 w-full accent-brand"
         />
         <div aria-hidden="true" className="relative h-4">
           {/* Wide screens: four ticks along the track. */}
@@ -77,16 +77,16 @@ export function UsageControl({
             <span
               key={tick}
               style={{ left: tickLeft(tick) }}
-              className="absolute top-0 hidden -translate-x-1/2 text-xs leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:block"
+              className="absolute top-0 hidden -translate-x-1/2 text-xs leading-none font-semibold whitespace-nowrap text-ink-soft sm:block"
             >
               {formatKwh(tick)} kWh
             </span>
           ))}
           {/* Phones: they collide there, so only the two ends are labelled. */}
-          <span className="absolute top-0 left-0 text-[10px] leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:hidden">
+          <span className="absolute top-0 left-0 text-[10px] leading-none font-semibold whitespace-nowrap text-ink-soft sm:hidden">
             {formatKwh(MIN_USAGE_KWH)} kWh
           </span>
-          <span className="absolute top-0 right-0 text-[10px] leading-none font-semibold whitespace-nowrap text-brand-navy/70 sm:hidden">
+          <span className="absolute top-0 right-0 text-[10px] leading-none font-semibold whitespace-nowrap text-ink-soft sm:hidden">
             {formatKwh(MAX_USAGE_KWH)} kWh
           </span>
         </div>

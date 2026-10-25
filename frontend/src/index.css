@@ -1,21 +1,72 @@
 @import "tailwindcss";
 
-/* Brand palette from the approved mockup (Texas Power .pdf). */
-@theme {
-  --color-brand-navy: #1f2b3a;
-  --color-brand-navy-600: #2b3a4d;
-  --color-brand-lime: #dcefaa;
-  --color-brand-lime-100: #eef7d2;
-  --color-brand-lime-200: #e4f3bf;
-  --color-brand-green: #5c9e30;
-  --color-brand-green-700: #3f7d2e;
-  --color-brand-green-800: #356b27;
-  --color-brand-gold: #f5b301;
+/* One light theme. Every colour is a custom property on :root; components use
+   the Tailwind names mapped in @theme inline (text-ink, bg-surface, bg-brand,
+   bg-bar ...), never a literal colour. The page and the cards are both white,
+   so structure comes from 1px lines. color-scheme: light keeps inputs, selects
+   and scrollbars light for people whose OS is in dark mode. */
+:root {
+  color-scheme: light;
+
+  --paper: #ffffff; /* page background */
+  --surface: #ffffff; /* cards, search band, modal */
+  --surface-alt: #f5f8f6; /* hover rows, inset blocks */
+
+  --ink: #0d2b25; /* headings, plan names, figures */
+  --ink-soft: #466b61; /* secondary text */
+  --ink-faint: #7d9a90; /* captions, counts */
+
+  --line: #d9dedb; /* input borders, card borders */
+  --line-soft: #e7ebe8; /* hairlines */
+
+  --brand: #176b57; /* buttons, active filters */
+  --brand-ink: #ffffff; /* text on --brand */
+  --brand-soft: #e1f1ea; /* chip background, slider track */
+
+  --warn: #9c5a24; /* unstable-price chip text */
+  --warn-soft: #f8ece1; /* that chip's background */
+
+  --sage: #2fa084; /* 100% renewable figures only */
+
+  /* Header band: the one filled area. */
+  --bar: #11443a;
+  --bar-fg: #eef6f2;
+  --bar-accent: #6fcf97;
+
+  /* Not in the supplied palette: error boxes and the modal's dimmed backdrop. */
+  --danger: #a12d2d;
+  --danger-soft: #fbeaea;
+  --danger-line: #e0a3a3;
+  --scrim: rgb(0 0 0 / 0.4);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-sage: var(--sage);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-scrim: var(--scrim);
+  --color-bar: var(--bar);
+  --color-bar-fg: var(--bar-fg);
+  --color-bar-accent: var(--bar-accent);
 }
 
 body {
-  background-color: var(--color-brand-lime);
-  color: var(--color-brand-navy);
+  background-color: var(--paper);
+  color: var(--ink);
   overflow-x: clip;
 }
 

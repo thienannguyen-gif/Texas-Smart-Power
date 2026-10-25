@@ -181,7 +181,7 @@ export function PlanDetailsModal({
 
         {plan.newCustomer === true && (
           <p className="mt-3 rounded-xl bg-surface-alt px-3 py-2 text-sm text-ink">
-            <strong>Eligibility:</strong> New customers only — if you&apos;re
+            <strong>Eligibility:</strong> New customers only; if you&apos;re
             already with {plan.companyName}, you may not qualify for this rate.
           </p>
         )}

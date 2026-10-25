@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
@@ -54,6 +54,26 @@ export function PlanList({
   const modalOpen = selected !== null;
   const touCount = timeOfUsePlans.length;
 
+  // A page change made by the user (buttons or arrow keys) scrolls back to the
+  // top and moves focus to the results line, once the new rows are on screen.
+  // Filter changes also reset the page, but those must not scroll.
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  const scrollAfterPageChange = useRef(false);
+  function goToPage(next: number) {
+    scrollAfterPageChange.current = true;
+    onPageChange(next);
+  }
+  useEffect(() => {
+    if (!scrollAfterPageChange.current) return;
+    scrollAfterPageChange.current = false;
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    // preventScroll: the smooth scroll above must not be cut short by a jump
+    summaryRef.current?.focus({ preventScroll: true });
+  }, [current]);
+
   // The plan count: all of them, or "Showing N of M" under a filter. In the
   // time-of-use-only view the count is of those plans.
   const summaryLine = showRanked
@@ -74,17 +94,23 @@ export function PlanList({
       ) {
         return;
       }
-      if (e.key === "ArrowLeft" && canPrev) onPageChange(current - 1);
-      else if (e.key === "ArrowRight" && canNext) onPageChange(current + 1);
+      if (e.key === "ArrowLeft" && canPrev) goToPage(current - 1);
+      else if (e.key === "ArrowRight" && canNext) goToPage(current + 1);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [modalOpen, showRanked, canPrev, canNext, current, onPageChange]);
+  }, [modalOpen, showRanked, canPrev, canNext, current]);
 
   return (
     <section aria-label="Plans">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <p className="text-xs text-ink-soft sm:text-sm">{summaryLine}</p>
+        <p
+          ref={summaryRef}
+          tabIndex={-1}
+          className="text-xs text-ink-soft outline-none sm:text-sm"
+        >
+          {summaryLine}
+        </p>
         <p className="text-xs text-ink-faint">
           Updated {new Date(generatedAt).toLocaleString("en-US")}
         </p>
@@ -117,7 +143,7 @@ export function PlanList({
             >
               <button
                 type="button"
-                onClick={() => onPageChange(current - 1)}
+                onClick={() => goToPage(current - 1)}
                 disabled={!canPrev}
                 className={PAGE_BUTTON}
               >
@@ -128,7 +154,7 @@ export function PlanList({
               </p>
               <button
                 type="button"
-                onClick={() => onPageChange(current + 1)}
+                onClick={() => goToPage(current + 1)}
                 disabled={!canNext}
                 className={PAGE_BUTTON}
               >
@@ -138,7 +164,9 @@ export function PlanList({
           </>
         ))}
 
-      {touCount > 0 && (
+      {/* Unranked, outside the paginated list: shown once, on page 1 only (and
+          always in the time-of-use-only view, which has no pages). */}
+      {touCount > 0 && (!showRanked || current === 1) && (
         <section
           aria-labelledby="tou-heading"
           className={showRanked ? "mt-10 border-t-2 border-line pt-6" : ""}

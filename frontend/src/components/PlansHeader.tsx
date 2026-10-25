@@ -45,7 +45,7 @@ export function PlansHeader({
   return (
     <section
       aria-label="Your search"
-      className="border-b border-brand-navy/10 bg-white"
+      className="border-b border-line-soft bg-surface"
     >
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:items-end md:gap-14 md:py-8">
         <div>
@@ -70,21 +70,18 @@ export function PlansHeader({
                 placeholder="ZIP code"
                 aria-invalid={touched && !valid}
                 aria-describedby={touched && !valid ? errorId : undefined}
-                className="w-32 min-w-0 rounded-md border border-brand-navy/15 bg-brand-lime px-3 py-2.5 font-mono text-lg focus:border-brand-green focus:outline-none"
+                className="w-32 min-w-0 rounded-md border border-line bg-paper px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={zipBusy}
-                className="rounded-md bg-brand-green px-5 py-2.5 text-base font-semibold text-white hover:bg-brand-green-800 disabled:opacity-50 sm:px-6"
+                className="rounded-md bg-brand px-5 py-2.5 text-base font-semibold text-brand-ink hover:bg-brand/90 disabled:opacity-50 sm:px-6"
               >
                 {zipBusy ? "…" : "Find plans"}
               </button>
             </div>
             {touched && !valid && (
-              <p
-                id={errorId}
-                className="mt-2 text-sm font-medium text-brand-green-800"
-              >
+              <p id={errorId} className="mt-2 text-sm font-medium text-brand">
                 Enter a 5-digit ZIP code.
               </p>
             )}
@@ -101,7 +98,7 @@ export function PlansHeader({
                     type="button"
                     onClick={() => setSwitching(true)}
                     aria-label="Change utility area"
-                    className="px-1 py-2 text-sm text-brand-green-800 underline"
+                    className="px-1 py-2 text-sm text-brand underline"
                   >
                     Change
                   </button>

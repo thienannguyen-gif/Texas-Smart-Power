@@ -20,10 +20,10 @@ function Bolt({ className }: { className?: string }) {
 
 export function SiteHeader() {
   return (
-    <header className="bg-brand-pine text-white">
+    <header className="bg-bar text-bar-fg">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
         <a href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/25 bg-white/5 text-emerald-300">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-bar-line bg-bar-fg/5 text-bar-accent">
             <Bolt className="h-5 w-5" />
           </span>
           <span className="text-xs font-semibold tracking-[0.12em] whitespace-nowrap uppercase sm:text-base sm:tracking-[0.18em]">
@@ -36,7 +36,7 @@ export function SiteHeader() {
               <li key={item.label}>
                 <a
                   href={item.href}
-                  className="text-white/80 transition-colors hover:text-white"
+                  className="text-bar-fg-soft transition-colors hover:text-bar-fg"
                 >
                   {item.label.toUpperCase()}
                 </a>

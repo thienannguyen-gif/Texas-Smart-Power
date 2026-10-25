@@ -21,7 +21,7 @@ export function AreaCard({
   onDone: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-brand-navy/10 bg-brand-lime-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-lg border border-line-soft bg-surface-alt p-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm font-semibold">Choose your utility service area</p>
       <div
         role="group"
@@ -40,10 +40,10 @@ export function AreaCard({
                 choice.onSelect(option.code);
                 onDone();
               }}
-              className={`min-h-10 rounded-md border-2 border-brand-green px-4 py-1.5 text-sm font-semibold ${
+              className={`min-h-10 rounded-md border-2 border-brand px-4 py-1.5 text-sm font-semibold ${
                 selected
-                  ? "bg-brand-green text-white"
-                  : "bg-white text-brand-green-800 hover:bg-brand-lime-200"
+                  ? "bg-brand text-brand-ink"
+                  : "bg-surface text-brand hover:bg-brand-soft"
               }`}
             >
               {option.label}
@@ -54,7 +54,7 @@ export function AreaCard({
           <button
             type="button"
             onClick={onDone}
-            className="px-2 py-2 text-sm text-brand-navy/70 underline"
+            className="px-2 py-2 text-sm text-ink-soft underline"
           >
             Cancel
           </button>

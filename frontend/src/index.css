@@ -1,11 +1,101 @@
 @import "tailwindcss";
 
-/* Palette and type for the results-page design: deep green header, white
-   panels on a light grey page, one dark green accent, monospace for labels and
-   numbers. System fonts only, so nothing is downloaded; if Inter / JetBrains
-   Mono are added later they slot in first in these stacks. The token names are
-   older than this palette ("lime" is now the page grey / mint tint). */
-@theme {
+/* Colours are CSS custom properties. Every token is defined on bare :root
+   (light values), so no colour exists only inside a media or [data-theme]
+   block; the dark blocks below only override values. Components use the
+   Tailwind names mapped in @theme inline (text-ink, bg-surface, bg-brand ...),
+   never a literal colour. System fonts only, so nothing is downloaded. */
+:root {
+  color-scheme: light;
+
+  --ink: #0d2b25; /* text */
+  --ink-soft: #466b61; /* secondary text */
+  --ink-faint: #7d9a90; /* labels, captions */
+  --paper: #eeeeee; /* page background */
+  --surface: #ffffff; /* cards, modal */
+  --surface-alt: #f5f8f6; /* subtle fills */
+  --line: #d9dedb; /* borders */
+  --line-soft: #e7ebe8; /* inner dividers */
+  --brand: #176b57; /* buttons, links */
+  --brand-ink: #ffffff; /* text on brand */
+  --brand-soft: #e1f1ea; /* brand-tinted fills */
+  --warn: #9c5a24; /* unstable price, eligibility */
+  --warn-soft: #f8ece1;
+  --sage: #2fa084; /* 100% renewable */
+  --sage-soft: #e1f1ea;
+
+  /* Error messages and the modal scrim: not in the supplied palette. */
+  --danger: #a12d2d;
+  --danger-soft: #fbeaea;
+  --scrim: rgb(0 0 0 / 0.4);
+
+  /* Header band: stays dark green in both themes. */
+  --bar: #11443a;
+  --bar-fg: #eef6f2;
+  --bar-fg-soft: #9cc4b7;
+  --bar-line: #2d6b5b;
+  --bar-accent: #6fcf97;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --ink: #e4efe9;
+    --ink-soft: #94b2a7;
+    --ink-faint: #6b8c82;
+    --paper: #0b1714;
+    --surface: #122420;
+    --surface-alt: #172e28;
+    --line: #26403a;
+    --line-soft: #1e332e;
+    --brand: #4cc3a3;
+    --brand-ink: #062019;
+    --brand-soft: #14312a;
+    --warn: #d4955f;
+    --warn-soft: #2b1e13;
+    --sage: #6fcf97;
+    --sage-soft: #15301f;
+    --danger: #e07b7b;
+    --danger-soft: #2e1717;
+    --bar: #0c201c;
+    --bar-fg: #e4efe9;
+    --bar-fg-soft: #8bada3;
+    --bar-line: #26403a;
+    --bar-accent: #4cc3a3;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ink: #e4efe9;
+  --ink-soft: #94b2a7;
+  --ink-faint: #6b8c82;
+  --paper: #0b1714;
+  --surface: #122420;
+  --surface-alt: #172e28;
+  --line: #26403a;
+  --line-soft: #1e332e;
+  --brand: #4cc3a3;
+  --brand-ink: #062019;
+  --brand-soft: #14312a;
+  --warn: #d4955f;
+  --warn-soft: #2b1e13;
+  --sage: #6fcf97;
+  --sage-soft: #15301f;
+  --danger: #e07b7b;
+  --danger-soft: #2e1717;
+  --bar: #0c201c;
+  --bar-fg: #e4efe9;
+  --bar-fg-soft: #8bada3;
+  --bar-line: #26403a;
+  --bar-accent: #4cc3a3;
+}
+
+/* Tailwind names for the tokens. "inline" makes the utilities read the live
+   variable, so they follow the theme blocks above. */
+@theme inline {
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -13,24 +103,34 @@
     ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas,
     monospace;
 
-  --color-brand-navy: #10302b; /* ink: text, borders */
-  --color-brand-navy-600: #1d4a42;
-  --color-brand-pine: #11453f; /* header bar */
-  --color-brand-muted: #6a7f79; /* small labels */
-  --color-brand-lime: #eeeeee; /* page background */
-  --color-brand-lime-100: #f4f6f5; /* soft panel */
-  --color-brand-lime-200: #dff0e8; /* mint tint: pills, badges */
-  --color-brand-green: #1a6b57;
-  --color-brand-green-700: #15594a;
-  --color-brand-green-800: #0f4a3d;
-  --color-brand-amber: #b5651d; /* flagged plans */
-  --color-brand-amber-100: #f8e7d7;
-  --color-brand-amber-800: #8a4310;
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-scrim: var(--scrim);
+  --color-bar: var(--bar);
+  --color-bar-fg: var(--bar-fg);
+  --color-bar-fg-soft: var(--bar-fg-soft);
+  --color-bar-line: var(--bar-line);
+  --color-bar-accent: var(--bar-accent);
 }
 
 body {
-  background-color: var(--color-brand-lime);
-  color: var(--color-brand-navy);
+  background-color: var(--paper);
+  color: var(--ink);
   overflow-x: clip;
 }
 
@@ -41,7 +141,7 @@ body {
   line-height: 1rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-brand-muted);
+  color: var(--ink-faint);
 }
 
 /* The usage slider: a thin track filled up to the thumb (--pct is set inline). */
@@ -57,11 +157,11 @@ body {
 .usage-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 9999px;
-  border: 1px solid rgb(16 48 43 / 0.15);
+  border: 1px solid var(--line);
   background: linear-gradient(
     to right,
-    var(--color-brand-green) var(--pct, 0%),
-    #dfe3e1 var(--pct, 0%)
+    var(--brand) var(--pct, 0%),
+    var(--line) var(--pct, 0%)
   );
 }
 .usage-range::-webkit-slider-thumb {
@@ -71,31 +171,31 @@ body {
   height: 18px;
   margin-top: -7px;
   border-radius: 9999px;
-  background: var(--color-brand-green);
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px rgb(16 48 43 / 0.25);
+  background: var(--brand);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--ink-faint);
 }
 .usage-range::-moz-range-track {
   height: 6px;
   border-radius: 9999px;
-  border: 1px solid rgb(16 48 43 / 0.15);
-  background: #dfe3e1;
+  border: 1px solid var(--line);
+  background: var(--line);
 }
 .usage-range::-moz-range-progress {
   height: 6px;
   border-radius: 9999px;
-  background: var(--color-brand-green);
+  background: var(--brand);
 }
 .usage-range::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 9999px;
-  background: var(--color-brand-green);
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px rgb(16 48 43 / 0.25);
+  background: var(--brand);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--ink-faint);
 }
 .usage-range:focus-visible {
-  outline: 2px solid var(--color-brand-green);
+  outline: 2px solid var(--brand);
   outline-offset: 4px;
   border-radius: 9999px;
 }

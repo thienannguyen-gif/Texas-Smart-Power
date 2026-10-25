@@ -104,11 +104,11 @@ describe("PlanCard row", () => {
     const { rerender } = render(
       <PlanCard plan={plan({ renewableDescription: "100% Renewable" })} />,
     );
-    expect(screen.getByText("100%")).toHaveClass("text-brand-green");
+    expect(screen.getByText("100%")).toHaveClass("text-sage");
     rerender(
       <PlanCard plan={plan({ renewableDescription: "22% Renewable" })} />,
     );
-    expect(screen.getByText("22%")).not.toHaveClass("text-brand-green");
+    expect(screen.getByText("22%")).not.toHaveClass("text-sage");
   });
 
   it("has no hide-provider action", () => {
@@ -126,7 +126,7 @@ describe("PlanCard marks", () => {
     });
     const { rerender } = render(<PlanCard plan={stable} bestMatch />);
     expect(screen.getByText("Best match")).toBeInTheDocument();
-    expect(article()).toHaveClass("border-l-4", "border-l-brand-green");
+    expect(article()).toHaveClass("border-l-4", "border-l-brand");
 
     rerender(<PlanCard plan={stable} />);
     expect(screen.queryByText("Best match")).not.toBeInTheDocument();
@@ -151,7 +151,7 @@ describe("PlanCard price-curve warning", () => {
       />,
     );
     expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
-    expect(article()).toHaveClass("border-l-brand-amber");
+    expect(article()).toHaveClass("border-l-warn");
 
     rerender(
       <PlanCard
@@ -168,7 +168,7 @@ describe("PlanCard price-curve warning", () => {
       />,
     );
     expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
-    expect(article()).not.toHaveClass("border-l-brand-amber");
+    expect(article()).not.toHaveClass("border-l-warn");
   });
 
   it("the best-match bar wins over the amber one when a plan is both", () => {
@@ -178,8 +178,8 @@ describe("PlanCard price-curve warning", () => {
         plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 } })}
       />,
     );
-    expect(article()).toHaveClass("border-l-brand-green");
-    expect(article()).not.toHaveClass("border-l-brand-amber");
+    expect(article()).toHaveClass("border-l-brand");
+    expect(article()).not.toHaveClass("border-l-warn");
     expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
   });
 });

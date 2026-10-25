@@ -16,8 +16,8 @@ import { ROW_GRID } from "./planRow";
 
 const BADGE =
   "inline-flex items-center rounded-sm px-2 py-0.5 font-mono text-[11px] font-medium tracking-wider uppercase";
-const BADGE_MINT = `${BADGE} bg-brand-lime-200 text-brand-green-800`;
-const BADGE_OUTLINE = `${BADGE} border border-brand-navy/20 text-brand-navy/70`;
+const BADGE_MINT = `${BADGE} bg-brand-soft text-brand`;
+const BADGE_OUTLINE = `${BADGE} border border-line text-ink-soft`;
 
 // One value of the row. On wide screens the column header names it (the label
 // stays for screen readers); on a phone, where there is no header, it is shown.
@@ -50,15 +50,15 @@ export function PlanCard({
 }) {
   const flagged = priceCurveWarning(plan) !== null;
   const accent = bestMatch
-    ? "border-l-4 border-l-brand-green"
+    ? "border-l-4 border-l-brand"
     : flagged
-      ? "border-l-4 border-l-brand-amber"
+      ? "border-l-4 border-l-warn"
       : "";
   const renewable = renewablePct(plan);
 
   return (
     <article
-      className={`rounded-lg border border-brand-navy/10 bg-white ${accent}`}
+      className={`rounded-lg border border-line-soft bg-surface ${accent}`}
     >
       <div
         className={`grid gap-4 p-4 md:items-center md:gap-3 md:px-5 md:py-4 ${ROW_GRID}`}
@@ -69,7 +69,7 @@ export function PlanCard({
               {plan.planName}
             </h3>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <span className="text-sm tracking-wide text-brand-navy/70 uppercase">
+              <span className="text-sm tracking-wide text-ink-soft uppercase">
                 {plan.companyName}
               </span>
               {bestMatch && <span className={BADGE_MINT}>Best match</span>}
@@ -94,7 +94,7 @@ export function PlanCard({
               type="button"
               onClick={onMoreDetails}
               aria-label={`More details: ${plan.planName}`}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-brand-navy/20 text-lg text-brand-navy hover:bg-brand-lime-100 md:order-last"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-line text-lg text-ink hover:bg-surface-alt md:order-last"
             >
               <span aria-hidden="true">›</span>
             </button>
@@ -121,9 +121,7 @@ export function PlanCard({
             <span
               title={plan.renewableDescription ?? undefined}
               className={`font-mono text-[15px] ${
-                renewable === 100
-                  ? "font-medium text-brand-green"
-                  : "text-brand-navy/70"
+                renewable === 100 ? "font-medium text-sage" : "text-ink-soft"
               }`}
             >
               {renewable !== null ? `${renewable}%` : "—"}

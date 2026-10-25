@@ -53,7 +53,7 @@ function toggle<T>(list: T[], item: T): T[] {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3">
-      <h3 className="label-mono border-b border-brand-navy/15 pb-3">{title}</h3>
+      <h3 className="label-mono border-b border-line pb-3">{title}</h3>
       {children}
     </section>
   );
@@ -83,7 +83,7 @@ function OptionRow({
   return (
     <label
       className={`flex items-center gap-3 py-1 text-[15px] ${
-        empty ? "text-brand-navy/40" : "text-brand-navy"
+        empty ? "text-ink-faint" : "text-ink"
       }`}
     >
       <input
@@ -92,14 +92,14 @@ function OptionRow({
         disabled={empty && !checked}
         checked={checked}
         onChange={onToggle}
-        className="h-4 w-4 shrink-0 rounded-sm accent-brand-green"
+        className="h-4 w-4 shrink-0 rounded-sm accent-brand"
       />
       <span className="flex-1">{label}</span>
       {noneInArea ? (
         <span className="text-xs">No plans available</span>
       ) : (
         count !== null && (
-          <span className="font-mono text-xs text-brand-muted">{count}</span>
+          <span className="font-mono text-xs text-ink-faint">{count}</span>
         )
       )}
     </label>
@@ -132,7 +132,7 @@ function SortSection({
                     checked={option.value === value}
                     onChange={() => onChange(option.value)}
                     aria-describedby={descriptionId}
-                    className="h-4 w-4 shrink-0 accent-brand-green"
+                    className="h-4 w-4 shrink-0 accent-brand"
                   />
                   {option.label}
                 </label>
@@ -140,7 +140,7 @@ function SortSection({
                   <span
                     aria-hidden="true"
                     title="Recommended"
-                    className="font-mono text-xs text-brand-muted"
+                    className="font-mono text-xs text-ink-faint"
                   >
                     rec.
                   </span>
@@ -148,7 +148,7 @@ function SortSection({
               </div>
               <p
                 id={descriptionId}
-                className="pl-7 text-sm leading-snug text-brand-navy/70"
+                className="pl-7 text-sm leading-snug text-ink-soft"
               >
                 {option.description}
               </p>
@@ -234,9 +234,7 @@ export function FilterPanel({
             onChange({ ...value, onlyTimeOfUse: !value.onlyTimeOfUse })
           }
         />
-        <p className="text-sm leading-snug text-brand-navy/70">
-          {TOU_FILTER_NOTE}
-        </p>
+        <p className="text-sm leading-snug text-ink-soft">{TOU_FILTER_NOTE}</p>
       </Section>
 
       {providers.length > 0 && (

@@ -11,7 +11,7 @@ import { ROW_GRID } from "./planRow";
 export const PLANS_PER_PAGE = 6;
 
 const PAGE_BUTTON =
-  "min-h-11 rounded-md border border-brand-navy/20 bg-white px-4 py-2 text-sm font-medium text-brand-navy hover:bg-brand-lime-100 disabled:opacity-40 disabled:hover:bg-white";
+  "min-h-11 rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-surface-alt disabled:opacity-40 disabled:hover:bg-surface";
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 const bold = (n: number) => <strong className="font-semibold">{n}</strong>;
@@ -167,20 +167,20 @@ export function PlanList({
             </Fragment>
           ))}
         </p>
-        <p className="ml-auto font-mono text-xs text-brand-muted">
+        <p className="ml-auto font-mono text-xs text-ink-faint">
           Updated {formatUpdated(generatedAt)}
         </p>
       </div>
 
       {showRanked &&
         (plans.length === 0 ? (
-          <p className="mt-6 text-brand-navy/70">
+          <p className="mt-6 text-ink-soft">
             {touCount === 0
               ? "No plans match these filters."
               : "No ranked plans match these filters."}
           </p>
         ) : (
-          <div className="mt-5 border-t border-brand-navy/10 pt-5">
+          <div className="mt-5 border-t border-line-soft pt-5">
             <RowHeader />
             <ul className="space-y-3">
               {visible.map((plan) => (
@@ -207,10 +207,7 @@ export function PlanList({
               >
                 ← Previous
               </button>
-              <p
-                aria-live="polite"
-                className="font-mono text-sm text-brand-navy"
-              >
+              <p aria-live="polite" className="font-mono text-sm text-ink">
                 Page {current} of {pageCount}
               </p>
               <button
@@ -224,7 +221,7 @@ export function PlanList({
             </nav>
 
             {anyFlagged && (
-              <p className="mt-8 rounded-lg border border-brand-navy/10 bg-brand-lime-100 p-5 text-[15px] leading-relaxed">
+              <p className="mt-8 rounded-lg border border-line-soft bg-surface-alt p-5 text-[15px] leading-relaxed">
                 <strong className="font-semibold">
                   Plans with the Unstable price mark are flagged.
                 </strong>{" "}
@@ -240,17 +237,13 @@ export function PlanList({
       {touCount > 0 && (
         <section
           aria-labelledby="tou-heading"
-          className={
-            showRanked ? "mt-10 border-t border-brand-navy/15 pt-6" : "mt-5"
-          }
+          className={showRanked ? "mt-10 border-t border-line pt-6" : "mt-5"}
         >
           <h2 id="tou-heading" className="text-xl font-semibold">
             Time-of-use plans{" "}
             <span className="label-mono align-middle">(unranked)</span>
           </h2>
-          <p className="mt-2 text-[15px] text-brand-navy/80">
-            {TOU_SECTION_INTRO}
-          </p>
+          <p className="mt-2 text-[15px] text-ink-soft">{TOU_SECTION_INTRO}</p>
           <div className="mt-5">
             <RowHeader unranked />
             <ul className="space-y-3">
@@ -270,7 +263,7 @@ export function PlanList({
       )}
 
       {!showRanked && touCount === 0 && (
-        <p className="mt-6 text-brand-navy/70">
+        <p className="mt-6 text-ink-soft">
           No time-of-use plans match these filters.
         </p>
       )}

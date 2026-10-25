@@ -124,7 +124,7 @@ export function PlansView({
         type="button"
         onClick={() => setDrawerOpen(true)}
         aria-haspopup="dialog"
-        className={`min-h-10 rounded-md bg-brand-green px-4 py-1.5 text-sm font-semibold text-white ${extraClass}`}
+        className={`min-h-10 rounded-md bg-brand px-4 py-1.5 text-sm font-semibold text-brand-ink ${extraClass}`}
       >
         {activeCount > 0 ? `Filters (${activeCount})` : "Filters"}
       </button>
@@ -182,7 +182,7 @@ export function PlansView({
 
           <main>
             {state.status === "loading" && (
-              <p role="status" className="text-brand-navy/70">
+              <p role="status" className="text-ink-soft">
                 Loading plans…
               </p>
             )}
@@ -190,7 +190,7 @@ export function PlansView({
             {state.status === "error" && (
               <div
                 role="alert"
-                className="rounded-2xl border-2 border-red-300 bg-red-50 p-4 text-red-800"
+                className="rounded-2xl border-2 border-danger bg-danger-soft p-4 text-danger"
               >
                 <p className="font-bold">Couldn’t load plans.</p>
                 <p className="mt-1 text-sm">{state.error}</p>
@@ -198,7 +198,7 @@ export function PlansView({
             )}
 
             {state.status === "empty" && (
-              <p className="text-brand-navy/70">
+              <p className="text-ink-soft">
                 No plans available for{" "}
                 <span className="font-semibold">{state.tdu}</span> right now.
                 Check back after the next data refresh.

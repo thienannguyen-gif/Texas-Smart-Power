@@ -325,10 +325,10 @@ test("Change opens the chooser in place: the chosen pill filled and the other ou
   const oncor = within(group).getByRole("button", { name: "Oncor" });
   const tnmp = within(group).getByRole("button", { name: "TNMP" });
   expect(oncor).toHaveAttribute("aria-pressed", "true");
-  expect(oncor).toHaveClass("bg-brand-green", "text-white");
+  expect(oncor).toHaveClass("bg-brand", "text-brand-ink");
   expect(tnmp).toHaveAttribute("aria-pressed", "false");
-  expect(tnmp).toHaveClass("border-2", "bg-white");
-  expect(tnmp).not.toHaveClass("bg-brand-green");
+  expect(tnmp).toHaveClass("border-2", "bg-surface");
+  expect(tnmp).not.toHaveClass("bg-brand");
   // full company names stay available on hover
   expect(tnmp).toHaveAttribute("title", "TEXAS-NEW MEXICO POWER COMPANY");
   // the service-area line stays while the user is only switching

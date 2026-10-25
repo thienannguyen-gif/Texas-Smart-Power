@@ -229,7 +229,7 @@ describe("PlanDetailsModal eligibility line", () => {
     );
     const line = screen.getByText(/new customers only/i).closest("p")!;
     expect(line).toHaveTextContent(
-      "Eligibility: New customers only — if you're already with Example Energy, you may not qualify for this rate.",
+      "Eligibility: New customers only; if you're already with Example Energy, you may not qualify for this rate.",
     );
     expect(line).toBeVisible();
   });

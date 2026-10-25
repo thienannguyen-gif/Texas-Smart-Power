@@ -1423,3 +1423,99 @@ test("a card whose logo fails to load shows the provider's initials in a circle 
     screen.getByRole("img", { name: "Octopus Energy" }),
   ).toBeInTheDocument();
 });
+
+// ---- Pagination: the time-of-use section, and scrolling on a page change
+
+const manyWithTou: TduDataFile = { ...many, timeOfUsePlans: [touNight] };
+
+function renderManyWithTou() {
+  mockPlans(manyWithTou);
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+}
+
+test("the time-of-use section is in the page on page 1 only, not hidden or empty on later pages", async () => {
+  renderManyWithTou();
+  await screen.findByText("Page 1 of 3");
+  expect(screen.getByText("Night Owl")).toBeInTheDocument();
+  expect(
+    screen.getByRole("region", { name: /time-of-use plans/i }),
+  ).toBeInTheDocument();
+
+  fireEvent.click(next());
+  expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("region", { name: /time-of-use plans/i }),
+  ).toBeNull();
+  expect(document.getElementById("tou-heading")).toBeNull();
+  expect(screen.queryByText("Night Owl")).toBeNull();
+  expect(document.body.textContent).not.toContain("Unranked");
+
+  fireEvent.click(next());
+  expect(document.getElementById("tou-heading")).toBeNull();
+
+  fireEvent.click(prev());
+  fireEvent.click(prev());
+  expect(screen.getByText("Night Owl")).toBeInTheDocument();
+});
+
+test("the time-of-use-only view still shows its section, whatever page the list was on", async () => {
+  renderManyWithTou();
+  await screen.findByText("Page 1 of 3");
+  fireEvent.click(next());
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /only time-of-use plans/i }),
+  );
+  expect(screen.getByText("Night Owl")).toBeInTheDocument();
+});
+
+test("changing page scrolls to the top smoothly, after the new rows are in, and focuses the results line", async () => {
+  renderManyWithTou();
+  await screen.findByText("Page 1 of 3");
+  const summary = screen.getByText("14 plans");
+  expect(summary).toHaveAttribute("tabindex", "-1");
+  expect(window.scrollTo).not.toHaveBeenCalled();
+
+  let rowsWhenScrolled = "";
+  (window.scrollTo as ReturnType<typeof vi.fn>).mockImplementation(() => {
+    rowsWhenScrolled = screen.getByText("Page 2 of 3") ? "new" : "old";
+    expect(screen.getByText("Plan 7")).toBeInTheDocument();
+  });
+  fireEvent.click(next());
+  expect(window.scrollTo).toHaveBeenCalledTimes(1);
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
+  expect(rowsWhenScrolled).toBe("new"); // the scroll came after the render
+  expect(summary).toHaveFocus();
+});
+
+test("arrow keys and Previous scroll too; a filter change that resets the page does not", async () => {
+  renderManyWithTou();
+  await screen.findByText("Page 1 of 3");
+  fireEvent.keyDown(document.body, { key: "ArrowRight" });
+  expect(window.scrollTo).toHaveBeenCalledTimes(1);
+  fireEvent.click(prev());
+  expect(window.scrollTo).toHaveBeenCalledTimes(2);
+
+  fireEvent.click(next());
+  expect(window.scrollTo).toHaveBeenCalledTimes(3);
+  pickProvider("bet", "Beta"); // resets to page 1
+  expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+  expect(window.scrollTo).toHaveBeenCalledTimes(3);
+});
+
+test("with prefers-reduced-motion the scroll is instant", async () => {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+  renderManyWithTou();
+  await screen.findByText("Page 1 of 3");
+  fireEvent.click(next());
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+});

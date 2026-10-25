@@ -18,7 +18,7 @@ export function HeroLanding({
     <section className="relative overflow-hidden">
       <Skyline className="pointer-events-none absolute inset-x-0 bottom-0 h-44 w-full opacity-90 sm:h-64" />
       <div className="relative mx-auto max-w-3xl px-4 pt-12 pb-32 text-center sm:px-6 sm:pt-16 sm:pb-40">
-        <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-7xl">
+        <h1 className="font-display text-4xl font-semibold tracking-tight text-ink sm:text-7xl">
           Texas Smart Power
         </h1>
         <div className="mx-auto mt-8 max-w-2xl sm:mt-10">

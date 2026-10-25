@@ -47,13 +47,13 @@ export function ZipForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-2xl bg-brand px-8 py-4 text-base font-bold text-brand-ink shadow hover:bg-brand/90 disabled:opacity-50 sm:text-lg"
+          className="rounded-2xl bg-brand px-8 py-4 text-base font-bold text-brand-ink shadow hover:bg-brand-deep disabled:opacity-50 sm:text-lg"
         >
           {busy ? "…" : "GO"}
         </button>
       </div>
       {showError && (
-        <p id={errorId} className="mt-2 text-sm font-medium text-brand">
+        <p id={errorId} className="mt-2 text-sm font-medium text-brand-deep">
           Enter a 5-digit ZIP code.
         </p>
       )}

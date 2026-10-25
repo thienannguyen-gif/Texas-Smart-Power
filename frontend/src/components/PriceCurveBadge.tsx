@@ -25,7 +25,7 @@ export function PriceCurveBadge({
     <div className={className}>
       <span
         title={PRICE_CURVE_EXPLANATION}
-        className="inline-flex items-center rounded-sm bg-warn-soft px-2 py-0.5 font-mono text-[11px] font-medium tracking-wider text-warn uppercase"
+        className="inline-flex items-center rounded-sm border border-warn bg-warn-soft px-1.5 py-0.5 font-mono text-[10px] leading-4 font-medium tracking-[0.1em] text-ink uppercase"
       >
         Unstable price
         {!explain && (

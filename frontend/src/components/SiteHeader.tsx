@@ -26,12 +26,12 @@ export function SiteHeader() {
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-bar-line bg-bar-fg/5 text-bar-accent">
             <Bolt className="h-5 w-5" />
           </span>
-          <span className="text-xs font-semibold tracking-[0.12em] whitespace-nowrap uppercase sm:text-base sm:tracking-[0.18em]">
+          <span className="text-xs font-display font-semibold tracking-[0.12em] whitespace-nowrap uppercase sm:text-base sm:tracking-[0.18em]">
             Texas Smart Power
           </span>
         </a>
         <nav aria-label="Primary">
-          <ul className="flex gap-4 text-xs font-medium tracking-[0.14em] sm:gap-10 sm:text-sm sm:tracking-[0.18em]">
+          <ul className="flex gap-4 font-mono text-xs font-medium tracking-[0.14em] sm:gap-10 sm:text-sm sm:tracking-[0.18em]">
             {NAV.map((item) => (
               <li key={item.label}>
                 <a

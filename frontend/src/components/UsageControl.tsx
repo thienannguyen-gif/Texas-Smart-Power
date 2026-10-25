@@ -79,7 +79,7 @@ export function UsageControl({
           onChange={(e) => onChange(Number(e.target.value))}
           onBlur={(e) => onChange(clampUsage(Number(e.target.value)))}
           aria-label="Monthly usage in kWh"
-          className="w-28 rounded-md border border-line bg-paper px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
+          className="w-28 rounded-md border border-line bg-surface px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
         />
         <span className="font-mono text-sm text-ink-faint">kWh</span>
       </label>

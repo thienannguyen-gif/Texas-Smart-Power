@@ -1405,7 +1405,7 @@ test("phone: the 100% renewable toggle is in the drawer, applies with Apply, and
 
 // ---- No logos: providers are plain names
 
-test("cards show the provider as a plain name and never load a logo image", async () => {
+test("a card whose logo fails to load shows the provider's initials next to its name", async () => {
   mockPlans({
     ...file,
     plans: [
@@ -1417,11 +1417,26 @@ test("cards show the provider as a plain name and never load a logo image", asyn
       }),
     ],
   });
-  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
+  const { container } = render(
+    <PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />,
+  );
   await screen.findByText("With logo");
 
+  fireEvent.error(container.querySelector("img")!);
+  expect(container.querySelector("img")).toBeNull();
+  expect(screen.getByTestId("provider-initials")).toHaveTextContent("GE");
   expect(screen.getByText("GEXA ENERGY")).toBeInTheDocument();
-  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+});
+
+test("the column header says the rates are quoted at the current usage, once, and follows it", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
+  expect(screen.getByText("at 1,000 kWh")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
+    target: { value: "2000" },
+  });
+  expect(screen.getByText("at 2,000 kWh")).toBeInTheDocument();
+  expect(screen.queryByText("at 1,000 kWh")).not.toBeInTheDocument();
 });
 
 // ---- Best match mark and the service-area line

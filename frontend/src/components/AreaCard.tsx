@@ -43,7 +43,7 @@ export function AreaCard({
               className={`min-h-10 rounded-md border-2 border-brand px-4 py-1.5 text-sm font-semibold ${
                 selected
                   ? "bg-brand text-brand-ink"
-                  : "bg-surface text-brand hover:bg-brand-soft"
+                  : "bg-surface text-brand-deep hover:bg-brand-soft"
               }`}
             >
               {option.label}

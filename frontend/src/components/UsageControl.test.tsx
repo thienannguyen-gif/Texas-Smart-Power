@@ -233,3 +233,52 @@ describe("UsageControl notches, labels and keys", () => {
     }
   });
 });
+
+describe("the palette", () => {
+  const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
+  const root = /:root\s*\{([^}]*)\}/.exec(css)![1];
+
+  it("is one light theme: no dark-mode blocks, and color-scheme is light on :root", () => {
+    expect(css).not.toMatch(/prefers-color-scheme/);
+    expect(css).not.toMatch(/data-theme/);
+    expect(root).toMatch(/color-scheme:\s*light/);
+  });
+
+  it("keeps the app's original lime page, navy header and green buttons", () => {
+    for (const token of [
+      "--paper: #dcefaa",
+      "--surface: #ffffff",
+      "--surface-alt: #eef7d2",
+      "--ink: #1f2b3a",
+      "--brand: #5c9e30",
+      "--brand-deep: #356b27",
+      "--brand-ink: #ffffff",
+      "--brand-soft: #e4f3bf",
+      "--warn: #f5b301",
+      "--bar: #1f2b3a",
+    ]) {
+      expect(root).toContain(token);
+    }
+  });
+
+  it("introduces no hex value beyond the original palette", () => {
+    const original = new Set([
+      "#dcefaa",
+      "#eef7d2",
+      "#e4f3bf",
+      "#1f2b3a",
+      "#5c9e30",
+      "#356b27",
+      "#3f7d2e",
+      "#f5b301",
+      "#ffffff",
+      "#991b1b",
+      "#fef2f2",
+      "#fca5a5",
+    ]);
+    const used = [...root.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) =>
+      m[0].toLowerCase(),
+    );
+    expect(used.filter((hex) => !original.has(hex))).toEqual([]);
+  });
+});

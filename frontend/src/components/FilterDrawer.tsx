@@ -61,7 +61,7 @@ export function FilterDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 pt-3 pb-3">
-          <h2 className="text-sm font-bold tracking-wide text-brand">
+          <h2 className="text-sm font-bold tracking-wide text-brand-deep">
             FILTERS
           </h2>
           <button

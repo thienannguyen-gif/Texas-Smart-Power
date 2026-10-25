@@ -136,7 +136,7 @@ function renderInline(text: string): ReactNode[] {
             {...(external
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
-            className="break-words text-brand underline"
+            className="break-words text-brand-deep underline"
           >
             {label}
           </a>,
@@ -152,10 +152,10 @@ function renderInline(text: string): ReactNode[] {
 }
 
 const HEADING_CLASS: Record<1 | 2 | 3 | 4, string> = {
-  1: "text-3xl font-extrabold tracking-tight text-brand sm:text-4xl",
-  2: "mt-10 text-xl font-bold text-brand sm:text-2xl",
-  3: "mt-8 text-lg font-bold text-brand",
-  4: "mt-6 text-base font-bold text-ink",
+  1: "font-display text-3xl font-semibold tracking-tight text-brand-deep sm:text-4xl",
+  2: "mt-10 font-display text-xl font-semibold text-brand-deep sm:text-2xl",
+  3: "mt-8 font-display text-lg font-semibold text-brand-deep",
+  4: "mt-6 font-display text-base font-semibold text-ink",
 };
 
 export function renderBlocks(blocks: Block[]): ReactNode[] {

@@ -23,18 +23,26 @@ const base: Plan = {
 };
 
 const plan = (over: Partial<Plan> = {}): Plan => ({ ...base, ...over });
+const article = () => screen.getByRole("article");
 
-describe("PlanCard", () => {
-  it("shows the plan name, company and the three headline stats", () => {
+describe("PlanCard row", () => {
+  it("shows the plan name, the provider and the four values: bill, rate, term, renewable", () => {
     render(<PlanCard plan={plan()} />);
     expect(
       screen.getByRole("heading", { name: "Steady 12" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Example Energy")).toBeInTheDocument();
-    expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 0.139 * 100, 1dp
     expect(screen.getByText("$139")).toBeInTheDocument(); // 0.139 * 1000 kWh
-    expect(screen.getByText("12 mos")).toBeInTheDocument();
-    expect(screen.getByText("6% renewable")).toBeInTheDocument();
+    expect(screen.getByText("13.9¢")).toBeInTheDocument(); // 0.139 * 100, 1dp
+    expect(screen.getByText("12 mo")).toBeInTheDocument();
+    expect(screen.getByText("6%")).toBeInTheDocument();
+  });
+
+  it("names each value for screen readers and on a phone (wide screens use the column header)", () => {
+    render(<PlanCard plan={plan()} />);
+    for (const label of ["Est. bill", "Rate / kWh", "Term", "Renewable"]) {
+      expect(screen.getByText(label)).toHaveClass("md:sr-only");
+    }
   });
 
   it("shows an em dash for missing term / price / bill / renewable", () => {
@@ -50,14 +58,14 @@ describe("PlanCard", () => {
     expect(screen.getAllByText("—")).toHaveLength(4);
   });
 
-  it("uses the logo (with company alt) instead of the company text when present", () => {
+  it("shows the provider as a plain name: no logo image that could break", () => {
     render(
-      <PlanCard plan={plan({ companyLogo: "https://example.com/l.png" })} />,
+      <PlanCard
+        plan={plan({ companyLogo: "https://example.com/blocked.png" })}
+      />,
     );
-    expect(
-      screen.getByRole("img", { name: "Example Energy" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Example Energy")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("Example Energy")).toBeInTheDocument();
   });
 
   it("has no star rating: there is no rating data behind one", () => {
@@ -66,12 +74,14 @@ describe("PlanCard", () => {
     expect(document.body.textContent).not.toContain("★");
   });
 
-  it("fires onMoreDetails from the button, and hides it without a handler", () => {
+  it("fires onMoreDetails from the chevron button, and hides it without a handler", () => {
     const onMoreDetails = vi.fn();
     const { rerender } = render(
       <PlanCard plan={plan()} onMoreDetails={onMoreDetails} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+    const button = screen.getByRole("button", { name: /more details/i });
+    expect(button).toHaveAccessibleName("More details: Steady 12");
+    fireEvent.click(button);
     expect(onMoreDetails).toHaveBeenCalledOnce();
 
     rerender(<PlanCard plan={plan()} />);
@@ -82,14 +92,23 @@ describe("PlanCard", () => {
 
   it("prices at the given usage using an anchor or interpolated value", () => {
     const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
-    expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
-    expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
+    expect(screen.getByText("15.1¢")).toBeInTheDocument(); // 0.151 -> anchor
     expect(screen.getByText("$76")).toBeInTheDocument(); // 0.151 * 500 = 75.5
 
     rerender(<PlanCard plan={plan()} usageKwh={1500} />);
-    expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
-    expect(screen.getByText("14.2¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("14.2¢")).toBeInTheDocument();
     expect(screen.getByText("$213")).toBeInTheDocument(); // 0.142 * 1500
+  });
+
+  it("shows a 100% renewable plan's figure in green, and a lower one plainly", () => {
+    const { rerender } = render(
+      <PlanCard plan={plan({ renewableDescription: "100% Renewable" })} />,
+    );
+    expect(screen.getByText("100%")).toHaveClass("text-sage");
+    rerender(
+      <PlanCard plan={plan({ renewableDescription: "22% Renewable" })} />,
+    );
+    expect(screen.getByText("22%")).not.toHaveClass("text-sage");
   });
 
   it("has no hide-provider action", () => {
@@ -100,14 +119,39 @@ describe("PlanCard", () => {
   });
 });
 
+describe("PlanCard marks", () => {
+  it("marks the best match with a badge and a green bar on its left edge", () => {
+    const stable = plan({
+      pricePerKwh: { at500: 0.13, at1000: 0.12, at2000: 0.11 },
+    });
+    const { rerender } = render(<PlanCard plan={stable} bestMatch />);
+    expect(screen.getByText("Best match")).toBeInTheDocument();
+    expect(article()).toHaveClass("border-l-4", "border-l-brand");
+
+    rerender(<PlanCard plan={stable} />);
+    expect(screen.queryByText("Best match")).not.toBeInTheDocument();
+    expect(article()).not.toHaveClass("border-l-4");
+  });
+
+  it("badges exactly-12-month plans as a 12-month lock, and no other term", () => {
+    const { rerender } = render(<PlanCard plan={plan({ termMonths: 12 })} />);
+    expect(screen.getByText("12-month lock")).toBeInTheDocument();
+    for (const termMonths of [3, 11, 13, 24, null]) {
+      rerender(<PlanCard plan={plan({ termMonths })} />);
+      expect(screen.queryByText("12-month lock")).not.toBeInTheDocument();
+    }
+  });
+});
+
 describe("PlanCard price-curve warning", () => {
-  it("shows an Unstable price badge for a V-Trap or a Hump, and not for a stable curve", () => {
+  it("shows an Unstable price badge and an amber bar for a V-Trap or a Hump, and neither for a stable curve", () => {
     const { rerender } = render(
       <PlanCard
         plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 } })}
       />,
     );
     expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
+    expect(article()).toHaveClass("border-l-warn");
 
     rerender(
       <PlanCard
@@ -124,6 +168,19 @@ describe("PlanCard price-curve warning", () => {
       />,
     );
     expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
+    expect(article()).not.toHaveClass("border-l-warn");
+  });
+
+  it("the best-match bar wins over the amber one when a plan is both", () => {
+    render(
+      <PlanCard
+        bestMatch
+        plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 } })}
+      />,
+    );
+    expect(article()).toHaveClass("border-l-brand");
+    expect(article()).not.toHaveClass("border-l-warn");
+    expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
   });
 });
 
@@ -131,16 +188,16 @@ describe("PlanCard for an unranked time-of-use plan", () => {
   it("is marked unranked and calls its price a reference rate", () => {
     render(<PlanCard plan={plan({ isTimeOfUse: true })} unranked />);
     expect(screen.getByText(/unranked · time-of-use/i)).toBeInTheDocument();
-    expect(screen.getByText("Reference rate")).toBeInTheDocument();
-    expect(screen.getByText("at reference rate")).toBeInTheDocument();
-    expect(screen.queryByText("Price per kWh")).not.toBeInTheDocument();
+    expect(screen.getByText("Ref. rate / kWh")).toBeInTheDocument();
+    expect(screen.getByText("Est. bill (ref.)")).toBeInTheDocument();
+    expect(screen.queryByText("Rate / kWh")).not.toBeInTheDocument();
   });
 
   it("an ordinary card has none of that", () => {
     render(<PlanCard plan={plan()} />);
     expect(screen.queryByText(/unranked/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Price per kWh")).toBeInTheDocument();
-    expect(screen.getByText("per month")).toBeInTheDocument();
+    expect(screen.getByText("Rate / kWh")).toBeInTheDocument();
+    expect(screen.getByText("Est. bill")).toBeInTheDocument();
   });
 });
 
@@ -162,43 +219,5 @@ describe("PlanCard customer-eligibility badge", () => {
 
     rerender(<PlanCard plan={plan()} />); // stored before the field existed
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
-  });
-});
-
-describe("PlanCard provider logo", () => {
-  const withLogo = plan({
-    companyName: "SMARTENERGY HOLDINGS LLC",
-    companyLogo: "https://example.com/logo.svg",
-  });
-
-  it("shows the logo while it loads fine", () => {
-    render(<PlanCard plan={withLogo} />);
-    expect(
-      screen.getByRole("img", { name: "SMARTENERGY HOLDINGS LLC" }),
-    ).toHaveAttribute("src", "https://example.com/logo.svg");
-    expect(screen.queryByText("SM")).not.toBeInTheDocument();
-  });
-
-  it("swaps a logo that fails to load for the provider's initials and name, with no broken image left", () => {
-    render(<PlanCard plan={withLogo} />);
-    fireEvent.error(
-      screen.getByRole("img", { name: "SMARTENERGY HOLDINGS LLC" }),
-    );
-
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.getByText("SM")).toBeInTheDocument(); // initials in the circle
-    expect(screen.getByText("SMARTENERGY HOLDINGS LLC")).toBeInTheDocument();
-    expect(screen.getByText("SM")).toHaveClass("rounded-full");
-  });
-
-  it("uses the same initials-and-name look when the plan has no logo at all", () => {
-    render(
-      <PlanCard
-        plan={plan({ companyName: "Gexa Energy", companyLogo: null })}
-      />,
-    );
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.getByText("GE")).toBeInTheDocument();
-    expect(screen.getByText("Gexa Energy")).toBeInTheDocument();
   });
 });

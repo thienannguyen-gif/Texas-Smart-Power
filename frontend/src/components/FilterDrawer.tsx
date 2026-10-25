@@ -50,18 +50,18 @@ export function FilterDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/40"
+      className="fixed inset-0 z-50 flex items-end bg-scrim"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Filters"
-        className="slide-up flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-brand-lime-200"
+        className="slide-up flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-surface"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 pt-3">
-          <h2 className="text-sm font-bold tracking-wide text-brand-green-800">
+        <div className="flex items-center justify-between px-4 pt-3 pb-3">
+          <h2 className="text-sm font-bold tracking-wide text-brand">
             FILTERS
           </h2>
           <button
@@ -69,7 +69,7 @@ export function FilterDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close filters"
-            className="min-h-11 min-w-11 rounded-full text-brand-navy/70 hover:bg-brand-lime-100"
+            className="min-h-11 min-w-11 rounded-full text-ink-soft hover:bg-surface-alt"
           >
             ✕
           </button>
@@ -87,22 +87,22 @@ export function FilterDrawer({
           />
         </div>
 
-        <div className="border-t border-brand-navy/10 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <p className="mb-2 text-center text-xs text-brand-navy/60">
+        <div className="border-t border-line-soft px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <p className="mb-2 text-center text-xs text-ink-soft">
             {matching} {matching === 1 ? "plan matches" : "plans match"}
           </p>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => setDraft(EMPTY_FILTERS)}
-              className="min-h-11 flex-1 rounded-full border-2 border-brand-navy/30 px-4 py-2 text-sm font-bold text-brand-navy"
+              className="min-h-11 flex-1 rounded-full border-2 border-line px-4 py-2 text-sm font-bold text-ink"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={() => onApply(draft, draftSort)}
-              className="min-h-11 flex-1 rounded-full bg-brand-green px-4 py-2 text-sm font-bold text-white"
+              className="min-h-11 flex-1 rounded-full bg-brand px-4 py-2 text-sm font-bold text-brand-ink"
             >
               Apply
             </button>

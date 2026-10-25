@@ -274,7 +274,7 @@ describe("PlanDetailsModal Sign up button", () => {
     expect(link).toHaveAccessibleName(
       "Sign up with Example Energy (opens in a new tab)",
     );
-    expect(link).toHaveClass("bg-brand-green", "text-white"); // the primary button
+    expect(link).toHaveClass("bg-brand", "text-brand-ink"); // the primary button
 
     const phone = screen.getByRole("link", { name: "or call (800) 805-6580" });
     expect(phone).toHaveAttribute("href", "tel:8008056580");

@@ -1,22 +1,212 @@
 @import "tailwindcss";
 
-/* Brand palette from the approved mockup (Texas Power .pdf). */
-@theme {
-  --color-brand-navy: #1f2b3a;
-  --color-brand-navy-600: #2b3a4d;
-  --color-brand-lime: #dcefaa;
-  --color-brand-lime-100: #eef7d2;
-  --color-brand-lime-200: #e4f3bf;
-  --color-brand-green: #5c9e30;
-  --color-brand-green-700: #3f7d2e;
-  --color-brand-green-800: #356b27;
-  --color-brand-gold: #f5b301;
+/* Colours are CSS custom properties. Every token is defined on bare :root
+   (light values), so no colour exists only inside a media or [data-theme]
+   block; the dark blocks below only override values. Components use the
+   Tailwind names mapped in @theme inline (text-ink, bg-surface, bg-brand ...),
+   never a literal colour. System fonts only, so nothing is downloaded. */
+:root {
+  color-scheme: light;
+
+  --ink: #0d2b25; /* text */
+  --ink-soft: #466b61; /* secondary text */
+  --ink-faint: #7d9a90; /* labels, captions */
+  --paper: #eeeeee; /* page background */
+  --surface: #ffffff; /* cards, modal */
+  --surface-alt: #f5f8f6; /* subtle fills */
+  --line: #d9dedb; /* borders */
+  --line-soft: #e7ebe8; /* inner dividers */
+  --brand: #176b57; /* buttons, links */
+  --brand-ink: #ffffff; /* text on brand */
+  --brand-soft: #e1f1ea; /* brand-tinted fills */
+  --warn: #9c5a24; /* unstable price, eligibility */
+  --warn-soft: #f8ece1;
+  --sage: #2fa084; /* 100% renewable */
+  --sage-soft: #e1f1ea;
+
+  /* Error messages and the modal scrim: not in the supplied palette. */
+  --danger: #a12d2d;
+  --danger-soft: #fbeaea;
+  --scrim: rgb(0 0 0 / 0.4);
+
+  /* Header band: stays dark green in both themes. */
+  --bar: #11443a;
+  --bar-fg: #eef6f2;
+  --bar-fg-soft: #9cc4b7;
+  --bar-line: #2d6b5b;
+  --bar-accent: #6fcf97;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --ink: #e4efe9;
+    --ink-soft: #94b2a7;
+    --ink-faint: #6b8c82;
+    --paper: #0b1714;
+    --surface: #122420;
+    --surface-alt: #172e28;
+    --line: #26403a;
+    --line-soft: #1e332e;
+    --brand: #4cc3a3;
+    --brand-ink: #062019;
+    --brand-soft: #14312a;
+    --warn: #d4955f;
+    --warn-soft: #2b1e13;
+    --sage: #6fcf97;
+    --sage-soft: #15301f;
+    --danger: #e07b7b;
+    --danger-soft: #2e1717;
+    --bar: #0c201c;
+    --bar-fg: #e4efe9;
+    --bar-fg-soft: #8bada3;
+    --bar-line: #26403a;
+    --bar-accent: #4cc3a3;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ink: #e4efe9;
+  --ink-soft: #94b2a7;
+  --ink-faint: #6b8c82;
+  --paper: #0b1714;
+  --surface: #122420;
+  --surface-alt: #172e28;
+  --line: #26403a;
+  --line-soft: #1e332e;
+  --brand: #4cc3a3;
+  --brand-ink: #062019;
+  --brand-soft: #14312a;
+  --warn: #d4955f;
+  --warn-soft: #2b1e13;
+  --sage: #6fcf97;
+  --sage-soft: #15301f;
+  --danger: #e07b7b;
+  --danger-soft: #2e1717;
+  --bar: #0c201c;
+  --bar-fg: #e4efe9;
+  --bar-fg-soft: #8bada3;
+  --bar-line: #26403a;
+  --bar-accent: #4cc3a3;
+}
+
+/* Tailwind names for the tokens. "inline" makes the utilities read the live
+   variable, so they follow the theme blocks above. */
+@theme inline {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas,
+    monospace;
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-scrim: var(--scrim);
+  --color-bar: var(--bar);
+  --color-bar-fg: var(--bar-fg);
+  --color-bar-fg-soft: var(--bar-fg-soft);
+  --color-bar-line: var(--bar-line);
+  --color-bar-accent: var(--bar-accent);
 }
 
 body {
-  background-color: var(--color-brand-lime);
-  color: var(--color-brand-navy);
+  background-color: var(--paper);
+  color: var(--ink);
   overflow-x: clip;
+}
+
+/* Small monospace section / column label: "ZIP CODE", "SORT BY", "TERM". */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* The usage slider: a thin track filled up to the thumb (--pct is set inline). */
+.usage-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+.usage-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: linear-gradient(
+    to right,
+    var(--brand) var(--pct, 0%),
+    var(--line) var(--pct, 0%)
+  );
+}
+.usage-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 9999px;
+  background: var(--brand);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--ink-faint);
+}
+.usage-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+.usage-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--brand);
+}
+.usage-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--brand);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--ink-faint);
+}
+/* Keyboard focus: a ring on the thumb only, so it never traces the track. */
+.usage-range:focus-visible {
+  outline: none;
+}
+.usage-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px var(--brand-soft),
+    0 0 0 4px var(--brand);
+}
+.usage-range:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 3px var(--brand-soft),
+    0 0 0 4px var(--brand);
 }
 
 /* Phone filter drawer slides up from the bottom edge. */

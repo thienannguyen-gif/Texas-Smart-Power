@@ -283,7 +283,7 @@ test("first load for a split ZIP defaults usage to 1000 kWh, same as a single-ar
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(1000);
 });
 
-const areaLine = () => screen.queryByText(/^Utility area:/);
+const areaLine = () => screen.queryByTestId("service-area");
 const changeArea = () =>
   screen.getByRole("button", { name: "Change utility area" });
 
@@ -297,10 +297,10 @@ async function openSplitZip() {
   await screen.findByText("Oncor Plan");
 }
 
-test("after the choice the area card is a compact line that shows it and lets the user switch; the picker block is gone", async () => {
+test("after the choice the header shows the service area with a Change button; the picker block is gone", async () => {
   await openSplitZip();
 
-  expect(areaLine()).toHaveTextContent("Utility area: Oncor");
+  expect(areaLine()).toHaveTextContent("Service area Oncor");
   expect(changeArea()).toBeInTheDocument();
   // the full card (heading and pills) is collapsed away
   expect(
@@ -314,7 +314,7 @@ test("after the choice the area card is a compact line that shows it and lets th
   expect(screen.getByLabelText("ZIP code")).toHaveValue("75067");
 });
 
-test("Change opens the card in place: pills on the right, the chosen one filled and the other outlined", async () => {
+test("Change opens the chooser in place: the chosen pill filled and the other outlined", async () => {
   await openSplitZip();
   fireEvent.click(changeArea());
 
@@ -325,14 +325,14 @@ test("Change opens the card in place: pills on the right, the chosen one filled 
   const oncor = within(group).getByRole("button", { name: "Oncor" });
   const tnmp = within(group).getByRole("button", { name: "TNMP" });
   expect(oncor).toHaveAttribute("aria-pressed", "true");
-  expect(oncor).toHaveClass("bg-brand-green", "text-white");
+  expect(oncor).toHaveClass("bg-brand", "text-brand-ink");
   expect(tnmp).toHaveAttribute("aria-pressed", "false");
-  expect(tnmp).toHaveClass("border-2", "bg-white");
-  expect(tnmp).not.toHaveClass("bg-brand-green");
+  expect(tnmp).toHaveClass("border-2", "bg-surface");
+  expect(tnmp).not.toHaveClass("bg-brand");
   // full company names stay available on hover
   expect(tnmp).toHaveAttribute("title", "TEXAS-NEW MEXICO POWER COMPANY");
-  // and the compact line gives way to the card
-  expect(areaLine()).not.toBeInTheDocument();
+  // the service-area line stays while the user is only switching
+  expect(areaLine()).toHaveTextContent("Service area Oncor");
 });
 
 test("choosing the other area loads its plans, collapses the card, and keeps ZIP, usage and filters", async () => {
@@ -347,7 +347,7 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
 
   expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
   expect(screen.queryByText("Oncor Plan")).not.toBeInTheDocument();
-  expect(areaLine()).toHaveTextContent("Utility area: TNMP");
+  expect(areaLine()).toHaveTextContent("Service area Texas-New Mexico Power");
   expect(areaPicker()).not.toBeInTheDocument();
   expect(screen.getByLabelText("ZIP code")).toHaveValue("75067");
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
@@ -365,7 +365,7 @@ test("the opened card can be closed again with Cancel, changing nothing", async 
   fireEvent.click(changeArea());
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   expect(areaPicker()).not.toBeInTheDocument();
-  expect(areaLine()).toHaveTextContent("Utility area: Oncor");
+  expect(areaLine()).toHaveTextContent("Service area Oncor");
   expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
 });
 
@@ -376,25 +376,33 @@ test("searching the same split ZIP again keeps the chosen area", async () => {
   await screen.findByText("TNMP Plan");
 
   changeZip("75067");
-  expect(areaLine()).toHaveTextContent("Utility area: TNMP");
+  expect(areaLine()).toHaveTextContent("Service area Texas-New Mexico Power");
   expect(screen.getByText("TNMP Plan")).toBeInTheDocument();
 });
 
-test("a single-area ZIP never shows the area card; moving to one from a split ZIP removes it", async () => {
+test("a single-area ZIP shows its service area but no Change button or chooser; moving to one from a split ZIP removes them", async () => {
   stubSplitZips();
   const first = render(<App />);
   submitZip("75201");
   await screen.findByText("Oncor Plan");
-  expect(areaLine()).not.toBeInTheDocument();
+  expect(areaLine()).toHaveTextContent("Service area Oncor");
+  expect(
+    screen.queryByRole("button", { name: "Change utility area" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByText(/choose your utility service area/i),
   ).not.toBeInTheDocument();
   first.unmount();
 
   await openSplitZip();
-  expect(areaLine()).toBeInTheDocument();
+  expect(changeArea()).toBeInTheDocument();
   changeZip("75201");
-  await waitFor(() => expect(areaLine()).not.toBeInTheDocument());
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("button", { name: "Change utility area" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(areaLine()).toHaveTextContent("Service area Oncor");
   expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
 });
 
@@ -421,18 +429,18 @@ test("searching a split ZIP from the plans page opens the card for its area; the
 
   fireEvent.click(within(group).getByRole("button", { name: "TNMP" }));
   expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();
-  expect(areaLine()).toHaveTextContent("Utility area: TNMP");
+  expect(areaLine()).toHaveTextContent("Service area Texas-New Mexico Power");
   expect(areaPicker()).not.toBeInTheDocument();
 });
 
-test("the area line stays after a failed lookup of another ZIP, and still switches", async () => {
+test("the service-area line stays after a failed lookup of another ZIP, and still switches", async () => {
   await openSplitZip();
 
   changeZip("99999");
   expect(
     await screen.findByText(/no texas utility area found for zip/i),
   ).toBeInTheDocument();
-  expect(areaLine()).toHaveTextContent("Utility area: Oncor");
+  expect(areaLine()).toHaveTextContent("Service area Oncor");
   fireEvent.click(changeArea());
   fireEvent.click(within(areaPicker()!).getByRole("button", { name: "TNMP" }));
   expect(await screen.findByText("TNMP Plan")).toBeInTheDocument();

@@ -1,17 +1,55 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { summarizePlans } from "../lib/filters";
+import { priceCurveWarning } from "../lib/ranking";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
+import { ROW_GRID } from "./planRow";
 
 export const PLANS_PER_PAGE = 6;
 
 const PAGE_BUTTON =
-  "min-h-11 rounded-full bg-brand-lime-200 px-4 py-2 text-sm font-bold text-brand-navy hover:bg-brand-lime-100 disabled:opacity-40 disabled:hover:bg-brand-lime-200";
+  "min-h-11 rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-surface-alt disabled:opacity-40 disabled:hover:bg-surface";
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const bold = (n: number) => <strong className="font-semibold">{n}</strong>;
+
+/** "24 Oct 2026, 4:42 PM" — the date and time the data was last pulled. */
+function formatUpdated(iso: string): string {
+  const when = new Date(iso);
+  const date = when.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const time = when.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${date}, ${time}`;
+}
+
+// Column titles over the rows. Wide screens only: on a phone each value carries
+// its own label.
+function RowHeader({ unranked = false }: { unranked?: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`label-mono hidden px-5 pb-2 md:grid md:items-end md:gap-3 ${ROW_GRID}`}
+    >
+      <span>Plan</span>
+      <span className="text-right">Est. bill</span>
+      <span className="text-right">
+        {unranked ? "Ref. rate / kWh" : "Rate / kWh"}
+      </span>
+      <span className="text-right">Term</span>
+      <span className="text-right">Renewable</span>
+      <span />
+    </div>
+  );
+}
 
 // Plans arrive in rank order; the sidebar's preference filters have already
 // been applied by the time they reach this component.
@@ -29,6 +67,7 @@ export function PlanList({
   totalCount,
   timeOfUsePlans = [],
   showRanked = true,
+  bestMatchId,
   generatedAt,
   page,
   onPageChange,
@@ -38,6 +77,8 @@ export function PlanList({
   totalCount: number;
   timeOfUsePlans?: Plan[];
   showRanked?: boolean;
+  /** The plan to mark "Best match": the top one under Best match sorting. */
+  bestMatchId?: number;
   generatedAt: string;
   page: number;
   onPageChange: (next: number) => void;
@@ -54,29 +95,47 @@ export function PlanList({
   const canNext = current < pageCount;
   const modalOpen = selected !== null;
   const touCount = timeOfUsePlans.length;
+  const anyFlagged = visible.some((plan) => priceCurveWarning(plan) !== null);
 
   // One line: how many ranked plans are showing, how many of those are 100%
   // renewable and 12 months (parts that would say "0" are left out), and how
   // many time-of-use plans are shown separately.
   const { renewable100, months12 } = summarizePlans(plans);
-  const summaryLine = showRanked
+  const parts: ReactNode[] = showRanked
     ? [
-        filtered
-          ? `Showing ${plans.length} of ${totalCount} ${plural(totalCount, "plan", "plans")}`
-          : `${totalCount} ${plural(totalCount, "plan", "plans")}`,
-        renewable100 > 0
-          ? `${renewable100} ${renewable100 === 1 ? "is" : "are"} 100% renewable`
-          : null,
-        months12 > 0
-          ? `${months12} ${months12 === 1 ? "is" : "are"} 12 months`
-          : null,
-        touCount > 0
-          ? `${touCount} time-of-use ${plural(touCount, "plan", "plans")} shown separately`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(" · ")
-    : `${touCount} time-of-use ${plural(touCount, "plan", "plans")}`;
+        filtered ? (
+          <>
+            Showing {bold(plans.length)} of {bold(totalCount)}{" "}
+            {plural(totalCount, "plan", "plans")}
+          </>
+        ) : (
+          <>
+            {bold(totalCount)} {plural(totalCount, "plan", "plans")}
+          </>
+        ),
+        renewable100 > 0 && (
+          <>
+            {bold(renewable100)} {renewable100 === 1 ? "is" : "are"} 100%
+            renewable
+          </>
+        ),
+        months12 > 0 && (
+          <>
+            {bold(months12)} {months12 === 1 ? "is" : "are"} 12 months
+          </>
+        ),
+        touCount > 0 && (
+          <>
+            {bold(touCount)} time-of-use {plural(touCount, "plan", "plans")}{" "}
+            shown separately
+          </>
+        ),
+      ].filter(Boolean)
+    : [
+        <>
+          {bold(touCount)} time-of-use {plural(touCount, "plan", "plans")}
+        </>,
+      ];
 
   useEffect(() => {
     if (modalOpen || !showRanked) return;
@@ -99,26 +158,37 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
-      <p className="text-xs text-brand-navy/70 sm:text-sm">{summaryLine}</p>
-      <p className="mb-2 text-xs text-brand-navy/50">
-        Updated {new Date(generatedAt).toLocaleString("en-US")}
-      </p>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <p data-testid="results-summary" className="text-[15px]">
+          {parts.map((part, i) => (
+            <Fragment key={i}>
+              {i > 0 && " · "}
+              {part}
+            </Fragment>
+          ))}
+        </p>
+        <p className="ml-auto font-mono text-xs text-ink-faint">
+          Updated {formatUpdated(generatedAt)}
+        </p>
+      </div>
 
       {showRanked &&
         (plans.length === 0 ? (
-          <p className="text-brand-navy/70">
+          <p className="mt-6 text-ink-soft">
             {touCount === 0
               ? "No plans match these filters."
               : "No ranked plans match these filters."}
           </p>
         ) : (
-          <>
-            <ul className="space-y-4">
+          <div className="mt-5 border-t border-line-soft pt-5">
+            <RowHeader />
+            <ul className="space-y-3">
               {visible.map((plan) => (
                 <li key={plan.id}>
                   <PlanCard
                     plan={plan}
                     usageKwh={usageKwh}
+                    bestMatch={plan.id === bestMatchId}
                     onMoreDetails={() => setSelected(plan)}
                   />
                 </li>
@@ -137,10 +207,7 @@ export function PlanList({
               >
                 ← Previous
               </button>
-              <p
-                aria-live="polite"
-                className="text-sm font-bold text-brand-navy"
-              >
+              <p aria-live="polite" className="font-mono text-sm text-ink">
                 Page {current} of {pageCount}
               </p>
               <button
@@ -152,43 +219,51 @@ export function PlanList({
                 Next →
               </button>
             </nav>
-          </>
+
+            {anyFlagged && (
+              <p className="mt-8 rounded-lg border border-line-soft bg-surface-alt p-5 text-[15px] leading-relaxed">
+                <strong className="font-semibold">
+                  Plans with the Unstable price mark are flagged.
+                </strong>{" "}
+                Their rate per kWh dips or rises around 1,000 kWh compared with
+                500 and 2,000 — the signature of a usage-based bill credit. It
+                pays off only if your usage lands in a narrow window. They still
+                appear in the list, but rank lower.
+              </p>
+            )}
+          </div>
         ))}
 
       {touCount > 0 && (
         <section
           aria-labelledby="tou-heading"
-          className={
-            showRanked ? "mt-10 border-t-2 border-brand-navy/15 pt-6" : ""
-          }
+          className={showRanked ? "mt-10 border-t border-line pt-6" : "mt-5"}
         >
-          <h2
-            id="tou-heading"
-            className="text-xl font-bold text-brand-green-700"
-          >
+          <h2 id="tou-heading" className="text-xl font-semibold">
             Time-of-use plans{" "}
-            <span className="text-sm font-semibold text-brand-navy/60">
-              (unranked)
-            </span>
+            <span className="label-mono align-middle">(unranked)</span>
           </h2>
-          <p className="mt-2 text-sm text-brand-navy/80">{TOU_SECTION_INTRO}</p>
-          <ul className="mt-4 space-y-4">
-            {timeOfUsePlans.map((plan) => (
-              <li key={plan.id}>
-                <PlanCard
-                  plan={plan}
-                  usageKwh={usageKwh}
-                  unranked
-                  onMoreDetails={() => setSelected(plan)}
-                />
-              </li>
-            ))}
-          </ul>
+          <p className="mt-2 text-[15px] text-ink-soft">{TOU_SECTION_INTRO}</p>
+          <div className="mt-5">
+            <RowHeader unranked />
+            <ul className="space-y-3">
+              {timeOfUsePlans.map((plan) => (
+                <li key={plan.id}>
+                  <PlanCard
+                    plan={plan}
+                    usageKwh={usageKwh}
+                    unranked
+                    onMoreDetails={() => setSelected(plan)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       )}
 
       {!showRanked && touCount === 0 && (
-        <p className="text-brand-navy/70">
+        <p className="mt-6 text-ink-soft">
           No time-of-use plans match these filters.
         </p>
       )}

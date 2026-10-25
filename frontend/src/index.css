@@ -1,79 +1,54 @@
 @import "tailwindcss";
 
-/* One light theme, in the app's original palette: lime page, white cards, navy
-   ink, green buttons, gold for the unstable-price warning. Every colour is a
-   custom property on :root; components use the Tailwind names mapped in
-   @theme inline (text-ink, bg-surface, bg-brand, bg-bar ...), never a literal
-   colour. Softer inks and lines are the navy at the opacity the app always used
-   for them, so no hex value exists twice. color-scheme: light keeps inputs,
-   selects and scrollbars light for people whose OS is in dark mode. */
+/* One light theme, white page. Every colour is a custom property on :root;
+   components use the Tailwind names mapped in @theme inline (text-ink,
+   bg-surface, bg-brand, bg-bar ...), never a literal colour. Page and cards are
+   both white, so structure comes from 1px lines. color-scheme: light keeps
+   inputs, selects and scrollbars light for people whose OS is in dark mode. */
 :root {
   color-scheme: light;
 
-  --paper: #dcefaa; /* page background (lime) */
+  --paper: #ffffff; /* page background */
   --surface: #ffffff; /* cards, search band, modal */
-  --surface-alt: #eef7d2; /* hover rows, inset blocks */
+  --surface-alt: #f5f8f6; /* hover rows, inset blocks */
 
-  --ink: #1f2b3a; /* headings, plan names, figures (navy) */
-  --ink-soft: color-mix(
-    in srgb,
-    var(--ink) 70%,
-    transparent
-  ); /* secondary text */
-  --ink-faint: color-mix(
-    in srgb,
-    var(--ink) 50%,
-    transparent
-  ); /* captions, counts */
+  --ink: #0d2b25; /* headings, plan names, figures */
+  --ink-soft: #466b61; /* secondary text, rate and term */
+  --ink-faint: #7d9a90; /* captions, counts, low renewable % */
 
-  --line: color-mix(
-    in srgb,
-    var(--ink) 20%,
-    transparent
-  ); /* input and card borders */
-  --line-soft: color-mix(
-    in srgb,
-    var(--ink) 10%,
-    transparent
-  ); /* row dividers */
+  --line: #d9dedb; /* input borders, card borders */
+  --line-soft: #e7ebe8; /* row dividers, hairlines under captions */
 
-  --brand: #5c9e30; /* buttons, active filters, best-match stripe */
-  --brand-deep: #356b27; /* links and headings in green, hover on buttons */
+  --brand: #176b57; /* buttons, active filters, best-match stripe */
   --brand-ink: #ffffff; /* text on --brand */
-  --brand-soft: #e4f3bf; /* chip background, slider track */
+  --brand-soft: #e1f1ea; /* chip background, slider track fill */
 
-  --warn: #f5b301; /* unstable-price stripe and chip border (gold) */
-  --warn-soft: color-mix(
-    in srgb,
-    var(--warn) 20%,
-    transparent
-  ); /* that chip's fill */
+  --warn: #9c5a24; /* unstable-price stripe and chip text */
+  --warn-soft: #f8ece1; /* that chip's background */
 
-  --sage: #3f7d2e; /* 100% renewable figures */
+  --sage: #2fa084; /* 100% renewable figures only */
 
-  /* Header band. */
-  --bar: #1f2b3a;
-  --bar-fg: #ffffff;
-  --bar-fg-soft: color-mix(in srgb, var(--bar-fg) 80%, transparent);
-  --bar-line: color-mix(in srgb, var(--bar-fg) 25%, transparent);
-  --bar-accent: #dcefaa;
+  /* Header bar: the one filled area on a white page. */
+  --bar: #11443a;
+  --bar-fg: #eef6f2;
+  --bar-fg-soft: #9cc4b7;
+  --bar-line: #2d6b5b;
 
-  /* Error boxes and the modal's dimmed backdrop (the app's original reds). */
-  --danger: #991b1b;
-  --danger-soft: #fef2f2;
-  --danger-line: #fca5a5;
+  /* Not in the supplied palette: the search band's grey input fields, error
+     boxes, and the modal's dimmed backdrop. */
+  --field: #eeeeee;
+  --danger: #a12d2d;
+  --danger-soft: #fbeaea;
+  --danger-line: #e0a3a3;
   --scrim: rgb(0 0 0 / 0.4);
 
-  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --font-body:
-    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Montserrat", -apple-system, sans-serif;
 }
 
-/* Tailwind names for the tokens. "inline" makes the utilities read the live
-   variable. */
+/* Tailwind names for the tokens ("inline": utilities read the live variable). */
 @theme inline {
-  --breakpoint-row: 47.5rem; /* 760px: plan rows become a table */
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
@@ -87,12 +62,12 @@
   --color-line: var(--line);
   --color-line-soft: var(--line-soft);
   --color-brand: var(--brand);
-  --color-brand-deep: var(--brand-deep);
   --color-brand-ink: var(--brand-ink);
   --color-brand-soft: var(--brand-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-sage: var(--sage);
+  --color-field: var(--field);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-danger-line: var(--danger-line);
@@ -101,7 +76,18 @@
   --color-bar-fg: var(--bar-fg);
   --color-bar-fg-soft: var(--bar-fg-soft);
   --color-bar-line: var(--bar-line);
-  --color-bar-accent: var(--bar-accent);
+}
+
+/* Montserrat's digits are proportional by default; ask for tabular ones so
+   columns of figures (bill, rate, term, renewable %, kWh, slider labels, the
+   timestamp, sidebar counts) line up. Inherited by everything, inputs included. */
+body,
+input,
+button,
+select,
+textarea {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 body {
@@ -111,42 +97,14 @@ body {
   overflow-x: clip;
 }
 
-/* Digits are all one width, so columns of figures line up. */
-.font-mono,
-.label-mono {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Small monospace section / column label: "ZIP CODE", "SORT BY", "TERM". */
-@utility label-mono {
+/* The search band's captions: "ZIP CODE", "YOUR MONTHLY USAGE". */
+@utility band-caption {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   line-height: 1rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-faint);
-}
-
-/* A plan row's figure. On a phone its label is printed above it from the
-   data-label attribute; from 760px the column header carries the labels. The
-   empty alt text after the slash keeps screen readers from reading it twice
-   (the label is also in the markup, visually hidden). */
-.row-cell::before {
-  content: attr(data-label);
-  content: attr(data-label) / "";
-  display: block;
-  margin-bottom: 0.25rem;
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  line-height: 1rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-@media (min-width: 47.5rem) {
-  .row-cell::before {
-    display: none;
-  }
 }
 
 /* The usage slider: a thin track filled up to the thumb (--pct is set inline). */
@@ -166,7 +124,7 @@ body {
   background: linear-gradient(
     to right,
     var(--brand) var(--pct, 0%),
-    var(--brand-soft) var(--pct, 0%)
+    var(--line) var(--pct, 0%)
   );
 }
 .usage-range::-webkit-slider-thumb {
@@ -184,7 +142,7 @@ body {
   height: 6px;
   border-radius: 9999px;
   border: 1px solid var(--line);
-  background: var(--brand-soft);
+  background: var(--line);
 }
 .usage-range::-moz-range-progress {
   height: 6px;

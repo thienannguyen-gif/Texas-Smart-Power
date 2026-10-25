@@ -8,4 +8,4 @@ export const TOU_SECTION_INTRO =
 
 /** The short note under the TIME-OF-USE PLANS filter in the sidebar. */
 export const TOU_FILTER_NOTE =
-  "Rates change by hour, so these aren't scored. The price shown is Power to Choose's flat reference rate, not what you would pay.";
+  "Rates vary by time of day, so these aren't scored the same way. The price shown is Power to Choose's flat reference rate, not what you would actually pay.";

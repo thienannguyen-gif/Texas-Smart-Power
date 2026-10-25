@@ -57,11 +57,11 @@ export function FilterDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Filters"
-        className="slide-up flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-surface"
+        className="slide-up flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-brand-soft"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 pt-3 pb-3">
-          <h2 className="text-sm font-bold tracking-wide text-brand-deep">
+        <div className="flex items-center justify-between px-4 pt-3">
+          <h2 className="text-sm font-bold tracking-wide text-brand">
             FILTERS
           </h2>
           <button

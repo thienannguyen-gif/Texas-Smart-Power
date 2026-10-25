@@ -53,7 +53,7 @@ function toggle<T>(list: T[], item: T): T[] {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3">
-      <h3 className="label-mono border-b border-line pb-3">{title}</h3>
+      <h3 className="label-mono border-b border-line-soft pb-3">{title}</h3>
       {children}
     </section>
   );

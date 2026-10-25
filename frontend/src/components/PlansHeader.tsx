@@ -45,10 +45,10 @@ export function PlansHeader({
   return (
     <section
       aria-label="Your search"
-      className="border-b border-line-soft bg-surface"
+      className="border-y border-line bg-surface"
     >
-      <div className="mx-auto flex max-w-6xl flex-wrap items-end gap-x-14 gap-y-8 px-4 py-6 sm:px-6 md:py-8">
-        <div className="shrink-0">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-6 sm:px-6 row:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] row:items-end row:gap-14 row:py-8">
+        <div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -70,18 +70,21 @@ export function PlansHeader({
                 placeholder="ZIP code"
                 aria-invalid={touched && !valid}
                 aria-describedby={touched && !valid ? errorId : undefined}
-                className="w-32 min-w-0 rounded-md border border-line bg-paper px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
+                className="w-32 min-w-0 rounded-md border border-line bg-surface px-3 py-2.5 font-mono text-lg focus:border-brand focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={zipBusy}
-                className="rounded-md bg-brand px-5 py-2.5 text-base font-semibold text-brand-ink hover:bg-brand/90 disabled:opacity-50 sm:px-6"
+                className="rounded-md bg-brand px-5 py-2.5 text-base font-semibold text-brand-ink hover:bg-brand-deep disabled:opacity-50 sm:px-6"
               >
                 {zipBusy ? "…" : "Find plans"}
               </button>
             </div>
             {touched && !valid && (
-              <p id={errorId} className="mt-2 text-sm font-medium text-brand">
+              <p
+                id={errorId}
+                className="mt-2 text-sm font-medium text-brand-deep"
+              >
                 Enter a 5-digit ZIP code.
               </p>
             )}
@@ -98,7 +101,7 @@ export function PlansHeader({
                     type="button"
                     onClick={() => setSwitching(true)}
                     aria-label="Change utility area"
-                    className="px-1 py-2 text-sm text-brand underline"
+                    className="px-1 py-2 text-sm text-brand-deep underline"
                   >
                     Change
                   </button>
@@ -108,10 +111,7 @@ export function PlansHeader({
           )}
         </div>
 
-        {/* takes the rest of the row; wraps below the ZIP group when under 32rem is left */}
-        <div className="min-w-0 grow basis-[32rem]">
-          <UsageControl value={usageKwh} onChange={onUsageChange} />
-        </div>
+        <UsageControl value={usageKwh} onChange={onUsageChange} />
       </div>
 
       {chooserOpen && areaChoice && (

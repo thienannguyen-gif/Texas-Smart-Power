@@ -5,7 +5,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <a
           href="#disclaimer"
-          className="inline-block py-2 text-sm text-brand underline"
+          className="inline-block py-2 text-sm text-brand-deep underline"
         >
           Disclaimer &amp; Terms of Use
         </a>

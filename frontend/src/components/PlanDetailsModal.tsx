@@ -26,10 +26,10 @@ function Stat({
 }) {
   return (
     <div>
-      <p className="rounded-full bg-brand-soft px-4 py-1 text-center text-sm font-bold tracking-wide text-brand">
+      <p className="rounded-full bg-brand-soft px-4 py-1 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-brand-deep">
         {label}
       </p>
-      <p className="mt-1 break-words text-center text-xl font-extrabold">
+      <p className="mt-1 break-words text-center font-mono text-xl font-semibold">
         {value}
       </p>
       {note && <p className="text-center text-xs text-ink-soft">{note}</p>}
@@ -40,10 +40,10 @@ function Stat({
 function Unavailable({ label, why }: { label: string; why: string }) {
   return (
     <div>
-      <p className="rounded-full bg-brand-soft px-4 py-1 text-center text-sm font-bold tracking-wide text-brand">
+      <p className="rounded-full bg-brand-soft px-4 py-1 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-brand-deep">
         {label}
       </p>
-      <p className="mt-1 text-center text-sm text-ink-faint" title={why}>
+      <p className="mt-1 text-center text-sm text-ink-soft" title={why}>
         not available
       </p>
     </div>
@@ -109,7 +109,10 @@ export function PlanDetailsModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
-          <h2 id="plan-details-title" className="text-xl font-bold text-brand">
+          <h2
+            id="plan-details-title"
+            className="font-display text-xl font-semibold text-brand-deep"
+          >
             {plan.planName}
             <span className="block text-sm font-normal text-ink-soft">
               {plan.companyName}
@@ -133,7 +136,7 @@ export function PlanDetailsModal({
                 href={signUpUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand px-7 py-2 text-base font-bold text-brand-ink shadow hover:bg-brand/90"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand px-7 py-2 text-base font-bold text-brand-ink shadow hover:bg-brand-deep"
               >
                 Sign up{" "}
                 <span className="sr-only">
@@ -145,7 +148,7 @@ export function PlanDetailsModal({
               (phoneHref ? (
                 <a
                   href={phoneHref}
-                  className="inline-flex min-h-11 items-center text-sm font-semibold text-brand underline"
+                  className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-deep underline"
                 >
                   {signUpUrl ? "or call " : "Call "}
                   {plan.enrollPhone}
@@ -159,14 +162,14 @@ export function PlanDetailsModal({
           </div>
         )}
 
-        <h3 className="mt-6 text-sm font-bold tracking-wide text-brand">
+        <h3 className="mt-6 text-sm font-display font-semibold tracking-wide text-brand-deep">
           PLAN PRICING
         </h3>
         <div className="mt-2 grid grid-cols-3 gap-3">
           {tiers.map((tier) => (
             <div key={tier.label} className="text-center">
               <p className="text-xs text-ink-soft">{tier.label}</p>
-              <p className="rounded-full bg-brand-soft px-2 py-1 text-sm font-extrabold">
+              <p className="rounded-full bg-brand-soft px-2 py-1 font-mono text-sm font-semibold">
                 {formatRate(tier.value)}
               </p>
             </div>
@@ -228,7 +231,7 @@ export function PlanDetailsModal({
 
         {(plan.factSheetUrl || plan.termsUrl || plan.yracUrl) && (
           <>
-            <h3 className="mt-6 text-sm font-bold tracking-wide text-brand">
+            <h3 className="mt-6 text-sm font-display font-semibold tracking-wide text-brand-deep">
               DOCUMENTS
             </h3>
             <ul className="mt-1 space-y-1 text-sm">
@@ -238,7 +241,7 @@ export function PlanDetailsModal({
                     href={plan.factSheetUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block py-2 text-brand underline"
+                    className="inline-block py-2 text-brand-deep underline"
                   >
                     Electricity Facts Label (EFL)
                   </a>
@@ -250,7 +253,7 @@ export function PlanDetailsModal({
                     href={plan.termsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block py-2 text-brand underline"
+                    className="inline-block py-2 text-brand-deep underline"
                   >
                     Terms of Service
                   </a>
@@ -262,7 +265,7 @@ export function PlanDetailsModal({
                     href={plan.yracUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block py-2 text-brand underline"
+                    className="inline-block py-2 text-brand-deep underline"
                   >
                     Your Rights as a Customer
                   </a>
@@ -273,7 +276,7 @@ export function PlanDetailsModal({
         )}
 
         {detailsNote && (
-          <p className="mt-4 text-xs text-ink-faint">{detailsNote}</p>
+          <p className="mt-4 text-xs text-ink-soft">{detailsNote}</p>
         )}
       </div>
     </div>

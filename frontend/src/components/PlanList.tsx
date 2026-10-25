@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { summarizePlans } from "../lib/filters";
+import { formatKwh } from "../lib/money";
 import { priceCurveWarning } from "../lib/ranking";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import { PlanCard } from "./PlanCard";
@@ -33,16 +34,26 @@ function formatUpdated(iso: string): string {
 
 // Column titles over the rows. Wide screens only: on a phone each value carries
 // its own label.
-function RowHeader({ unranked = false }: { unranked?: boolean }) {
+function RowHeader({
+  unranked = false,
+  usageKwh,
+}: {
+  unranked?: boolean;
+  usageKwh: number;
+}) {
   return (
     <div
       aria-hidden="true"
-      className={`label-mono hidden px-5 pb-2 md:grid md:items-end md:gap-3 ${ROW_GRID}`}
+      className={`label-mono hidden border-b border-line-soft pr-[17px] pb-2 pl-5 row:grid row:items-end ${ROW_GRID}`}
     >
       <span>Plan</span>
       <span className="text-right">Est. bill</span>
       <span className="text-right">
         {unranked ? "Ref. rate / kWh" : "Rate / kWh"}
+        {/* the usage level the rates are quoted at, said once here */}
+        <span className="block tracking-normal normal-case">
+          at {formatKwh(usageKwh)} kWh
+        </span>
       </span>
       <span className="text-right">Term</span>
       <span className="text-right">Renewable</span>
@@ -180,11 +191,14 @@ export function PlanList({
               : "No ranked plans match these filters."}
           </p>
         ) : (
-          <div className="mt-5 border-t border-line-soft pt-5">
-            <RowHeader />
-            <ul className="space-y-3">
+          <div className="mt-5">
+            <RowHeader usageKwh={usageKwh} />
+            <ul className="overflow-hidden rounded-lg border border-line bg-surface">
               {visible.map((plan) => (
-                <li key={plan.id}>
+                <li
+                  key={plan.id}
+                  className="border-b border-line-soft last:border-b-0"
+                >
                   <PlanCard
                     plan={plan}
                     usageKwh={usageKwh}
@@ -221,7 +235,7 @@ export function PlanList({
             </nav>
 
             {anyFlagged && (
-              <p className="mt-8 rounded-lg border border-line-soft bg-surface-alt p-5 text-[15px] leading-relaxed">
+              <p className="mt-8 rounded-lg border border-line bg-surface-alt p-5 text-[15px] leading-relaxed">
                 <strong className="font-semibold">
                   Plans with the Unstable price mark are flagged.
                 </strong>{" "}
@@ -239,16 +253,19 @@ export function PlanList({
           aria-labelledby="tou-heading"
           className={showRanked ? "mt-10 border-t border-line pt-6" : "mt-5"}
         >
-          <h2 id="tou-heading" className="text-xl font-semibold">
+          <h2 id="tou-heading" className="font-display text-xl font-semibold">
             Time-of-use plans{" "}
             <span className="label-mono align-middle">(unranked)</span>
           </h2>
           <p className="mt-2 text-[15px] text-ink-soft">{TOU_SECTION_INTRO}</p>
           <div className="mt-5">
-            <RowHeader unranked />
-            <ul className="space-y-3">
+            <RowHeader unranked usageKwh={usageKwh} />
+            <ul className="overflow-hidden rounded-lg border border-line bg-surface">
               {timeOfUsePlans.map((plan) => (
-                <li key={plan.id}>
+                <li
+                  key={plan.id}
+                  className="border-b border-line-soft last:border-b-0"
+                >
                   <PlanCard
                     plan={plan}
                     usageKwh={usageKwh}

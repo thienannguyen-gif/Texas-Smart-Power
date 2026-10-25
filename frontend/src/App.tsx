@@ -58,7 +58,7 @@ export default function App() {
       {lookup.status === "error" && (
         <div
           role="alert"
-          className="rounded-2xl border-2 border-danger bg-danger-soft p-4 text-danger"
+          className="rounded-2xl border-2 border-danger-line bg-danger-soft p-4 text-danger"
         >
           <p className="font-bold">Couldn’t look up that ZIP.</p>
           <p className="mt-1 text-sm">{lookup.error}</p>

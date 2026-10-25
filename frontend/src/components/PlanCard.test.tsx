@@ -38,11 +38,48 @@ describe("PlanCard row", () => {
     expect(screen.getByText("6%")).toBeInTheDocument();
   });
 
-  it("names each value for screen readers and on a phone (wide screens use the column header)", () => {
+  it("names each value for screen readers, and carries it as data-label for the phone layout", () => {
     render(<PlanCard plan={plan()} />);
     for (const label of ["Est. bill", "Rate / kWh", "Term", "Renewable"]) {
-      expect(screen.getByText(label)).toHaveClass("md:sr-only");
+      const name = screen.getByText(label);
+      expect(name).toHaveClass("sr-only");
+      expect(name.parentElement).toHaveAttribute("data-label", label);
     }
+  });
+
+  it("is one grid row with the six agreed columns, and a button that reads 'Plan details' on a phone", () => {
+    render(<PlanCard plan={plan()} onMoreDetails={() => {}} />);
+    const grid = article().firstElementChild as HTMLElement;
+    expect(grid.className).toContain(
+      "row:grid-cols-[minmax(0,1fr)_92px_86px_70px_88px_40px]",
+    );
+    expect(grid.className).toContain("row:gap-[14px]");
+    expect(screen.getByText("Plan details")).toHaveClass("row:hidden");
+    expect(screen.getByRole("button")).toHaveClass("w-full", "row:w-10");
+  });
+
+  it("sets the bill largest, the rate and term smaller, and right-aligns the four figures", () => {
+    render(<PlanCard plan={plan()} />);
+    expect(screen.getByText("$139")).toHaveClass(
+      "text-[21px]",
+      "font-semibold",
+    );
+    expect(screen.getByText("13.9¢")).toHaveClass("text-sm", "text-ink-soft");
+    expect(screen.getByText("12 mo")).toHaveClass("text-sm", "text-ink-soft");
+    for (const label of ["Est. bill", "Rate / kWh", "Term", "Renewable"]) {
+      expect(screen.getByText(label).parentElement).toHaveClass(
+        "row:text-right",
+      );
+    }
+  });
+
+  it("shows a low renewable figure in faint ink, and 100% in sage", () => {
+    const { rerender } = render(<PlanCard plan={plan()} />);
+    expect(screen.getByText("6%")).toHaveClass("text-ink-faint");
+    rerender(
+      <PlanCard plan={plan({ renewableDescription: "100% Renewable" })} />,
+    );
+    expect(screen.getByText("100%")).toHaveClass("text-sage");
   });
 
   it("shows an em dash for missing term / price / bill / renewable", () => {
@@ -58,13 +95,19 @@ describe("PlanCard row", () => {
     expect(screen.getAllByText("—")).toHaveLength(4);
   });
 
-  it("shows the provider as a plain name: no logo image that could break", () => {
-    render(
+  it("puts the provider's logo beside its name, and shows initials instead when the logo fails", () => {
+    const { container } = render(
       <PlanCard
         plan={plan({ companyLogo: "https://example.com/blocked.png" })}
       />,
     );
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    const img = container.querySelector("img")!;
+    expect(img).toHaveAttribute("src", "https://example.com/blocked.png");
+    expect(screen.getByText("Example Energy")).toBeInTheDocument();
+
+    fireEvent.error(img);
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByTestId("provider-initials")).toHaveTextContent("EE");
     expect(screen.getByText("Example Energy")).toBeInTheDocument();
   });
 
@@ -126,11 +169,13 @@ describe("PlanCard marks", () => {
     });
     const { rerender } = render(<PlanCard plan={stable} bestMatch />);
     expect(screen.getByText("Best match")).toBeInTheDocument();
-    expect(article()).toHaveClass("border-l-4", "border-l-brand");
+    expect(article()).toHaveClass("border-l-[3px]", "border-l-brand");
 
+    // every other row gets the quiet hairline stripe
     rerender(<PlanCard plan={stable} />);
     expect(screen.queryByText("Best match")).not.toBeInTheDocument();
-    expect(article()).not.toHaveClass("border-l-4");
+    expect(article()).toHaveClass("border-l-[3px]", "border-l-line-soft");
+    expect(article()).not.toHaveClass("border-l-brand");
   });
 
   it("badges exactly-12-month plans as a 12-month lock, and no other term", () => {
@@ -207,17 +252,19 @@ describe("PlanCard customer-eligibility badge", () => {
     expect(screen.getByText("Open to existing customers")).toBeInTheDocument();
   });
 
-  it("shows nothing for new-customer-only plans (nearly every plan), unknown, or old data", () => {
+  it("shows 'New customers only' when new_customer is true, and neither chip for unknown or old data", () => {
     const { rerender } = render(
       <PlanCard plan={plan({ newCustomer: true })} />,
     );
+    expect(screen.getByText("New customers only")).toBeInTheDocument();
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/new customers/i)).not.toBeInTheDocument();
 
     rerender(<PlanCard plan={plan({ newCustomer: null })} />);
+    expect(screen.queryByText(/new customers only/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
 
     rerender(<PlanCard plan={plan()} />); // stored before the field existed
+    expect(screen.queryByText(/new customers only/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
   });
 });

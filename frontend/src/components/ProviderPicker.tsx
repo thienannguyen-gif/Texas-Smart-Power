@@ -105,7 +105,7 @@ export function ProviderPicker({
         }}
         onKeyDown={onKeyDown}
         onBlur={() => setOpen(false)}
-        className="min-h-10 w-full rounded-md border border-line bg-paper px-3 py-2 font-mono text-base sm:min-h-0 sm:text-sm"
+        className="min-h-10 w-full rounded-md border border-line bg-surface px-3 py-2 font-mono text-base sm:min-h-0 sm:text-sm"
       />
 
       {showList && (

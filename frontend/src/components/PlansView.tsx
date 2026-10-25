@@ -190,7 +190,7 @@ export function PlansView({
             {state.status === "error" && (
               <div
                 role="alert"
-                className="rounded-2xl border-2 border-danger bg-danger-soft p-4 text-danger"
+                className="rounded-2xl border-2 border-danger-line bg-danger-soft p-4 text-danger"
               >
                 <p className="font-bold">Couldn’t load plans.</p>
                 <p className="mt-1 text-sm">{state.error}</p>

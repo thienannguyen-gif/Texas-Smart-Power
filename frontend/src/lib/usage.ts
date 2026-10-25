@@ -71,3 +71,23 @@ export function snapToSlider(kwh: number): number {
     Math.round((clamped - MIN_USAGE_KWH) / USAGE_STEP_KWH) * USAGE_STEP_KWH
   );
 }
+
+/**
+ * The only three usage levels Power to Choose publishes a price for; every other
+ * usage is interpolated (see pricePerKwhAtUsage).
+ */
+export const USAGE_ANCHORS_KWH = [500, 1000, 2000] as const;
+
+/** Releasing the slider this close to an anchor (or closer) snaps to it. */
+export const ANCHOR_SNAP_KWH = 25;
+
+/** The anchor within ANCHOR_SNAP_KWH of `kwh`, else `kwh` unchanged. */
+export function snapToAnchor(kwh: number): number {
+  const near = USAGE_ANCHORS_KWH.find(
+    (anchor) => Math.abs(kwh - anchor) <= ANCHOR_SNAP_KWH,
+  );
+  return near ?? kwh;
+}
+
+/** PageUp / PageDown move the slider by this much. */
+export const USAGE_PAGE_KWH = 500;

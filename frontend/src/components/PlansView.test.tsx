@@ -563,7 +563,7 @@ test("phone drawer: Clear empties the draft only; closing without Apply discards
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 });
 
-test("a one-line summary above the list counts what is showing and follows the filters", async () => {
+test("the results line is just the plan count and the Updated stamp, and the count follows the filters", async () => {
   mockPlans({
     ...file,
     planCount: 4,
@@ -591,25 +591,22 @@ test("a one-line summary above the list counts what is showing and follows the f
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
+  expect(await screen.findByText("4 plans")).toBeInTheDocument();
+  // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
+  expect(screen.queryByText(/ · /)).not.toBeInTheDocument();
   expect(
-    await screen.findByText("4 plans · 2 are 100% renewable · 2 are 12 months"),
-  ).toBeInTheDocument();
+    screen.queryByText(
+      /(is|are) 100% renewable|(is|are) 12 months|shown separately/,
+    ),
+  ).toBeNull();
+  expect(screen.getByText(/^Updated /)).toBeInTheDocument();
 
-  // at least 100% renewable: A and C remain; only A is 12 months
   fireEvent.click(
     screen.getByRole("checkbox", { name: /100% renewable only/i }),
   );
-  expect(
-    screen.getByText(
-      "Showing 2 of 4 plans · 2 are 100% renewable · 1 is 12 months",
-    ),
-  ).toBeInTheDocument();
-
-  // parts that would say "0" are left out
-  fireEvent.click(screen.getByRole("checkbox", { name: /13\+ months/i }));
-  expect(
-    screen.getByText("Showing 1 of 4 plans · 1 is 100% renewable"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Showing 2 of 4 plans")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: /13[+] months/i }));
+  expect(screen.getByText("Showing 1 of 4 plans")).toBeInTheDocument();
 });
 
 // ---- Sort: Best match / Lowest bill
@@ -1124,14 +1121,12 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
 });
 
-test("the summary counts time-of-use plans separately from the ranked plans", async () => {
+test("the results line counts only the ranked plans and says nothing about the time-of-use ones", async () => {
   renderTou();
   await screen.findByText("Ranked A");
-  expect(
-    screen.getByText(
-      "2 plans · 2 are 12 months · 3 time-of-use plans shown separately",
-    ),
-  ).toBeInTheDocument();
+  expect(screen.getByText("2 plans")).toBeInTheDocument();
+  expect(screen.queryByText(/shown separately/)).not.toBeInTheDocument();
+  expect(screen.getByText(/^Updated /)).toBeInTheDocument();
 });
 
 test("the TIME-OF-USE PLANS filter shows its count and note, and switches to only that section", async () => {
@@ -1183,11 +1178,7 @@ test("the other filters apply to the time-of-use section too, and its count foll
   expect(
     screen.getByText(/no ranked plans match these filters/i),
   ).toBeInTheDocument();
-  expect(
-    screen.getByText(
-      "Showing 0 of 2 plans · 2 time-of-use plans shown separately",
-    ),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Showing 0 of 2 plans")).toBeInTheDocument();
 });
 
 test("with no time-of-use plans in the area the filter is greyed out and says so, and there is no section", async () => {
@@ -1204,7 +1195,7 @@ test("with no time-of-use plans in the area the filter is greyed out and says so
   expect(
     screen.queryByRole("region", { name: /time-of-use plans/i }),
   ).not.toBeInTheDocument();
-  expect(screen.getByText("2 plans · 2 are 12 months")).toBeInTheDocument();
+  expect(screen.getByText("2 plans")).toBeInTheDocument();
 });
 
 test("data written before the split (time-of-use plans inside plans) is still shown separately", async () => {
@@ -1216,11 +1207,7 @@ test("data written before the split (time-of-use plans inside plans) is still sh
   await screen.findByText("Ranked A");
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
   expect(sectionNames()).toEqual(["Night Owl"]);
-  expect(
-    screen.getByText(
-      "2 plans · 2 are 12 months · 1 time-of-use plan shown separately",
-    ),
-  ).toBeInTheDocument();
+  expect(screen.getByText("2 plans")).toBeInTheDocument();
 });
 
 test("a ZIP whose only plans are time-of-use still shows them", async () => {
@@ -1304,9 +1291,7 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
     within(sidebar).getByRole("checkbox", { name: /^12 months/ }),
   );
   expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
-  expect(
-    screen.getByText(/Showing 3 of 7 plans · 3 are 12 months/),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Showing 3 of 7 plans")).toBeInTheDocument();
 });
 
 const cardNamesOnPage = () =>

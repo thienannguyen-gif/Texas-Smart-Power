@@ -10,7 +10,6 @@ import {
   renewablePct,
   selectProvider,
   splitForView,
-  summarizePlans,
   type PlanFilters,
 } from "./filters";
 import type { Plan } from "../types/plan";
@@ -199,27 +198,6 @@ describe("isFiltering", () => {
     expect(isFiltering(withFilters({ providers: ["Gexa"] }))).toBe(true);
     expect(isFiltering(withFilters({ renewable100Only: true }))).toBe(true);
     expect(activeFilterCount(withFilters({ renewable100Only: true }))).toBe(1);
-  });
-});
-
-describe("summarizePlans", () => {
-  const mk = (term: number | null, renewable: string | null) =>
-    make({ termMonths: term, renewableDescription: renewable });
-
-  it("counts 100% renewable and exactly-12-month plans among those given", () => {
-    const plans = [
-      mk(12, "100% Renewable"), // both
-      mk(12, "22% Renewable"), // 12 months only
-      mk(24, "100% Renewable"), // renewable only
-      mk(3, null), // neither
-      mk(13, "100% Renewable"), // 13 is not 12
-      mk(11, "100% Renewable"), // nor is 11
-    ];
-    expect(summarizePlans(plans)).toEqual({ renewable100: 4, months12: 2 });
-  });
-
-  it("is all zeros for no plans", () => {
-    expect(summarizePlans([])).toEqual({ renewable100: 0, months12: 0 });
   });
 });
 

@@ -5,6 +5,7 @@ import {
   pricePerKwhAtUsage,
 } from "../lib/usage";
 import { formatAmount, formatKwh, formatRate } from "../lib/money";
+import { renewablePct } from "../lib/filters";
 import { PriceCurveBadge } from "./PriceCurveBadge";
 import { ProviderLogo } from "./ProviderLogo";
 
@@ -23,6 +24,8 @@ export function PlanCard({
   /** A time-of-use plan in its own section: marked as unranked, and its price is a reference rate. */
   unranked?: boolean;
 }) {
+  const renewable = renewablePct(plan);
+
   return (
     <article className="rounded-2xl border-2 border-line bg-surface p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -88,11 +91,12 @@ export function PlanCard({
         <div>
           <dt className="text-sm font-semibold text-ink-soft">% Renewable</dt>
           <dd
-            className={`mt-1 break-words text-base font-extrabold sm:text-lg ${
-              /^100%/.test(plan.renewableDescription ?? "") ? "text-sage" : ""
+            title={plan.renewableDescription ?? undefined}
+            className={`mt-1 text-base font-extrabold sm:text-lg ${
+              renewable === 100 ? "text-sage" : "text-ink-faint"
             }`}
           >
-            {plan.renewableDescription ?? "—"}
+            {renewable !== null ? `${renewable}%` : "—"}
           </dd>
         </div>
       </dl>

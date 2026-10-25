@@ -47,8 +47,8 @@ export function PlansHeader({
       aria-label="Your search"
       className="border-b border-line-soft bg-surface"
     >
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:items-end md:gap-14 md:py-8">
-        <div>
+      <div className="mx-auto flex max-w-6xl flex-wrap items-end gap-x-14 gap-y-8 px-4 py-6 sm:px-6 md:py-8">
+        <div className="shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -108,7 +108,10 @@ export function PlansHeader({
           )}
         </div>
 
-        <UsageControl value={usageKwh} onChange={onUsageChange} />
+        {/* takes the rest of the row; wraps below the ZIP group when under 32rem is left */}
+        <div className="min-w-0 grow basis-[32rem]">
+          <UsageControl value={usageKwh} onChange={onUsageChange} />
+        </div>
       </div>
 
       {chooserOpen && areaChoice && (

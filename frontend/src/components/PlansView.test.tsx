@@ -943,7 +943,7 @@ test("usage block: band pill, then the number box, then the slider with its two 
   const header = screen.getByRole("region", { name: "Your search" });
   const numberBox = screen.getByLabelText(/monthly usage in kWh/i);
   const slider = screen.getByLabelText("Monthly usage slider");
-  const band = within(header).getByText("Average Home");
+  const band = within(header).getByText("Average home");
 
   // band pill, then the number box, then the slider
   expect(

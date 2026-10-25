@@ -51,25 +51,25 @@ describe("UsageControl", () => {
     expect(slider()).toHaveValue("100");
   });
 
-  it("names the usage band: under 700 Efficient, 700 to 1,400 Average Home, above 1,400 High Usage", () => {
+  it("names the usage band: under 700 Efficient, 700 to 1,400 Average home, above 1,400 High usage", () => {
     render(<Harness />);
     const typeKwh = (kwh: number) =>
       fireEvent.change(numberBox(), { target: { value: String(kwh) } });
 
-    expect(screen.getByText("Average Home")).toBeInTheDocument(); // 1,000 by default
+    expect(screen.getByText("Average home")).toBeInTheDocument(); // 1,000 by default
     typeKwh(699);
     expect(screen.getByText("Efficient")).toBeInTheDocument();
     typeKwh(700);
-    expect(screen.getByText("Average Home")).toBeInTheDocument();
+    expect(screen.getByText("Average home")).toBeInTheDocument();
     typeKwh(1400);
-    expect(screen.getByText("Average Home")).toBeInTheDocument();
+    expect(screen.getByText("Average home")).toBeInTheDocument();
     typeKwh(1401);
-    expect(screen.getByText("High Usage")).toBeInTheDocument();
+    expect(screen.getByText("High usage")).toBeInTheDocument();
 
     // and from the slider
     fireEvent.change(slider(), { target: { value: "300" } });
     expect(screen.getByText("Efficient")).toBeInTheDocument();
-    expect(screen.queryByText("High Usage")).not.toBeInTheDocument();
+    expect(screen.queryByText("High usage")).not.toBeInTheDocument();
   });
 
   it("labels the two ends of the slider, 100 kWh and 4,000 kWh, and nothing in between", () => {
@@ -106,7 +106,7 @@ describe("UsageControl", () => {
     expect(screen.getByText("4,000 kWh")).toBeInTheDocument();
     expect(slider()).toHaveAttribute(
       "aria-valuetext",
-      "1,000 kWh, Average Home",
+      "1,000 kWh, Average home",
     );
   });
 });
@@ -136,5 +136,100 @@ describe("locale formatting in the source", () => {
       ),
     );
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("UsageControl notches, labels and keys", () => {
+  it("marks 500, 1,000 and 2,000 kWh on the track, and nothing else", () => {
+    render(<Harness />);
+    const ticks = screen.getAllByTestId("usage-tick");
+    expect(ticks).toHaveLength(3);
+    // a fraction of the way along: (500-100)/3900, (1000-100)/3900, (2000-100)/3900
+    expect(ticks.map((t) => t.style.left)).toEqual([
+      expect.stringContaining("0.10256"),
+      expect.stringContaining("0.23076"),
+      expect.stringContaining("0.48717"),
+    ]);
+    for (const tick of ticks) expect(tick).toHaveClass("bg-line");
+  });
+
+  it("labels the three anchors only on wide screens, and the two ends always", () => {
+    render(<Harness />);
+    const anchors = screen.getAllByTestId("usage-tick-label");
+    expect(anchors.map((a) => a.textContent)).toEqual([
+      "500",
+      "1,000",
+      "2,000",
+    ]);
+    // hidden at 600px and below, shown above it
+    for (const anchor of anchors) {
+      expect(anchor).toHaveClass("hidden", "min-[601px]:block");
+    }
+    for (const end of ["100 kWh", "4,000 kWh"]) {
+      expect(screen.getByText(end)).not.toHaveClass("hidden");
+    }
+  });
+
+  it("writes the anchor labels with a comma even on a machine whose locale uses a dot", () => {
+    const original = Number.prototype.toLocaleString;
+    vi.spyOn(Number.prototype, "toLocaleString").mockImplementation(function (
+      this: number,
+      locales?: Intl.LocalesArgument,
+      options?: Intl.NumberFormatOptions,
+    ) {
+      return original.call(this, locales ?? "de-DE", options);
+    });
+    render(<Harness />);
+    expect(screen.getByText("2,000")).toBeInTheDocument();
+    expect(screen.queryByText("2.000")).not.toBeInTheDocument();
+  });
+
+  it("PageUp / PageDown move 500, Home and End jump to the ends, and all stay in range", () => {
+    render(<Harness />);
+    fireEvent.keyDown(slider(), { key: "PageUp" });
+    expect(numberBox()).toHaveValue(1500);
+    fireEvent.keyDown(slider(), { key: "PageDown" });
+    fireEvent.keyDown(slider(), { key: "PageDown" });
+    expect(numberBox()).toHaveValue(500);
+    fireEvent.keyDown(slider(), { key: "PageDown" });
+    expect(numberBox()).toHaveValue(100); // clamped, not -0
+    fireEvent.keyDown(slider(), { key: "End" });
+    expect(numberBox()).toHaveValue(4000);
+    fireEvent.keyDown(slider(), { key: "PageUp" });
+    expect(numberBox()).toHaveValue(4000);
+    fireEvent.keyDown(slider(), { key: "Home" });
+    expect(numberBox()).toHaveValue(100);
+  });
+
+  it("arrow keys are left to the slider's own 50 kWh step", () => {
+    render(<Harness />);
+    const event = new KeyboardEvent("keydown", {
+      key: "ArrowRight",
+      cancelable: true,
+      bubbles: true,
+    });
+    slider().dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("releasing the thumb keeps it on the slider value, and the slider and box stay in sync", () => {
+    render(<Harness />);
+    fireEvent.change(slider(), { target: { value: "1000" } });
+    fireEvent.pointerUp(slider());
+    expect(numberBox()).toHaveValue(1000);
+    expect(slider()).toHaveValue("1000");
+  });
+
+  it("the focus ring is on the thumb, not an outline that traces the track", () => {
+    const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
+    const focus = /\.usage-range:focus-visible\s*\{([^}]*)\}/.exec(css);
+    expect(focus?.[1]).toMatch(/outline:\s*none/);
+    for (const thumb of ["::-webkit-slider-thumb", "::-moz-range-thumb"]) {
+      const rule = new RegExp(
+        String.raw`\.usage-range:focus-visible${thumb}\s*\{([^}]*)\}`,
+      ).exec(css);
+      expect(rule?.[1]).toMatch(/var\(--brand-soft\)/);
+      expect(rule?.[1]).toMatch(/var\(--brand\)/);
+    }
   });
 });

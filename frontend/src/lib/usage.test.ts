@@ -3,6 +3,8 @@ import {
   clampUsage,
   estimatedMonthlyBill,
   pricePerKwhAtUsage,
+  snapToAnchor,
+  USAGE_ANCHORS_KWH,
   snapToSlider,
   usageBand,
 } from "./usage";
@@ -111,11 +113,11 @@ describe("usageBand", () => {
   it.each([
     [100, "Efficient"],
     [699, "Efficient"],
-    [700, "Average Home"],
-    [1000, "Average Home"],
-    [1400, "Average Home"],
-    [1401, "High Usage"],
-    [4000, "High Usage"],
+    [700, "Average home"],
+    [1000, "Average home"],
+    [1400, "Average home"],
+    [1401, "High usage"],
+    [4000, "High usage"],
   ])("%i kWh is %s", (kwh, band) => {
     expect(usageBand(kwh)).toBe(band);
   });
@@ -129,5 +131,23 @@ describe("snapToSlider", () => {
     expect(snapToSlider(9999)).toBe(4000);
     expect(snapToSlider(0)).toBe(100);
     expect(snapToSlider(Number.NaN)).toBe(1000);
+  });
+});
+
+describe("snapToAnchor", () => {
+  it("snaps to an anchor within 25 kWh, either side, and leaves other values alone", () => {
+    expect(snapToAnchor(1000)).toBe(1000);
+    expect(snapToAnchor(1025)).toBe(1000);
+    expect(snapToAnchor(975)).toBe(1000);
+    expect(snapToAnchor(1026)).toBe(1026);
+    expect(snapToAnchor(520)).toBe(500);
+    expect(snapToAnchor(1980)).toBe(2000);
+    expect(snapToAnchor(1500)).toBe(1500);
+    expect(snapToAnchor(100)).toBe(100);
+    expect(snapToAnchor(4000)).toBe(4000);
+  });
+
+  it("the anchors are the three published price levels", () => {
+    expect([...USAGE_ANCHORS_KWH]).toEqual([500, 1000, 2000]);
   });
 });

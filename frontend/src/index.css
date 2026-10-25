@@ -194,10 +194,19 @@ body {
   border: 3px solid var(--surface);
   box-shadow: 0 0 0 1px var(--ink-faint);
 }
+/* Keyboard focus: a ring on the thumb only, so it never traces the track. */
 .usage-range:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 4px;
-  border-radius: 9999px;
+  outline: none;
+}
+.usage-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px var(--brand-soft),
+    0 0 0 4px var(--brand);
+}
+.usage-range:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 3px var(--brand-soft),
+    0 0 0 4px var(--brand);
 }
 
 /* Phone filter drawer slides up from the bottom edge. */

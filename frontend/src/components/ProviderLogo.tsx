@@ -28,9 +28,11 @@ export function providerInitials(name: string): string {
   return (usable[0][0] + usable[1][0]).toUpperCase();
 }
 
-// The provider's logo. Many providers block hotlinking (the image request is
-// refused), so when the picture fails — or there is none — show the provider's
-// initials in a circle next to its name instead of a broken-image icon.
+// The mark that sits before a provider's name: its logo, or two initials in a
+// circle. Many providers block hotlinking (the image request is refused), so
+// when the picture fails — or there is none — the initials stand in rather than
+// a broken-image icon. The name itself is written next to it by the caller, so
+// the logo is decorative.
 export function ProviderLogo({
   name,
   src,
@@ -42,14 +44,12 @@ export function ProviderLogo({
 
   if (!src || failedSrc === src) {
     return (
-      <span className="inline-flex items-center gap-2">
-        <span
-          aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand"
-        >
-          {providerInitials(name)}
-        </span>
-        <span className="text-sm text-ink-soft">{name}</span>
+      <span
+        aria-hidden="true"
+        data-testid="provider-initials"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-soft font-mono text-[10px] font-semibold text-brand"
+      >
+        {providerInitials(name)}
       </span>
     );
   }
@@ -57,9 +57,9 @@ export function ProviderLogo({
   return (
     <img
       src={src}
-      alt={name}
+      alt=""
       onError={() => setFailedSrc(src)}
-      className="h-5 w-auto max-w-[10rem] object-contain"
+      className="h-5 w-auto max-w-[5rem] shrink-0 object-contain"
     />
   );
 }

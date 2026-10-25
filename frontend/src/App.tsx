@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { isTduId, TDU_LABELS, type TduId } from "./types/plan";
+import { displayAreaName } from "./lib/areaName";
 import type { UtilityArea } from "./types/zip";
 import { useZipLookup } from "./hooks/useZipLookup";
 import { SiteHeader } from "./components/SiteHeader";
@@ -142,6 +143,11 @@ export default function App() {
     };
   }
 
+  // "Service area <name>" in the header: the utility whose plans are showing.
+  const serviceAreaName = tdu
+    ? activeAreas.find((area) => area.code === tdu)?.name
+    : undefined;
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -156,6 +162,9 @@ export default function App() {
             tdu={tdu}
             zip={activeZip}
             onSubmitZip={submitZip}
+            serviceArea={
+              serviceAreaName ? displayAreaName(serviceAreaName) : undefined
+            }
             areaChoice={areaChoice}
             zipBusy={lookup.status === "loading"}
             zipStatus={lookupMessages}

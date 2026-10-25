@@ -72,40 +72,23 @@ describe("UsageControl", () => {
     expect(screen.queryByText("High Usage")).not.toBeInTheDocument();
   });
 
-  it("puts a notch on the track at 500, 1,000 and 2,000 kWh, and nowhere else", () => {
+  it("labels the two ends of the slider, 100 kWh and 4,000 kWh, and nothing in between", () => {
     render(<Harness />);
-    const notches = screen.getAllByTestId("usage-notch");
-    expect(notches).toHaveLength(3);
-    // (500-100)/3900, (1000-100)/3900, (2000-100)/3900 of the way along
-    expect(notches.map((n) => n.style.left)).toEqual([
-      expect.stringContaining("0.10256"),
-      expect.stringContaining("0.23076"),
-      expect.stringContaining("0.48717"),
-    ]);
+    const ends = screen.getAllByText(/^[\d,]+ kWh$/);
+    expect(ends.map((el) => el.textContent)).toEqual(["100 kWh", "4,000 kWh"]);
+    expect(screen.queryByText("1,000 kWh")).not.toBeInTheDocument();
+    expect(screen.queryByText("2,500 kWh")).not.toBeInTheDocument();
   });
 
-  it("fills the track up to the thumb, and the fill follows the value", () => {
+  it("shows the band name, 'Your monthly usage' and the filled slider track", () => {
     render(<Harness />);
-    const fill = () => screen.getByTestId("usage-fill").style.width;
-    expect(fill()).toContain("0.23076"); // 1,000 kWh
+    expect(screen.getByText("Your monthly usage")).toBeInTheDocument();
+    // 1,000 kWh is (1000-100)/(4000-100) of the way along
+    expect(slider().style.getPropertyValue("--pct")).toMatch(/^23\.07/);
     fireEvent.change(slider(), { target: { value: "4000" } });
-    expect(fill()).toContain("+ 1 *");
+    expect(slider().style.getPropertyValue("--pct")).toBe("100%");
     fireEvent.change(slider(), { target: { value: "100" } });
-    expect(fill()).toContain("+ 0 *");
-  });
-
-  it("shows the label under the thumb in green, and the others quietly", () => {
-    render(<Harness />);
-    expect(screen.getByText("1,000 kWh")).toHaveClass("text-brand");
-    expect(screen.getByText("500 kWh")).toHaveClass("text-ink-faint");
-    fireEvent.change(slider(), { target: { value: "2000" } });
-    expect(screen.getByText("2,000 kWh")).toHaveClass("text-brand");
-    expect(screen.getByText("1,000 kWh")).toHaveClass("text-ink-faint");
-    // between notches nothing is highlighted
-    fireEvent.change(slider(), { target: { value: "1500" } });
-    for (const el of screen.getAllByTestId("usage-label")) {
-      expect(el).not.toHaveClass("text-brand");
-    }
+    expect(slider().style.getPropertyValue("--pct")).toBe("0%");
   });
 
   it("writes numbers with an explicit en-US locale, so the machine's locale cannot turn 1,000 into 1.000", () => {
@@ -120,8 +103,7 @@ describe("UsageControl", () => {
     });
 
     render(<Harness />);
-    expect(screen.getByText("1,000 kWh")).toBeInTheDocument();
-    expect(screen.getByText("2,000 kWh")).toBeInTheDocument();
+    expect(screen.getByText("4,000 kWh")).toBeInTheDocument();
     expect(slider()).toHaveAttribute(
       "aria-valuetext",
       "1,000 kWh, Average Home",
@@ -154,34 +136,5 @@ describe("locale formatting in the source", () => {
       ),
     );
     expect(offenders).toEqual([]);
-  });
-});
-
-describe("UsageControl labels by screen width", () => {
-  it("labels three notches and the top end on wider screens, and only the two ends on phones", () => {
-    render(<Harness />);
-
-    // wider screens (sm and up): a label under each notch, plus the top end
-    for (const text of ["500 kWh", "1,000 kWh", "2,000 kWh"]) {
-      expect(screen.getByText(text)).toHaveClass("hidden", "sm:block");
-    }
-    const labels = screen.getAllByTestId("usage-label");
-    expect(labels.map((l) => l.textContent)).toEqual([
-      "500 kWh",
-      "1,000 kWh",
-      "2,000 kWh",
-      "4,000 kWh",
-    ]);
-    expect(screen.queryByText("2,500 kWh")).not.toBeInTheDocument();
-
-    // phones: just the slider's two ends, which collide with nothing
-    const lowest = screen.getByText("100 kWh");
-    expect(lowest).toHaveClass("sm:hidden", "left-0");
-    expect(lowest).not.toHaveClass("hidden");
-    const highest = screen
-      .getAllByText("4,000 kWh")
-      .find((el) => el.className.includes("sm:hidden"))!;
-    expect(highest).toHaveClass("right-0");
-    expect(highest).not.toHaveClass("hidden");
   });
 });

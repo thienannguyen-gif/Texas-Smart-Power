@@ -42,7 +42,7 @@ export function ZipForm({
           onBlur={() => setTouched(true)}
           aria-invalid={showError}
           aria-describedby={showError ? errorId : undefined}
-          className="min-w-0 flex-1 rounded-2xl bg-bar px-5 py-4 text-base text-bar-fg placeholder:text-bar-fg/60 focus:outline-none focus:ring-2 focus:ring-brand sm:px-6 sm:text-lg"
+          className="min-w-0 flex-1 rounded-2xl bg-bar px-5 py-4 text-base text-bar-fg placeholder:text-bar-fg-soft focus:outline-none focus:ring-2 focus:ring-brand sm:px-6 sm:text-lg"
         />
         <button
           type="submit"

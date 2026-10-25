@@ -48,7 +48,7 @@ export function DisclaimerPage({
         </a>
 
         {title && (
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-brand sm:text-4xl">
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-brand sm:text-4xl">
             {title.text}
           </h1>
         )}

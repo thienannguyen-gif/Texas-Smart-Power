@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatKwh, formatRate } from "./money";
+import { formatAmount, formatKwh, formatRate, formatRateShort } from "./money";
 
 describe("formatKwh", () => {
   it("uses a comma thousands separator", () => {
@@ -65,5 +65,18 @@ describe("formatAmount", () => {
   it("returns a dash for a missing value", () => {
     expect(formatAmount(null)).toBe("—");
     expect(formatAmount(Number.NaN)).toBe("—");
+  });
+});
+
+describe("formatRateShort", () => {
+  it("shows cents to one decimal with a cent sign, and no /kWh", () => {
+    expect(formatRateShort(0.139)).toBe("13.9¢");
+    expect(formatRateShort(0.1)).toBe("10.0¢");
+    expect(formatRateShort(0.1011)).toBe("10.1¢");
+  });
+
+  it("shows an em dash for a missing or invalid rate", () => {
+    expect(formatRateShort(null)).toBe("—");
+    expect(formatRateShort(Number.NaN)).toBe("—");
   });
 });

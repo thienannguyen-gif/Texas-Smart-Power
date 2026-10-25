@@ -84,7 +84,7 @@ describe("OurPicks cards", () => {
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByText("Best overall")).toBeInTheDocument();
     expect(screen.getByText("Best 100% green")).toBeInTheDocument();
-    expect(screen.getByText("Cheapest 12-month")).toBeInTheDocument();
+    expect(screen.getByText("Lowest bill")).toBeInTheDocument();
   });
 
   it("shows term, renewable and cancellation chips, with the 100% one in green", () => {
@@ -201,14 +201,18 @@ describe("OurPicks in the page", () => {
     ).toBeTruthy();
 
     const cards = within(picks).getAllByRole("button");
-    // best overall = Plan 1 (first in score order); green = Plan 4; cheapest
-    // 12-month never the unstable Plan 2
-    expect(within(cards[0]).getByText("Plan 1")).toBeInTheDocument();
+    // Best overall = the best-scored 12-month plan: Plan 1 ranks first but is a
+    // 24-month plan, and Plan 2 is 12 months but has an unstable curve, so Plan 3
+    expect(within(cards[0]).getByText("Plan 3")).toBeInTheDocument();
+    expect(within(cards[0]).getByText("Best overall")).toBeInTheDocument();
+    expect(within(picks).queryByText("Plan 1")).toBeNull();
     expect(within(picks).queryByText("Plan 2")).toBeNull();
+    expect(within(picks).getByText("Lowest bill")).toBeInTheDocument();
     expect(within(picks).getByText("Best 100% green")).toBeInTheDocument();
+    expect(within(picks).queryByText("Cheapest 12-month")).toBeNull();
 
     fireEvent.click(cards[0]);
-    expect(screen.getByRole("dialog", { name: /plan 1/i })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /plan 3/i })).toBeInTheDocument();
   });
 
   it("follows the usage in its header", async () => {

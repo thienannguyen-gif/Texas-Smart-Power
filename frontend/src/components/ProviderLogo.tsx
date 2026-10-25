@@ -63,3 +63,37 @@ export function ProviderLogo({
     />
   );
 }
+
+// Just the mark, for places where the plan name sits beside it: the provider's
+// logo (decorative, alt=""), or two initials in a circle when the picture fails
+// to load (many providers answer a hotlinked logo with 403) or there is none.
+export function ProviderMark({
+  name,
+  src,
+}: {
+  name: string;
+  src: string | null;
+}) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+  if (!src || failedSrc === src) {
+    return (
+      <span
+        aria-hidden="true"
+        data-testid="provider-initials"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand"
+      >
+        {providerInitials(name)}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      onError={() => setFailedSrc(src)}
+      className="h-6 w-auto max-w-[6rem] shrink-0 object-contain"
+    />
+  );
+}

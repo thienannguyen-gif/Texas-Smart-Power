@@ -51,27 +51,35 @@ describe("UsageControl", () => {
     expect(slider()).toHaveValue("100");
   });
 
-  it("names the usage band: under 700 Efficient, 700 to 1,400 Average Home, above 1,400 High Usage", () => {
+  it("names the usage band live: under 500 Efficient, 500-1,000 Average Home, 1,001-2,000 Power User, above 2,000 Heavy User", () => {
     render(<Harness />);
     const typeKwh = (kwh: number) =>
       fireEvent.change(numberBox(), { target: { value: String(kwh) } });
+    const pill = (name: string) => screen.getByText(name);
 
-    expect(screen.getByText("Average Home")).toBeInTheDocument(); // 1,000 by default
-    typeKwh(699);
-    expect(screen.getByText("Efficient")).toBeInTheDocument();
-    typeKwh(700);
-    expect(screen.getByText("Average Home")).toBeInTheDocument();
-    typeKwh(1400);
-    expect(screen.getByText("Average Home")).toBeInTheDocument();
-    typeKwh(1401);
-    expect(screen.getByText("High Usage")).toBeInTheDocument();
+    expect(pill("Average Home")).toBeInTheDocument(); // 1,000 by default
+    typeKwh(499);
+    expect(pill("Efficient")).toBeInTheDocument();
+    typeKwh(500);
+    expect(pill("Average Home")).toBeInTheDocument();
+    typeKwh(1000);
+    expect(pill("Average Home")).toBeInTheDocument();
+    typeKwh(1001);
+    expect(pill("Power User")).toBeInTheDocument();
+    typeKwh(2000);
+    expect(pill("Power User")).toBeInTheDocument();
+    typeKwh(2001);
+    expect(pill("Heavy User")).toBeInTheDocument();
 
-    // and from the slider
+    // and from the slider, which moves in steps of 50
     fireEvent.change(slider(), { target: { value: "300" } });
-    expect(screen.getByText("Efficient")).toBeInTheDocument();
-    expect(screen.queryByText("High Usage")).not.toBeInTheDocument();
+    expect(pill("Efficient")).toBeInTheDocument();
+    fireEvent.change(slider(), { target: { value: "1500" } });
+    expect(pill("Power User")).toBeInTheDocument();
+    fireEvent.change(slider(), { target: { value: "3000" } });
+    expect(pill("Heavy User")).toBeInTheDocument();
+    expect(screen.queryByText("Efficient")).not.toBeInTheDocument();
   });
-
   it("labels the two ends of the slider, 100 kWh and 4,000 kWh, and nothing in between", () => {
     render(<Harness />);
     const ends = screen.getAllByText(/^[\d,]+ kWh$/);
@@ -208,7 +216,7 @@ describe("UsageControl notches and keys", () => {
     });
     render(<Harness start={2000} />);
     expect(screen.getByText("4,000 kWh")).toBeInTheDocument();
-    expect(slider()).toHaveAttribute("aria-valuetext", "2,000 kWh, High Usage");
+    expect(slider()).toHaveAttribute("aria-valuetext", "2,000 kWh, Power User");
     expect(document.body.textContent).not.toMatch(/\d\.\d{3} kWh/);
   });
 });

@@ -112,12 +112,15 @@ describe("clampUsage", () => {
 describe("usageBand", () => {
   it.each([
     [100, "Efficient"],
-    [699, "Efficient"],
-    [700, "Average Home"],
+    [499, "Efficient"],
+    [500, "Average Home"],
+    [750, "Average Home"],
     [1000, "Average Home"],
-    [1400, "Average Home"],
-    [1401, "High Usage"],
-    [4000, "High Usage"],
+    [1001, "Power User"],
+    [1500, "Power User"],
+    [2000, "Power User"],
+    [2001, "Heavy User"],
+    [4000, "Heavy User"],
   ])("%i kWh is %s", (kwh, band) => {
     expect(usageBand(kwh)).toBe(band);
   });

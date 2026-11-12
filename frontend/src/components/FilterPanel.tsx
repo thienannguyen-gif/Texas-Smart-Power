@@ -21,14 +21,13 @@ const SORT_OPTIONS: {
   label: string;
   /** Adds "(recommended)" after the label, inside the same <label>. */
   recommended?: boolean;
-  description: string;
+  /** Shown under the options while this one is chosen; none for Best match. */
+  description?: string;
 }[] = [
   {
     value: "best",
     label: "Best match",
     recommended: true,
-    description:
-      "Sorted by our score: price, price stability, flexibility and renewable content.",
   },
   {
     value: "lowestBill",
@@ -134,7 +133,11 @@ function SortSection({
           )}
         </label>
       ))}
-      <p className="text-center text-xs text-ink-soft">{current.description}</p>
+      {current.description && (
+        <p className="text-center text-xs text-ink-soft">
+          {current.description}
+        </p>
+      )}
     </fieldset>
   );
 }

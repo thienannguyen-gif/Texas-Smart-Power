@@ -39,28 +39,11 @@ function renderPicks(plans: Plan[], usage = 1000) {
 }
 
 describe("OurPicks cards", () => {
-  it("shows the header with the usage, formatted en-US with a comma", () => {
+  it("shows the Our picks header and no explanatory line under it", () => {
     renderPicks([mk({ id: 1 })], 2334);
     expect(screen.getByText("Our picks")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Picked from these plans, at 2,334 kWh. Tap one for details.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("writes the usage with a comma even on a machine whose locale uses a dot", () => {
-    const original = Number.prototype.toLocaleString;
-    vi.spyOn(Number.prototype, "toLocaleString").mockImplementation(function (
-      this: number,
-      locales?: Intl.LocalesArgument,
-      options?: Intl.NumberFormatOptions,
-    ) {
-      return original.call(this, locales ?? "de-DE", options);
-    });
-    renderPicks([mk({ id: 1 })], 2334);
-    expect(document.body.textContent).toContain("2,334 kWh");
-    expect(document.body.textContent).not.toContain("2.334");
+    expect(screen.queryByText(/picked from these plans/i)).toBeNull();
+    expect(screen.queryByText(/tap one for details/i)).toBeNull();
   });
 
   it("is a keyboard-reachable button that opens the plan on click, Enter and Space", () => {

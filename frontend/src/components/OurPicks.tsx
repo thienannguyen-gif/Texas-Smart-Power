@@ -3,7 +3,7 @@ import type { Plan } from "../types/plan";
 import { AWARD_LABELS, type AwardPick } from "../lib/awards";
 import { parseCancellationFee } from "../lib/cancellationFee";
 import { renewablePct } from "../lib/filters";
-import { formatAmount, formatKwh, formatRate } from "../lib/money";
+import { formatAmount, formatRate } from "../lib/money";
 import { estimatedMonthlyBill, pricePerKwhAtUsage } from "../lib/usage";
 import { ProviderMark } from "./ProviderLogo";
 
@@ -135,10 +135,6 @@ export function OurPicks({
       <p className="mb-3 flex flex-wrap items-baseline gap-x-2">
         <span className="text-xs font-bold tracking-wide text-ink uppercase">
           Our picks
-        </span>
-        <span className="text-xs text-ink-faint">
-          Picked from these plans, at {formatKwh(usageKwh)} kWh. Tap one for
-          details.
         </span>
       </p>
       <div className={`grid grid-cols-1 gap-3 ${COLUMNS[picks.length]}`}>

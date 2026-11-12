@@ -710,7 +710,9 @@ test("in Lowest bill mode, changing the usage re-sorts the list", async () => {
   const first = screen.getAllByRole("article")[0];
   expect(within(first).getByText("$200")).toBeInTheDocument();
 
-  // and back to Best match: the ranked order again, whatever the usage
+  // and back to Best match at 1,000 kWh: the score order again (the score
+  // moves with the usage, so this is checked at the usage it was written for)
+  fireEvent.change(usage, { target: { value: "1000" } });
   fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
 });

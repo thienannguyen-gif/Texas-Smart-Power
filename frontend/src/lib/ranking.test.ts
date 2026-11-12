@@ -97,7 +97,7 @@ describe("scorePlans", () => {
       }),
       makePlan({
         id: 2,
-        pricePerKwh: { at500: 0.12, at1000: 0.13, at2000: 0.13 },
+        pricePerKwh: { at500: 0.12, at1000: 0.13, at2000: 0.12 },
       }),
       makePlan({
         id: 3,
@@ -179,9 +179,16 @@ describe("priceCurveWarning", () => {
   const curve = (at500: number, at1000: number, at2000: number) =>
     makePlan({ pricePerKwh: { at500, at1000, at2000 } });
 
-  it("flags a V-Trap (P1000 < P2000) and a Hump (P1000 > P500), per BRIEF.md", () => {
+  it("flags a V-Trap (P500 > P1000 < P2000) and a Hump (P500 < P1000 > P2000)", () => {
     expect(priceCurveWarning(curve(0.1, 0.09, 0.11))).toBe("v-trap");
     expect(priceCurveWarning(curve(0.1, 0.12, 0.11))).toBe("hump");
+  });
+
+  it("does not flag a curve that bends only on one side of 1,000 kWh", () => {
+    expect(priceCurveWarning(curve(0.1, 0.1, 0.11))).toBeNull(); // flat then up
+    expect(priceCurveWarning(curve(0.1, 0.11, 0.11))).toBeNull(); // up then flat
+    expect(priceCurveWarning(curve(0.1, 0.11, 0.12))).toBeNull(); // rises throughout
+    expect(priceCurveWarning(curve(0.12, 0.11, 0.11))).toBeNull(); // falls then flat
   });
 
   it("does not flag a curve that only falls or stays flat", () => {

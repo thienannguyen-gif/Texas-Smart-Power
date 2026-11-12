@@ -673,7 +673,8 @@ test("sort control: Best match is the default and keeps the ranked order, with i
   expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
   expect(screen.getByRole("radio", { name: "Lowest bill" })).not.toBeChecked();
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
-  expect(screen.getByText(/sorted by our score/i)).toBeInTheDocument();
+  // Best match has no description line any more
+  expect(screen.queryByText(/sorted by our score/i)).toBeNull();
 });
 
 test("Lowest bill puts the cheapest estimated bill first, with the new description", async () => {

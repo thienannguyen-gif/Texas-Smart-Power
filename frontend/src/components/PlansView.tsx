@@ -9,8 +9,8 @@ import {
   splitForView,
   type PlanFilters,
 } from "../lib/filters";
-import { sortPlans } from "../lib/sort";
-import { currentStartMonth } from "../lib/contractCost";
+import { computeAwards } from "../lib/awards";
+import { sortPlans, type SortMode } from "../lib/sort";
 import { scorablePlans, scorePlansV2 } from "../lib/scoreV2";
 import { PlanList } from "./PlanList";
 import { PlansHeader } from "./PlansHeader";
@@ -61,9 +61,7 @@ export function PlansView({
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
-  // The month the contract details on each row start in: this month, fixed at
-  // load. It is shown, not scored.
-  const [startMonth] = useState(currentStartMonth);
+  const [sortMode, setSortMode] = useState<SortMode>("best");
   // Current page (1-based) of the filtered, rank-ordered list. A filter
   // change goes back to page 1; a usage change leaves it alone.
   const [page, setPage] = useState(1);
@@ -96,14 +94,27 @@ export function PlansView({
     if (isDesktop) setDrawerOpen(false);
   }, [isDesktop]);
 
-  // Filter first, then score what is left (lib/scoreV2.ts): the bill's min and
-  // max are taken over the plans shown, the highest cancellation fee over the
-  // whole area, and the list follows the usage field on every render. The
-  // time-of-use section is always cheapest reference rate first.
+  // Filter first, then order. "Best match" keeps the ranked order from
+  // ingestion; "Lowest bill" re-sorts by the bill at the current usage, so it
+  // follows the usage field on every render. The time-of-use section is always
+  // cheapest reference rate first, whatever the sort above it says.
   const view = splitForView(allPlans, timeOfUsePlans, filters);
-  const visiblePlans = scorePlansV2(allPlans, view.ranked, usageKwh);
+  // The ranked order is the v2 score (lib/scoreV2.ts), computed over the plans
+  // left after the filters: "Best match" and Our picks both follow it.
+  const scored = scorePlansV2(allPlans, view.ranked, usageKwh).map(
+    (s) => s.plan,
+  );
+  const visiblePlans = sortPlans(scored, sortMode, usageKwh);
+  // Our picks come from the ranked plans being shown, in score order (view.ranked
+  // keeps the order from ingestion), priced at the current usage.
+  const picks = computeAwards(scored, usageKwh);
   const visibleTimeOfUse = sortPlans(view.timeOfUse, "lowestBill", usageKwh);
   const activeCount = activeFilterCount(filters);
+
+  function changeSort(next: SortMode) {
+    setSortMode(next);
+    setPage(1);
+  }
 
   function changeFilters(next: PlanFilters) {
     setFilters(next);
@@ -172,6 +183,8 @@ export function PlansView({
                 providers={providers}
                 value={filters}
                 onChange={changeFilters}
+                sort={sortMode}
+                onSortChange={changeSort}
               />
             </aside>
           )}
@@ -205,8 +218,8 @@ export function PlansView({
               <PlanList
                 plans={visiblePlans}
                 totalCount={scorablePlans(allPlans, usageKwh).length}
-                startMonth={startMonth}
                 timeOfUsePlans={visibleTimeOfUse}
+                picks={picks}
                 showRanked={!filters.onlyTimeOfUse}
                 generatedAt={state.data.generatedAt}
                 page={page}
@@ -224,8 +237,10 @@ export function PlansView({
           timeOfUsePlans={timeOfUsePlans}
           providers={providers}
           applied={filters}
-          onApply={(next) => {
+          appliedSort={sortMode}
+          onApply={(next, sort) => {
             changeFilters(next);
+            changeSort(sort);
             setDrawerOpen(false);
           }}
           onClose={() => setDrawerOpen(false)}

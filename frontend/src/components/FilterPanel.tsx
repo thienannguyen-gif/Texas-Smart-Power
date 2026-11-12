@@ -157,9 +157,8 @@ export function FilterPanel({
   providers: string[];
   value: PlanFilters;
   onChange: (next: PlanFilters) => void;
-  /** Both omitted: no sort control (the page has one fixed order). */
-  sort?: SortMode;
-  onSortChange?: (next: SortMode) => void;
+  sort: SortMode;
+  onSortChange: (next: SortMode) => void;
 }) {
   const allPlans = [...plans, ...timeOfUsePlans];
   const hasPlans = allPlans.length > 0;
@@ -167,9 +166,7 @@ export function FilterPanel({
   const scope = plansInScope(plans, timeOfUsePlans, value);
   return (
     <div className="space-y-6">
-      {sort !== undefined && onSortChange !== undefined && (
-        <SortSection value={sort} onChange={onSortChange} />
-      )}
+      <SortSection value={sort} onChange={onSortChange} />
 
       <div className="space-y-2">
         <GroupHeading>TIME-OF-USE PLANS</GroupHeading>

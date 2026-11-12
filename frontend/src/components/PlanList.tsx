@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
-import { formatKwh } from "../lib/money";
-import { contractCost } from "../lib/contractCost";
-import type { ScoredPlanV2 } from "../lib/scoreV2";
-import { ContractCostCard } from "./ContractCostCard";
+import type { AwardPick } from "../lib/awards";
+import { OurPicks } from "./OurPicks";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
 
@@ -16,9 +14,8 @@ const PAGE_BUTTON =
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
-// The ranked plans arrive as one list, best score first (lib/scoreV2.ts), after
-// the sidebar's preference filters. The score ranks the plans; it is not shown.
-// The largest figure on a row is the estimated monthly bill.
+// Plans arrive in rank order; the sidebar's preference filters have already
+// been applied by the time they reach this component.
 //
 // Display-only pagination over the in-memory list. The current page lives in
 // the parent (`page`, 1-based) so it is the parent that resets it on a filter
@@ -31,22 +28,20 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 export function PlanList({
   plans,
   totalCount,
-  startMonth,
   timeOfUsePlans = [],
   showRanked = true,
+  picks = [],
   generatedAt,
   page,
   onPageChange,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
-  /** Best score first. */
-  plans: ScoredPlanV2[];
-  /** How many ranked plans there are before any filter. */
+  plans: Plan[];
   totalCount: number;
-  /** 0 = January: the month the contract details on each row start in. */
-  startMonth: number;
   timeOfUsePlans?: Plan[];
   showRanked?: boolean;
+  /** The "Our picks" winners, from the ranked plans being shown. */
+  picks?: AwardPick[];
   generatedAt: string;
   page: number;
   onPageChange: (next: number) => void;
@@ -113,11 +108,9 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
-      {showRanked && (
-        <p className="mb-4 text-xs text-ink-soft sm:text-sm">
-          Ranked by estimated monthly bill at {formatKwh(usageKwh)} kWh, term,
-          cancellation fee and renewable content.
-        </p>
+      {/* Above the list, on its first page only, like the time-of-use section. */}
+      {showRanked && current === 1 && (
+        <OurPicks picks={picks} usageKwh={usageKwh} onOpen={setSelected} />
       )}
 
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -143,21 +136,15 @@ export function PlanList({
         ) : (
           <>
             <ul className="space-y-4">
-              {visible.map(({ plan, bill }) => {
-                const cost = contractCost(plan, usageKwh, startMonth);
-                if (cost === null) return null;
-                return (
-                  <li key={plan.id}>
-                    <ContractCostCard
-                      plan={plan}
-                      bill={bill}
-                      usageKwh={usageKwh}
-                      cost={cost}
-                      onMoreDetails={() => setSelected(plan)}
-                    />
-                  </li>
-                );
-              })}
+              {visible.map((plan) => (
+                <li key={plan.id}>
+                  <PlanCard
+                    plan={plan}
+                    usageKwh={usageKwh}
+                    onMoreDetails={() => setSelected(plan)}
+                  />
+                </li>
+              ))}
             </ul>
 
             <nav

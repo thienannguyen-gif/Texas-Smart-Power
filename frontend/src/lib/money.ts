@@ -31,6 +31,27 @@ export function formatAmount(dollars: number | null): string {
   return wholeDollars.format(dollars);
 }
 
+const dollarsAndCents = new Intl.NumberFormat(LOCALE, {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** Dollar figure with cents -> "$115.67". Used where the cents are the point (contract costs). */
+export function formatAmountCents(dollars: number | null): string {
+  if (dollars === null || Number.isNaN(dollars)) return EM_DASH;
+  return dollarsAndCents.format(dollars);
+}
+
+/** Whole-dollar change with its sign -> "+$18", "-$9", "$0". */
+export function formatSignedAmount(dollars: number | null): string {
+  if (dollars === null || Number.isNaN(dollars)) return EM_DASH;
+  const rounded = Math.round(dollars);
+  if (rounded === 0) return wholeDollars.format(0);
+  return `${rounded > 0 ? "+" : "-"}${wholeDollars.format(Math.abs(rounded))}`;
+}
+
 /** A kWh quantity -> "1,000". */
 export function formatKwh(kwh: number): string {
   return kwh.toLocaleString(LOCALE);

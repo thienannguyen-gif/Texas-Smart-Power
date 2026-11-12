@@ -5,13 +5,15 @@ import { renewablePct } from "../lib/filters";
 import {
   formatAmount,
   formatAmountCents,
+  formatKwh,
   formatSignedAmount,
 } from "../lib/money";
 import { PriceCurveBadge } from "./PriceCurveBadge";
 import { ProviderLogo } from "./ProviderLogo";
 
-// One plan in the dollar ranking: what it costs each month and over its whole
-// contract, and which calendar months those are. There is no score here.
+// One ranked plan. The largest figure is the estimated monthly bill the score is
+// built on; below it, for information only, what the plan costs over its whole
+// contract and which calendar months those are. The score itself is not shown.
 
 function feeText(plan: Plan): string {
   const fee = parseExitFee(plan.pricingDetails, plan.termMonths);
@@ -21,10 +23,16 @@ function feeText(plan: Plan): string {
 
 export function ContractCostCard({
   plan,
+  bill,
+  usageKwh,
   cost,
   onMoreDetails,
 }: {
   plan: Plan;
+  /** The estimated monthly bill the plan is scored on, in dollars. */
+  bill: number;
+  usageKwh: number;
+  /** The plan over its own contract, with the seasonal months: information only. */
   cost: ContractCost;
   onMoreDetails?: () => void;
 }) {
@@ -61,15 +69,13 @@ export function ContractCostCard({
 
       <div className="mt-4">
         <p className="text-3xl font-extrabold">
-          {formatAmountCents(cost.rankedPerMonth)}
+          {formatAmountCents(bill)}
           <span className="ml-1 text-base font-semibold text-ink-soft">
             / mo
           </span>
         </p>
         <p className="text-xs text-ink-faint">
-          {term >= 12
-            ? "average of the first 12 months"
-            : `average over its ${term} ${term === 1 ? "month" : "months"}`}
+          estimated bill at {formatKwh(usageKwh)} kWh
         </p>
         <p className="mt-1 text-sm font-semibold text-ink">
           {formatAmountCents(cost.total)} over {term}{" "}

@@ -10,11 +10,8 @@ import {
   type PlanFilters,
 } from "../lib/filters";
 import { sortPlans } from "../lib/sort";
-import {
-  currentStartMonth,
-  rankByContractCost,
-  type TermList,
-} from "../lib/contractCost";
+import { currentStartMonth } from "../lib/contractCost";
+import { scorablePlans, scorePlansV2 } from "../lib/scoreV2";
 import { PlanList } from "./PlanList";
 import { PlansHeader } from "./PlansHeader";
 import { CompactBar } from "./CompactBar";
@@ -64,9 +61,8 @@ export function PlansView({
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
-  // Short and long contracts are two separate lists, never shown together.
-  const [list, setList] = useState<TermList>("long");
-  // The month a contract is assumed to start in: this month, fixed at load.
+  // The month the contract details on each row start in: this month, fixed at
+  // load. It is shown, not scored.
   const [startMonth] = useState(currentStartMonth);
   // Current page (1-based) of the filtered, rank-ordered list. A filter
   // change goes back to page 1; a usage change leaves it alone.
@@ -100,24 +96,14 @@ export function PlansView({
     if (isDesktop) setDrawerOpen(false);
   }, [isDesktop]);
 
-  // Filter first, then price each plan over its own contract and order the
-  // chosen list cheapest per month first. It follows the usage field on every
-  // render. The time-of-use section is always cheapest reference rate first.
+  // Filter first, then score what is left (lib/scoreV2.ts): the bill's min and
+  // max are taken over the plans shown, the highest cancellation fee over the
+  // whole area, and the list follows the usage field on every render. The
+  // time-of-use section is always cheapest reference rate first.
   const view = splitForView(allPlans, timeOfUsePlans, filters);
-  const rankedList = (plans: typeof allPlans, which: TermList) =>
-    rankByContractCost(plans, which, usageKwh, startMonth);
-  const visiblePlans = rankedList(view.ranked, list);
-  const listCounts = {
-    long: rankedList(view.ranked, "long").length,
-    short: rankedList(view.ranked, "short").length,
-  };
+  const visiblePlans = scorePlansV2(allPlans, view.ranked, usageKwh);
   const visibleTimeOfUse = sortPlans(view.timeOfUse, "lowestBill", usageKwh);
   const activeCount = activeFilterCount(filters);
-
-  function changeList(next: TermList) {
-    setList(next);
-    setPage(1);
-  }
 
   function changeFilters(next: PlanFilters) {
     setFilters(next);
@@ -218,10 +204,7 @@ export function PlansView({
             {state.status === "success" && (
               <PlanList
                 plans={visiblePlans}
-                totalCount={rankedList(allPlans, list).length}
-                list={list}
-                onListChange={changeList}
-                listCounts={listCounts}
+                totalCount={scorablePlans(allPlans, usageKwh).length}
                 startMonth={startMonth}
                 timeOfUsePlans={visibleTimeOfUse}
                 showRanked={!filters.onlyTimeOfUse}

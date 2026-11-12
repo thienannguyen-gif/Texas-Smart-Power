@@ -3,11 +3,8 @@ import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import { formatKwh } from "../lib/money";
-import {
-  MONTH_NAMES,
-  type CostedPlan,
-  type TermList,
-} from "../lib/contractCost";
+import { contractCost } from "../lib/contractCost";
+import type { ScoredPlanV2 } from "../lib/scoreV2";
 import { ContractCostCard } from "./ContractCostCard";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
@@ -19,15 +16,9 @@ const PAGE_BUTTON =
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
-const LIST_OPTIONS: { value: TermList; label: string }[] = [
-  { value: "long", label: "12 months and longer" },
-  { value: "short", label: "Under 12 months" },
-];
-
-// The ranked plans arrive as the ONE list the user is looking at (short or long
-// contracts, never both and never merged), already priced over their own term
-// and ordered cheapest per month first; the sidebar's preference filters have
-// already been applied by the time they reach this component.
+// The ranked plans arrive as one list, best score first (lib/scoreV2.ts), after
+// the sidebar's preference filters. The score ranks the plans; it is not shown.
+// The largest figure on a row is the estimated monthly bill.
 //
 // Display-only pagination over the in-memory list. The current page lives in
 // the parent (`page`, 1-based) so it is the parent that resets it on a filter
@@ -40,9 +31,6 @@ const LIST_OPTIONS: { value: TermList; label: string }[] = [
 export function PlanList({
   plans,
   totalCount,
-  list,
-  onListChange,
-  listCounts,
   startMonth,
   timeOfUsePlans = [],
   showRanked = true,
@@ -51,15 +39,11 @@ export function PlanList({
   onPageChange,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
-  /** The chosen list, cheapest per month first. */
-  plans: CostedPlan[];
-  /** How many plans that list has before any filter. */
+  /** Best score first. */
+  plans: ScoredPlanV2[];
+  /** How many ranked plans there are before any filter. */
   totalCount: number;
-  list: TermList;
-  onListChange: (next: TermList) => void;
-  /** How many plans each list shows under the current filters. */
-  listCounts: Record<TermList, number>;
-  /** 0 = January: the month the costed contracts start in. */
+  /** 0 = January: the month the contract details on each row start in. */
   startMonth: number;
   timeOfUsePlans?: Plan[];
   showRanked?: boolean;
@@ -130,37 +114,10 @@ export function PlanList({
   return (
     <section aria-label="Plans">
       {showRanked && (
-        <div className="mb-4">
-          <div
-            role="group"
-            aria-label="Contract length"
-            className="flex flex-wrap gap-2"
-          >
-            {LIST_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={list === option.value}
-                onClick={() =>
-                  option.value !== list && onListChange(option.value)
-                }
-                className={`min-h-11 rounded-full px-4 py-2 text-sm font-bold ${
-                  list === option.value
-                    ? "bg-brand text-brand-ink"
-                    : "bg-brand-soft text-ink hover:bg-surface-alt"
-                }`}
-              >
-                {option.label} ({listCounts[option.value]})
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-ink-soft sm:text-sm">
-            Ranked by what each plan costs per month over its own contract, at{" "}
-            {formatKwh(usageKwh)} kWh a month, starting in{" "}
-            {MONTH_NAMES[startMonth]}. Summer months cost more, so the months a
-            contract covers matter.
-          </p>
-        </div>
+        <p className="mb-4 text-xs text-ink-soft sm:text-sm">
+          Ranked by estimated monthly bill at {formatKwh(usageKwh)} kWh, term,
+          cancellation fee and renewable content.
+        </p>
       )}
 
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -186,15 +143,21 @@ export function PlanList({
         ) : (
           <>
             <ul className="space-y-4">
-              {visible.map(({ plan, cost }) => (
-                <li key={plan.id}>
-                  <ContractCostCard
-                    plan={plan}
-                    cost={cost}
-                    onMoreDetails={() => setSelected(plan)}
-                  />
-                </li>
-              ))}
+              {visible.map(({ plan, bill }) => {
+                const cost = contractCost(plan, usageKwh, startMonth);
+                if (cost === null) return null;
+                return (
+                  <li key={plan.id}>
+                    <ContractCostCard
+                      plan={plan}
+                      bill={bill}
+                      usageKwh={usageKwh}
+                      cost={cost}
+                      onMoreDetails={() => setSelected(plan)}
+                    />
+                  </li>
+                );
+              })}
             </ul>
 
             <nav

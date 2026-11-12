@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { PlansView } from "./PlansView";
-import { contractCost } from "../lib/contractCost";
+import { costAt } from "../lib/contractCost";
 import { formatAmountCents } from "../lib/money";
 import type { Plan, TduDataFile } from "../types/plan";
 
@@ -13,9 +13,9 @@ const mk = (over: Partial<Plan>): Plan =>
     termMonths: 12,
     rateType: "Fixed",
     pricePerKwh: { at500: 0.16, at1000: 0.15, at2000: 0.155 },
-    pricingDetails: null,
+    pricingDetails: "Cancellation fee: $0.",
     isTimeOfUse: false,
-    renewableDescription: null,
+    renewableDescription: "10% renewable",
     prepaid: false,
     companyLogo: null,
     website: null,
@@ -65,15 +65,17 @@ test("updates the card and the details modal immediately when usage changes", as
     companyName: "Example Co",
     pricePerKwh: { at500: 0.127, at1000: 0.123, at2000: 0.121 },
   });
-  // a 12-month plan covers every month once, so the start month does not matter
-  const perMonth = (usage: number) =>
-    formatAmountCents(contractCost(interpolated, usage, 0)!.perMonth);
+  // the figure on the card: the estimated bill at that usage, to the cent
+  const bill = (usage: number) =>
+    formatAmountCents(Math.round(costAt(interpolated, usage)! * 100) / 100);
   mockPlans({ ...file, planCount: 1, plans: [interpolated] });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
-  expect(await screen.findByText(/at 1,000 kWh a month/)).toBeInTheDocument();
+  expect(
+    await screen.findByText("estimated bill at 1,000 kWh"),
+  ).toBeInTheDocument();
   const card = screen.getByRole("article");
-  expect(within(card).getByText(perMonth(1000))).toBeInTheDocument();
+  expect(within(card).getByText(bill(1000))).toBeInTheDocument();
   const box = screen.getByLabelText(/monthly usage in kWh/i);
   expect(box).toHaveValue(1000);
   expect(
@@ -87,8 +89,10 @@ test("updates the card and the details modal immediately when usage changes", as
 
   fireEvent.click(within(dialog).getByRole("button", { name: /close/i }));
   fireEvent.change(box, { target: { value: "850" } });
-  expect(screen.getByText(/at 850 kWh a month/)).toBeInTheDocument();
-  expect(within(card).getByText(perMonth(850))).toBeInTheDocument();
+  expect(
+    within(card).getByText("estimated bill at 850 kWh"),
+  ).toBeInTheDocument();
+  expect(within(card).getByText(bill(850))).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /more details/i }));
   const updatedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
@@ -103,7 +107,7 @@ test("updates the card and the details modal immediately when usage changes", as
   fireEvent.change(box, { target: { value: "9999" } });
   fireEvent.blur(box);
   expect(box).toHaveValue(4000); // clamped
-  expect(within(card).getByText(perMonth(4000))).toBeInTheDocument();
+  expect(within(card).getByText(bill(4000))).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /more details/i }));
   const cappedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
@@ -276,7 +280,7 @@ test("a usage change keeps the same page number", async () => {
   fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
     target: { value: "500" },
   });
-  expect(screen.getByText(/at 500 kWh a month/)).toBeInTheDocument();
+  expect(screen.getByText(/monthly bill at 500 kWh/)).toBeInTheDocument();
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
   expect(screen.getByText("Plan 7")).toBeInTheDocument();
 });
@@ -348,10 +352,6 @@ test("1–6 months becomes selectable when the area has a short plan", async () 
     plans: [mk({ id: 1, planName: "Short 3", termMonths: 3 }), ...file.plans],
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  // the page opens on the long list; the short plan is in the other one
-  await screen.findByText("Gexa 12");
-  expect(screen.queryByText("Short 3")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /^under 12 months/i }));
   await screen.findByText("Short 3");
   const box = screen.getByRole("checkbox", { name: /^1–6 months/i });
   expect(box).toBeEnabled();
@@ -589,15 +589,19 @@ test("the results line is just the plan count and the Updated stamp, and the cou
         termMonths: 24,
         renewableDescription: "100% Renewable",
       }),
-      mk({ id: 4, planName: "D", termMonths: 3, renewableDescription: null }),
+      mk({
+        id: 4,
+        planName: "D",
+        termMonths: 3,
+        renewableDescription: "5% renewable",
+      }),
     ],
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
-  // the page opens on the long list (12 months and up): A, B and C
-  expect(await screen.findByText("3 plans")).toBeInTheDocument();
+  expect(await screen.findByText("4 plans")).toBeInTheDocument();
   // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
-  expect(screen.getByText("3 plans").textContent).not.toMatch(/ · /);
+  expect(screen.getByText("4 plans").textContent).not.toMatch(/ · /);
   expect(
     screen.queryByText(
       /(is|are) 100% renewable|(is|are) 12 months|shown separately/,
@@ -608,12 +612,12 @@ test("the results line is just the plan count and the Updated stamp, and the cou
   fireEvent.click(
     screen.getByRole("checkbox", { name: /100% renewable only/i }),
   );
-  expect(screen.getByText("Showing 2 of 3 plans")).toBeInTheDocument();
+  expect(screen.getByText("Showing 2 of 4 plans")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("checkbox", { name: /13[+] months/i }));
-  expect(screen.getByText("Showing 1 of 3 plans")).toBeInTheDocument();
+  expect(screen.getByText("Showing 1 of 4 plans")).toBeInTheDocument();
 });
 
-// ---- Sort: Best match / Lowest bill
+// ---- Plans with different price curves
 
 // Arrive in "best match" (score) order A, B, C, D. Bills at 500 / 1000 / 2000 kWh:
 //   A Flat      60 / 120 / 240
@@ -656,8 +660,6 @@ function renderSortable() {
   mockPlans(sortFile);
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 }
-
-// ---- Sort control lives in the filter sidebar / drawer
 
 // ---- Usage slider in the sticky bar
 
@@ -834,7 +836,7 @@ test("time-of-use plans are in their own unranked section below the ranked list,
   ).toHaveLength(3);
 });
 
-test("the section is ordered by reference rate, cheapest first, follows the usage, and ignores the list choice", async () => {
+test("the section is ordered by reference rate, cheapest first, and follows the usage", async () => {
   renderTou();
   await screen.findByText("Ranked A");
   const usage = screen.getByLabelText(/monthly usage in kWh/i);
@@ -844,12 +846,6 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
   fireEvent.change(usage, { target: { value: "500" } }); // 50, 75, 150
   expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
 
-  // switching the ranked list leaves the section as it is: always cheapest first
-  fireEvent.click(screen.getByRole("button", { name: /^under 12 months/i }));
-  expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
-  fireEvent.click(
-    screen.getByRole("button", { name: /^12 months and longer/i }),
-  );
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
 });
 
@@ -1023,8 +1019,7 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
     within(sidebar).getByRole("checkbox", { name: /^12 months/ }),
   );
   expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
-  // of the 4 plans in the long list, the three of exactly 12 months
-  expect(screen.getByText("Showing 3 of 4 plans")).toBeInTheDocument();
+  expect(screen.getByText("Showing 3 of 7 plans")).toBeInTheDocument();
 });
 
 const cardNamesOnPage = () =>

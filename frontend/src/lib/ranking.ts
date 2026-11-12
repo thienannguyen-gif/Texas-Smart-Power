@@ -65,8 +65,12 @@ function termScore(termMonths: number | null): number | null {
 export type PriceCurveWarning = "v-trap" | "hump";
 
 /**
- * The price-curve check from BRIEF.md (Component 2): a "V-Trap" is
- * P1000 < P2000, a "Hump" is P1000 > P500. Either one makes S_slope zero.
+ * The price-curve check: a "V-Trap" is a dip at 1,000 kWh, P500 > P1000 and
+ * P1000 < P2000; a "Hump" is a peak there, P500 < P1000 and P1000 > P2000. The
+ * curve has to bend at 1,000 kWh, going down then up or up then down: a curve
+ * that only rises or only falls is stable. (The wording in BRIEF.md is looser,
+ * P1000 < P2000 alone and P1000 > P500 alone; this is the rule the user gave.)
+ * Either one makes S_slope zero.
  * Returns null for a stable curve, and also when an anchor price is missing
  * (nothing can be said about it). The score and the warning badge both use
  * this, so there is one definition of "unstable".
@@ -81,8 +85,8 @@ export function priceCurveWarning(plan: Plan): PriceCurveWarning | null {
   ) {
     return null;
   }
-  if (at1000 < at2000) return "v-trap";
-  if (at1000 > at500) return "hump";
+  if (at500 > at1000 && at1000 < at2000) return "v-trap";
+  if (at500 < at1000 && at1000 > at2000) return "hump";
   return null;
 }
 

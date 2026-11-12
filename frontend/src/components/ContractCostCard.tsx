@@ -2,7 +2,11 @@ import type { Plan } from "../types/plan";
 import { parseExitFee } from "../lib/cancellationFee";
 import { describeMonths, type ContractCost } from "../lib/contractCost";
 import { renewablePct } from "../lib/filters";
-import { formatAmount, formatAmountCents } from "../lib/money";
+import {
+  formatAmount,
+  formatAmountCents,
+  formatSignedAmount,
+} from "../lib/money";
 import { PriceCurveBadge } from "./PriceCurveBadge";
 import { ProviderLogo } from "./ProviderLogo";
 
@@ -57,10 +61,15 @@ export function ContractCostCard({
 
       <div className="mt-4">
         <p className="text-3xl font-extrabold">
-          {formatAmountCents(cost.perMonth)}
+          {formatAmountCents(cost.rankedPerMonth)}
           <span className="ml-1 text-base font-semibold text-ink-soft">
             / mo
           </span>
+        </p>
+        <p className="text-xs text-ink-faint">
+          {term >= 12
+            ? "average of the first 12 months"
+            : `average over its ${term} ${term === 1 ? "month" : "months"}`}
         </p>
         <p className="mt-1 text-sm font-semibold text-ink">
           {formatAmountCents(cost.total)} over {term}{" "}
@@ -71,6 +80,10 @@ export function ContractCostCard({
         </p>
         <p className="mt-1 text-sm text-ink-soft">
           Most expensive month about {formatAmountCents(cost.worstMonth)}
+        </p>
+        <p className="mt-1 text-sm text-ink-soft">
+          20% more usage: {formatSignedAmount(cost.moreUsageDelta)}/mo · 20%
+          less: {formatSignedAmount(cost.lessUsageDelta)}/mo
         </p>
       </div>
 

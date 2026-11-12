@@ -145,6 +145,23 @@ describe("dollar ranking: two lists", () => {
     expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
     expect(screen.getByText("Short 1")).toBeInTheDocument();
   });
+
+  it("does not let a term that is not a whole year win through the calendar: signed in November, an 18-month plan 0.5% dearer than a 12-month one stays below it", async () => {
+    vi.setSystemTime(new Date(2026, 10, 15)); // November: an 18-month plan picks up six cheap months
+    mount({
+      ...data,
+      plans: [
+        flat(0.1005, { id: 1, planName: "Eighteen", termMonths: 18 }),
+        flat(0.1, { id: 2, planName: "Twelve", termMonths: 12 }),
+      ],
+    });
+    await screen.findByText("Twelve");
+    expect(cardNames()).toEqual(["Twelve", "Eighteen"]);
+    // the real term and the real total of the 18-month plan are still shown
+    const card = screen.getByText("Eighteen").closest("article")!;
+    expect(within(card).getByText(/over 18 months$/)).toBeInTheDocument();
+    expect(within(card).getByText("18 mos")).toBeInTheDocument();
+  });
 });
 
 describe("dollar ranking: what a row shows", () => {
@@ -162,9 +179,18 @@ describe("dollar ranking: what a row shows", () => {
     expect(
       within(card).getByText(/^Months covered: Jul to Jun, 36 months$/),
     ).toBeInTheDocument();
-    // the worst month is August (factor 1.4299): 90 x 1.4299 = 128.69
+    // the worst month is August (factor 1.4298): 90 x 1.4298 = 128.68
     expect(
-      within(card).getByText("Most expensive month about $128.69"),
+      within(card).getByText("Most expensive month about $128.68"),
+    ).toBeInTheDocument();
+    // a flat rate: 20% more or less usage is 20% of the bill, about $18
+    expect(
+      within(card).getByText(
+        /^20% more usage: \+\$1\d\/mo · 20% less: -\$1\d\/mo$/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(card).getByText("average of the first 12 months"),
     ).toBeInTheDocument();
     expect(within(card).getByText("36 mos")).toBeInTheDocument();
     expect(within(card).getByText("$300")).toBeInTheDocument();

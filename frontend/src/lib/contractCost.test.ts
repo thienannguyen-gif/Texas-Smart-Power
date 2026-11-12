@@ -36,9 +36,63 @@ const flat = (rate: number, over: Partial<Plan> = {}) =>
   plan({ pricePerKwh: { at500: rate, at1000: rate, at2000: rate }, ...over });
 
 describe("SEASON", () => {
-  it("has twelve factors that sum to 12 within 0.001 (the published figures add up to 12.0001)", () => {
+  it("has twelve factors of 4 decimals that sum to exactly 12", () => {
     expect(SEASON).toHaveLength(12);
-    expect(SEASON.reduce((a, b) => a + b, 0)).toBeCloseTo(12, 3);
+    expect(SEASON.reduce((a, b) => a + Math.round(b * 1e4), 0)).toBe(120000);
+    SEASON.forEach((f) => expect(Math.round(f * 1e4) / 1e4).toBe(f));
+  });
+});
+
+describe("rankedPerMonth: the long list is priced on its first twelve months", () => {
+  it("is the same for 12, 14, 18, 24 and 36 months of the same plan, from any start month", () => {
+    for (const start of [0, 4, 10]) {
+      const base = contractCost(plan({ termMonths: 12 }), 1000, start)!;
+      for (const termMonths of [13, 14, 15, 18, 24, 36]) {
+        const c = contractCost(plan({ termMonths }), 1000, start)!;
+        expect(c.rankedPerMonth).toBeCloseTo(base.rankedPerMonth, 9);
+      }
+    }
+  });
+
+  it("gives an 18-month plan no discount for starting in November", () => {
+    // its own-term average does drop (the extra months are cheap); the ranked figure must not
+    const eighteen = contractCost(plan({ termMonths: 18 }), 1000, 10)!;
+    const twelve = contractCost(plan({ termMonths: 12 }), 1000, 10)!;
+    expect(eighteen.perMonth).toBeLessThan(twelve.perMonth * 0.97);
+    expect(eighteen.rankedPerMonth).toBeCloseTo(twelve.rankedPerMonth, 9);
+    // the real term and the real total are still reported
+    expect(eighteen.monthsCovered).toHaveLength(18);
+    expect(eighteen.total).toBeGreaterThan(twelve.total);
+  });
+
+  it("is the own-term average for a contract under 12 months", () => {
+    const c = contractCost(flat(0.1, { termMonths: 3 }), 1000, 6)!;
+    expect(c.rankedPerMonth).toBeCloseTo(c.perMonth, 9);
+  });
+});
+
+describe("usage fragility, in dollars", () => {
+  it("is small for a flat plan and large for a curved one", () => {
+    // flat 10c: 20% more usage is +20% of the bill, 20% less is -20%
+    const f = contractCost(flat(0.1, { termMonths: 12 }), 1000, 0)!;
+    expect(f.moreUsageDelta).toBeCloseTo(f.rankedPerMonth * 0.2, 6);
+    expect(f.lessUsageDelta).toBeCloseTo(-f.rankedPerMonth * 0.2, 6);
+    // a hump: the rate jumps after 1,000 kWh, so more usage costs about 2.5x the flat plan's 20%
+    const hump = plan({
+      pricePerKwh: { at500: 0.1, at1000: 0.1, at2000: 0.3 },
+    });
+    const h = contractCost(hump, 1000, 0)!;
+    expect(h.moreUsageDelta / h.rankedPerMonth).toBeGreaterThan(0.4);
+  });
+
+  it("adds no penalty: the ranking figure itself is untouched", () => {
+    const hump = plan({
+      pricePerKwh: { at500: 0.1, at1000: 0.1, at2000: 0.3 },
+    });
+    const c = contractCost(hump, 1000, 0)!;
+    const direct =
+      SEASON.reduce((sum, s) => sum + costAt(hump, 1000 * s)!, 0) / 12;
+    expect(c.rankedPerMonth).toBeCloseTo(direct, 9);
   });
 });
 
@@ -184,6 +238,15 @@ describe("rankByContractCost", () => {
     // 12, 24 and 36 months are compared on one footing: only the rate differs
     expect(long).toEqual([2, 6, 3, 1]);
     expect(short).toEqual([4, 5]);
+  });
+
+  it("keeps the arrival order of plans that cost the same, whatever the term", () => {
+    // 12, 24 and 36 months of one rate differ only by floating point noise
+    const same = [36, 12, 24].map((termMonths, i) =>
+      flat(0.13, { id: i + 1, termMonths }),
+    );
+    const ids = rankByContractCost(same, "long", 1000, 0).map((c) => c.plan.id);
+    expect(ids).toEqual([1, 2, 3]);
   });
 
   it("sorts by perMonth, not total", () => {

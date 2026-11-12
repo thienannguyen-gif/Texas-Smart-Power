@@ -110,16 +110,20 @@ const renewOf = (plan) => {
   const r = renewablePct(plan);
   return r === null ? "n/a" : `${r}%`;
 };
+const signedUsd = (n) => {
+  const r = Math.round(n);
+  return r === 0 ? "$0" : `${r > 0 ? "+" : "-"}${Math.abs(r)}`;
+};
 const sign = (n) => (n > 0 ? `+${n}` : String(n));
 
 function topTable(which, n = 10) {
   const rows = dollar[which].slice(0, n).map(({ plan, cost }, i) => {
     const own = liveOwnRank.get(plan.id);
-    return `| ${i + 1} | ${cell(plan.planName)} | ${cell(plan.companyName)} | ${plan.termMonths} | ${feeOf(plan)} | ${usd(cost.perMonth)} | ${usd(cost.total)} over ${plan.termMonths} mo | ${describeMonths(cost.monthsCovered)} | ${usd(cost.worstMonth)} | ${renewOf(plan)} | ${liveRank.get(plan.id)} | ${own} | ${sign(own - (i + 1))} |`;
+    return `| ${i + 1} | ${cell(plan.planName)} | ${cell(plan.companyName)} | ${plan.termMonths} | ${feeOf(plan)} | ${usd(cost.rankedPerMonth)} | ${usd(cost.total)} over ${plan.termMonths} mo | ${describeMonths(cost.monthsCovered)} | ${usd(cost.worstMonth)} | ${signedUsd(cost.moreUsageDelta)} / ${signedUsd(cost.lessUsageDelta)} | ${renewOf(plan)} | ${liveRank.get(plan.id)} | ${own} | ${sign(own - (i + 1))} |`;
   });
   return [
-    "| Rank | Plan | Provider | Term (mo) | Cancellation fee | Per month | Total | Months covered | Most expensive month | Renewable | Live rank (all plans) | Live rank (own list) | Moved up (+) / down (-) vs own list |",
-    "|---:|---|---|---:|---:|---:|---|---|---:|---:|---:|---:|---:|",
+    "| Rank | Plan | Provider | Term (mo) | Cancellation fee | Ranked per month | Total | Months covered | Most expensive month | 20% more / 20% less usage (per month) | Renewable | Live rank (all plans) | Live rank (own list) | Moved up (+) / down (-) vs own list |",
+    "|---:|---|---|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|",
     ...rows,
   ].join("\n");
 }
@@ -174,7 +178,7 @@ function why(m) {
   const b = liveBreakdown.get(m.plan.id);
   const p = m.plan.pricePerKwh;
   const rate500 = (p.at500 * 100).toFixed(1);
-  const dollarsPerMonth = usd(m.cost.perMonth);
+  const dollarsPerMonth = usd(m.cost.rankedPerMonth);
   if (m.move > 0) {
     // ranks better in dollars than in the live list
     if (b.slope === 0) {
@@ -214,10 +218,10 @@ out(
   `- ${stored.length} ranked plans + ${touStored.length} time-of-use plans in the file. Time-of-use plans are not ranked in either method. ${plans.length} ranked plans analysed; ${notCosted} could not be costed (missing price or term).`,
 );
 out(
-  `- Usage: ${usage} kWh a month (the page's default). Start month: ${MONTH_NAMES[startMonth]} (${startMonth === currentStartMonth() ? "the current month" : "chosen"}). The short list changes with the start month (see section 3); the long list changes only for terms that are not whole years.`,
+  `- Usage: ${usage} kWh a month (the page's default). Start month: ${MONTH_NAMES[startMonth]} (${startMonth === currentStartMonth() ? "the current month" : "chosen"}). The short list changes with the start month (see section 3); the long list does not, because every long plan is priced on its first twelve months.`,
 );
 out(
-  `- Dollar ranking: sum of the real monthly bills over the plan's own term, sorted by per-month cost, two separate lists (under 12 months, 12 months and longer). No score, weights, normalisation or risk term.`,
+  `- Dollar ranking: two separate lists (under 12 months, 12 months and longer). A short plan is priced as the average of its real monthly bills over its own term; a long plan, whatever its term, over its FIRST 12 months, so 12, 14, 18, 24 and 36-month plans are measured on the same twelve calendar months. The real term and the real total over it are still shown. No score, weights, normalisation of prices or risk term.`,
 );
 out(
   `- Live scoring: \`scorePlans\` in \`ranking.ts\`, one combined list, 5/12 price (500 kWh rate) + 3/12 slope + 3/12 flexibility + 1/12 green. Its order ${sameAsStored ? "matches" : "DIFFERS FROM"} the order stored in the file.`,
@@ -226,7 +230,7 @@ out(
   `- "Live rank (own list)" is the plan's position in the live order among plans of the same list (long or short), so it can be compared with the dollar rank like for like. "Live rank (all plans)" is its position in the single combined live list.`,
 );
 out(
-  `- Cancellation fee: per-remaining-month fees are shown as the worst-case total (fee x (term - 1)), as in BRIEF.md.`,
+  `- Fragility: each row shows ranked per month at 20% more and 20% less usage, as a difference from its own figure. It is information only and does not enter the ranking.- Cancellation fee: per-remaining-month fees are shown as the worst-case total (fee x (term - 1)), as in BRIEF.md.`,
 );
 out();
 out("## 1 and 2. Top 10 of each list, with the live positions");
@@ -256,11 +260,26 @@ out(
   `- Best start month to worst, by term: 3 months ${spread(3).toFixed(2)}x, 6 months ${spread(6).toFixed(2)}x, 12 months ${spread(12).toFixed(5)}x.`,
 );
 out(
-  `- The twelve factors sum to ${SEASON.reduce((a, b) => a + b, 0).toFixed(4)}, not exactly 12, so a 12-month term is flat to within about 0.001%, not exactly flat.`,
+  `- The twelve factors are normalised to sum to exactly ${SEASON.reduce((a, b) => a + Math.round(b * 1e4), 0) / 1e4} (the published figures add up to 12.0001; only August moves, 1.4299 to 1.4298), so a whole number of years is flat.`,
 );
 out(
-  `- ${nonYearTerms.length} of the ${dollar.long.length} plans in the long list have a term that is not a whole number of years (${[...new Set(nonYearTerms.map(({ plan }) => plan.termMonths))].sort((a, b) => a - b).join(", ") || "none"} months). Their per-month figure carries some seasonal bias that depends on the start month, like a short plan, though a smaller one.`,
+  `- ${nonYearTerms.length} of the ${dollar.long.length} plans in the long list have a term that is not a whole number of years (${[...new Set(nonYearTerms.map(({ plan }) => plan.termMonths))].sort((a, b) => a - b).join(", ") || "none"} months). They are now priced on their first twelve months like every other long plan, so the extra months no longer give them a calendar discount (table above).`,
 );
+out();
+out(
+  "Average seasonal exposure of a long contract signed in November, over its whole term (the figure the earlier version ranked on) against its first twelve months (the figure used now):",
+);
+out();
+out(
+  "| Term | Exposure over the whole term | Difference from a 12-month plan | Exposure over the first 12 months |",
+);
+out("|---:|---:|---:|---:|");
+for (const L of [12, 13, 14, 15, 18, 24, 36]) {
+  const e = exposure(10, L);
+  out(
+    `| ${L} months | ${e.toFixed(4)} | ${(Math.abs((e / exposure(10, 12) - 1) * 100) < 0.005 ? 0 : (e / exposure(10, 12) - 1) * 100).toFixed(2)}% | ${exposure(10, 12).toFixed(4)} |`,
+  );
+}
 out();
 out("## 4. Plans whose rank moves more than 10 places");
 out();
@@ -290,7 +309,7 @@ out();
 out("## 5. How much the top of each list depends on the start month");
 out();
 out(
-  "Cheapest plan of each list if the contract started in each month (same usage, same data). A plan whose term is not a whole number of years can move with the calendar.",
+  "Cheapest plan of each list if the contract started in each month (same usage, same data). The long list is priced on the same twelve months whatever the start month, so its winner should not move; the short list is priced on each plan's own months, so it can.",
 );
 out();
 out("| Start month | Long list #1 | Per month | Short list #1 | Per month |");
@@ -299,7 +318,7 @@ const topByMonth = MONTH_NAMES.map((name, m) => {
   const l = rankByContractCost(plans, "long", usage, m)[0];
   const sh = rankByContractCost(plans, "short", usage, m)[0];
   out(
-    `| ${name} | ${cell(l.plan.planName)} (${l.plan.termMonths} mo) | ${usd(l.cost.perMonth)} | ${cell(sh.plan.planName)} (${sh.plan.termMonths} mo) | ${usd(sh.cost.perMonth)} |`,
+    `| ${name} | ${cell(l.plan.planName)} (${l.plan.termMonths} mo) | ${usd(l.cost.rankedPerMonth)} | ${cell(sh.plan.planName)} (${sh.plan.termMonths} mo) | ${usd(sh.cost.rankedPerMonth)} |`,
   );
   return { l: l.plan.id, s: sh.plan.id };
 });
@@ -307,6 +326,76 @@ out();
 out(
   `The long list has ${new Set(topByMonth.map((t) => t.l)).size} different #1 plan(s) across the twelve start months; the short list has ${new Set(topByMonth.map((t) => t.s)).size}.`,
 );
+out();
+
+// ---------- 6. against the previous version (long list ranked on the own-term average) ----------
+const prevLong = [...dollar.long].sort(
+  (a, b) =>
+    Math.round(a.cost.perMonth * 100) - Math.round(b.cost.perMonth * 100) ||
+    plans.indexOf(a.plan) - plans.indexOf(b.plan),
+);
+const prevRank = new Map(prevLong.map(({ plan }, i) => [plan.id, i + 1]));
+const moved = dollar.long
+  .map(({ plan, cost }, i) => ({
+    plan,
+    cost,
+    now: i + 1,
+    before: prevRank.get(plan.id),
+  }))
+  .map((m) => ({ ...m, change: m.before - m.now }))
+  .filter((m) => m.change !== 0)
+  .sort((a, b) => Math.abs(b.change) - Math.abs(a.change) || a.now - b.now);
+const prevShort = [...dollar.short].sort(
+  (a, b) =>
+    Math.round(a.cost.perMonth * 100) - Math.round(b.cost.perMonth * 100) ||
+    plans.indexOf(a.plan) - plans.indexOf(b.plan),
+);
+const shortSame = prevShort.every(
+  ({ plan }, i) => plan.id === dollar.short[i].plan.id,
+);
+out("## 6. What moved against the previous version");
+out();
+out(
+  "The previous version ranked the long list on each plan's average over its OWN term; this one ranks it on the first twelve months. Positive = moved up now.",
+);
+out();
+out(
+  `- Short list: ${shortSame ? "identical order (it is still priced on each plan's own term)" : "ORDER CHANGED, which should not happen"}.`,
+);
+out(
+  `- Long list: ${moved.length} of ${dollar.long.length} plans change rank; all ${dollar.long.filter(({ plan }) => plan.termMonths % 12 === 0).length} plans with a whole-year term (12, 24, 36) keep their relative order among themselves: ${(() => {
+    const whole = (list) =>
+      list
+        .filter(({ plan }) => plan.termMonths % 12 === 0)
+        .map(({ plan }) => plan.id)
+        .join();
+    return whole(prevLong) === whole(dollar.long) ? "yes" : "NO";
+  })()}.`,
+);
+out();
+out("Top 10 of the long list, then and now:");
+out();
+out("| Rank | Previous version | Now |");
+out("|---:|---|---|");
+for (let i = 0; i < 10; i++) {
+  const a = prevLong[i];
+  const b = dollar.long[i];
+  out(
+    `| ${i + 1} | ${cell(a.plan.planName)} (${a.plan.termMonths} mo, ${usd(a.cost.perMonth)}) | ${cell(b.plan.planName)} (${b.plan.termMonths} mo, ${usd(b.cost.rankedPerMonth)}) |`,
+  );
+}
+out();
+out("Every plan that moved, largest move first:");
+out();
+out(
+  "| Plan | Provider | Term | Previous rank | Rank now | Moved | Per month before | Per month now |",
+);
+out("|---|---|---:|---:|---:|---:|---:|---:|");
+for (const m of moved) {
+  out(
+    `| ${cell(m.plan.planName)} | ${cell(m.plan.companyName)} | ${m.plan.termMonths} | ${m.before} | ${m.now} | ${sign(m.change)} | ${usd(m.cost.perMonth)} | ${usd(m.cost.rankedPerMonth)} |`,
+  );
+}
 out();
 
 mkdirSync(resolve(root, "analysis"), { recursive: true });

@@ -597,7 +597,7 @@ test("the results line is just the plan count and the Updated stamp, and the cou
   // the page opens on the long list (12 months and up): A, B and C
   expect(await screen.findByText("3 plans")).toBeInTheDocument();
   // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
-  expect(screen.queryByText(/ · /)).not.toBeInTheDocument();
+  expect(screen.getByText("3 plans").textContent).not.toMatch(/ · /);
   expect(
     screen.queryByText(
       /(is|are) 100% renewable|(is|are) 12 months|shown separately/,

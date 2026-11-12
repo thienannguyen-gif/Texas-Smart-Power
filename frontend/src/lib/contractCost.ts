@@ -7,10 +7,14 @@ import type { Plan } from "../types/plan.js";
 // already in the total. The old 0-10 scoring (ranking.ts) is untouched and
 // still works; this is a second, separate way of ordering the same plans.
 
-// EIA Form EIA-861M, Texas residential, 2020-2025.
-// Index 0 = January. Sums to 12, averages exactly 1.00.
+// EIA Form EIA-861M, Texas residential, 2020-2025, scaled so the twelve factors
+// average exactly 1.00 (the published figures add up to 12.0001). Each factor
+// is divided by (sum / 12) and rounded to 4 decimals, with the last 0.0001 of
+// rounding handed out by largest remainder so the sum is exactly 12: the only
+// factor that moves from the published figure is August, 1.4299 -> 1.4298.
+// Index 0 = January.
 export const SEASON = [
-  0.9931, 0.8903, 0.7898, 0.7223, 0.8896, 1.176, 1.3954, 1.4299, 1.2153, 0.9297,
+  0.9931, 0.8903, 0.7898, 0.7223, 0.8896, 1.176, 1.3954, 1.4298, 1.2153, 0.9297,
   0.7336, 0.8351,
 ];
 
@@ -39,6 +43,19 @@ export interface ContractCost {
   total: number;
   /** total / termMonths: what the user pays each month while the contract runs. */
   perMonth: number;
+  /**
+   * The figure the plans are ranked on. A contract of 12 months or more is
+   * measured over its FIRST 12 months, whatever its term, so every long plan is
+   * priced on the same twelve calendar months: a term that is not a whole number
+   * of years would otherwise pick up a few extra months the calendar happens to
+   * give it, a discount that has nothing to do with the price. A contract under
+   * 12 months is measured over its own term (equal to `perMonth`).
+   */
+  rankedPerMonth: number;
+  /** rankedPerMonth at 20% more usage, minus rankedPerMonth: how fragile the estimate is. */
+  moreUsageDelta: number;
+  /** rankedPerMonth at 20% less usage, minus rankedPerMonth (usually negative). */
+  lessUsageDelta: number;
   /** The single most expensive monthly bill in the contract. */
   worstMonth: number;
   /** The `termMonths` calendar month names, in order, from the start month. */
@@ -71,6 +88,26 @@ export function costAt(plan: Plan, usage: number): number | null {
   return c2000 + m2 * (usage - 2000);
 }
 
+/** The usage swing the fragility figures are priced at. */
+export const USAGE_SWING = 0.2;
+
+/** Mean monthly bill over the first `months` months of a contract starting in `startMonth`. */
+function meanBill(
+  plan: Plan,
+  usage: number,
+  startMonth: number,
+  months: number,
+): number | null {
+  let sum = 0;
+  for (let i = 0; i < months; i++) {
+    const month = (((startMonth + i) % 12) + 12) % 12;
+    const bill = costAt(plan, usage * SEASON[month]);
+    if (bill === null) return null;
+    sum += bill;
+  }
+  return sum / months;
+}
+
 /**
  * The cost of the plan over its own term, starting in `startMonth` (0 =
  * January; defaults to the current month). Month i of the contract is billed at
@@ -97,9 +134,17 @@ export function contractCost(
   }
 
   const total = bills.reduce((sum, bill) => sum + bill, 0);
+  const window = Math.min(L, 12);
+  const rankedPerMonth = meanBill(plan, usage, startMonth, window);
+  const more = meanBill(plan, usage * (1 + USAGE_SWING), startMonth, window);
+  const less = meanBill(plan, usage * (1 - USAGE_SWING), startMonth, window);
+  if (rankedPerMonth === null || more === null || less === null) return null;
   return {
     total,
     perMonth: total / L,
+    rankedPerMonth,
+    moreUsageDelta: more - rankedPerMonth,
+    lessUsageDelta: less - rankedPerMonth,
     worstMonth: Math.max(...bills),
     monthsCovered,
   };
@@ -130,10 +175,14 @@ export interface CostedPlan {
 }
 
 /**
- * The plans of one list, cheapest first by `perMonth` (not by total, so 12, 24
- * and 36-month plans are comparable and a short plan is judged by what it costs
- * each month). Two plans with the same per-month figure keep the order they
- * arrived in. A plan that cannot be costed is left out. Never mutates `plans`.
+ * The plans of one list, cheapest first by `rankedPerMonth` (not by total: in
+ * the long list every plan is priced on the same first twelve months, so 12, 14,
+ * 18, 24 and 36-month plans are comparable and the term says only how long the
+ * rate is locked; a short plan is judged by what it costs each month of its own
+ * term). Plans are compared to the cent, the precision they are shown at, so two
+ * plans with the same per-month figure keep the order they arrived in (floating
+ * point noise of 1e-14 would otherwise decide it). A plan that cannot be costed
+ * is left out. Never mutates `plans`.
  */
 export function rankByContractCost(
   plans: Plan[],
@@ -147,7 +196,8 @@ export function rankByContractCost(
     const cost = contractCost(plan, usage, startMonth);
     if (cost !== null) costed.push({ plan, cost, index });
   });
+  const cents = (c: ContractCost) => Math.round(c.rankedPerMonth * 100);
   return costed
-    .sort((a, b) => a.cost.perMonth - b.cost.perMonth || a.index - b.index)
+    .sort((a, b) => cents(a.cost) - cents(b.cost) || a.index - b.index)
     .map(({ plan, cost }) => ({ plan, cost }));
 }

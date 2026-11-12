@@ -1,16 +1,22 @@
 import type { Plan } from "../types/plan.js";
 import { parseExitFee } from "./cancellationFee.js";
-import { costAt } from "./contractCost.js";
+import { costAt, SEASON } from "./contractCost.js";
 import { renewablePct } from "./filters.js";
 
 // Score v2: one list, scored 0-10, built from three parts.
 //
 //   score = (8 * S_cost + 3 * S_flex + 1 * S_green) / 12
 //
-//   S_cost  = 10 * (cost_max - cost) / (cost_max - cost_min), where cost is the
-//             estimated monthly bill at the usage the user entered and the min
-//             and max run over the plans currently displayed. If they are within
-//             1e-9 of each other every plan gets 10.
+//   S_cost  = 10 * (CE_max - CE) / (CE_max - CE_min), where CE is the plan's
+//             risk-adjusted yearly cost (below) and the min and max run over the
+//             plans currently displayed. If they are within 1e-9 of each other
+//             every plan gets 10.
+//   CE      = E + k * sigma-, k = 1, over the twelve months of a year:
+//               b_m    = costAt(plan, u0 * s_m)       s_m = SEASON[m], u0 = the
+//                                                     usage the user entered
+//               E      = mean of the b_m
+//               sigma- = sqrt( (1/12) * sum of (b_m - E)^2 over b_m > E )
+//             the semi-deviation: only the months dearer than average count.
 //   S_flex  = 0.5 * S_term + 0.5 * S_fee
 //   S_term  = 10 * min(L, 12) / 12   (L = term in months: a year or more is 10)
 //   S_fee   = 10 * (1 - fee / max_fee), max_fee being the highest cancellation
@@ -19,10 +25,37 @@ import { renewablePct } from "./filters.js";
 //             are all equal
 //   S_green = renewable % / 10
 //
-// There is no S_slope and no seasonal factor here. ranking.ts (the scoring that
-// is live on main) is untouched, so the two can be compared.
+// There is no S_slope. The card still shows the plain bill at u0, not CE.
+// ranking.ts (the scoring that is live on main) is untouched, so the two can be
+// compared.
 
 const EPSILON = 1e-9;
+
+/** Weight of the above-average months in CE = E + k * sigma-. */
+export const RISK_K = 1;
+
+/**
+ * CE = E + k * sigma- for one plan over a year of seasonal usage, in dollars.
+ * Null when the bill cannot be priced (a missing anchor price).
+ */
+export function riskAdjustedCost(
+  plan: Plan,
+  usage: number,
+  k: number = RISK_K,
+): number | null {
+  const bills: number[] = [];
+  for (const s of SEASON) {
+    const b = costAt(plan, usage * s);
+    if (b === null || !Number.isFinite(b)) return null;
+    bills.push(b);
+  }
+  const mean = bills.reduce((a, b) => a + b, 0) / bills.length;
+  const above = bills.reduce(
+    (sum, b) => (b > mean ? sum + (b - mean) ** 2 : sum),
+    0,
+  );
+  return mean + k * Math.sqrt(above / bills.length);
+}
 
 export const WEIGHTS_V2 = {
   cost: 8 / 12,
@@ -41,8 +74,10 @@ export interface ScoreBreakdownV2 {
 
 export interface ScoredPlanV2 {
   plan: Plan;
-  /** Estimated monthly bill in dollars at the entered usage, to the cent. */
+  /** Estimated monthly bill in dollars at the entered usage, to the cent (shown). */
   bill: number;
+  /** The risk-adjusted yearly cost CE the price score is built on, to the cent. */
+  ce: number;
   breakdown: ScoreBreakdownV2;
 }
 
@@ -54,6 +89,7 @@ export function termScoreV2(termMonths: number): number {
 interface Eligible {
   plan: Plan;
   bill: number;
+  ce: number;
   fee: number;
   term: number;
   green: number;
@@ -67,6 +103,8 @@ function eligible(plan: Plan, usage: number): Eligible | null {
   if (term === null || !Number.isInteger(term) || term < 1) return null;
   const raw = costAt(plan, usage);
   if (raw === null || !Number.isFinite(raw)) return null;
+  const rawCe = riskAdjustedCost(plan, usage);
+  if (rawCe === null || !Number.isFinite(rawCe)) return null;
   const fee = parseExitFee(plan.pricingDetails, term);
   if (fee === null || !Number.isFinite(fee) || fee < 0) return null;
   const renewable = renewablePct(plan);
@@ -83,6 +121,7 @@ function eligible(plan: Plan, usage: number): Eligible | null {
   return {
     plan,
     bill: Math.round(raw * 100) / 100,
+    ce: Math.round(rawCe * 100) / 100,
     fee,
     term,
     green: renewable / 10,
@@ -123,13 +162,13 @@ export function scorePlansV2(
     .filter((x): x is { e: Eligible; index: number } => x.e !== null);
   if (shown.length === 0) return [];
 
-  const bills = shown.map(({ e }) => e.bill);
-  const lo = Math.min(...bills);
-  const hi = Math.max(...bills);
+  const ces = shown.map(({ e }) => e.ce);
+  const lo = Math.min(...ces);
+  const hi = Math.max(...ces);
 
   return shown
     .map(({ e, index }) => {
-      const cost = hi - lo < EPSILON ? 10 : (10 * (hi - e.bill)) / (hi - lo);
+      const cost = hi - lo < EPSILON ? 10 : (10 * (hi - e.ce)) / (hi - lo);
       const term = termScoreV2(e.term);
       const fee =
         maxFee === minFee
@@ -145,6 +184,7 @@ export function scorePlansV2(
         scored: {
           plan: e.plan,
           bill: e.bill,
+          ce: e.ce,
           breakdown: { cost, term, fee, flexibility, green: e.green, total },
         } satisfies ScoredPlanV2,
       };

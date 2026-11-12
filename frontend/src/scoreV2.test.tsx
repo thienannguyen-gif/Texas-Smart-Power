@@ -50,19 +50,23 @@ function mount(file: TduDataFile = data) {
   );
   return render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 }
+// The Our picks cards repeat plan names, so the list is read from the plan cards
+// (articles), and the picks are checked on their own.
 const cardNames = () =>
   screen
     .getAllByRole("article")
     .map((a) => within(a).getByRole("heading").textContent);
+const ready = () => screen.findAllByRole("article");
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("score v2: one ranked list", () => {
-  it("is a single list ordered by score, not by bill: the 12-month plan beats a cheaper 3-month one", async () => {
+describe("score v2 in the list", () => {
+  it("Best match follows the score, not the bill: the 12-month plan beats a cheaper 3-month one", async () => {
     mount();
-    await screen.findByText("Twelve Mid");
+    await ready();
     // bills: Cheap Three $90 (S_cost 10, S_term 2.5), Twelve Mid $100 (S_cost
     // 9.09, S_term 10); the 12-month plan's flexibility outweighs $10
+    expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
     expect(cardNames()).toEqual([
       "Twelve Mid",
       "Cheap Three",
@@ -71,34 +75,25 @@ describe("score v2: one ranked list", () => {
     ]);
   });
 
-  it("has no short/long switch, no sort control and no score on the page", async () => {
+  it("keeps the sort control: Lowest bill puts the cheapest first", async () => {
     mount();
-    await screen.findByText("Twelve Mid");
-    expect(
-      screen.queryByRole("button", { name: /12 months and longer/i }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: /under 12 months/i }),
-    ).toBeNull();
-    expect(screen.queryByRole("radio")).toBeNull();
-    expect(screen.queryByText(/score/i)).toBeNull();
-    expect(screen.getByText("4 plans")).toBeInTheDocument();
+    await ready();
+    fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+    expect(cardNames()).toEqual([
+      "Cheap Three",
+      "Twelve Mid",
+      "Twelve Dear",
+      "Thirty-six Dear",
+    ]);
   });
 
-  it("shows the estimated bill as the largest figure on the row, with term, fee and renewable %", async () => {
+  it("keeps Our picks: Best overall is the top-scored 12-month plan, Lowest bill the cheapest", async () => {
     mount();
-    const card = (await screen.findByText("Thirty-six Dear")).closest(
-      "article",
-    )!;
-    const bill = within(card).getByText("$200.00");
-    expect(bill).toHaveClass("text-3xl");
-    expect(within(card).getByText("/ mo")).toBeInTheDocument();
-    expect(
-      within(card).getByText("estimated bill at 1,000 kWh"),
-    ).toBeInTheDocument();
-    expect(within(card).getByText("36 mos")).toBeInTheDocument();
-    expect(within(card).getByText("$300")).toBeInTheDocument();
-    expect(within(card).getByText("100%")).toBeInTheDocument();
+    await ready();
+    expect(screen.getByText("Our picks")).toBeInTheDocument();
+    expect(screen.getByText("Best overall")).toBeInTheDocument();
+    // the sort option and the pick both say "Lowest bill"
+    expect(screen.getAllByText("Lowest bill").length).toBeGreaterThanOrEqual(2);
   });
 
   it("re-ranks when the usage changes", async () => {
@@ -109,7 +104,7 @@ describe("score v2: one ranked list", () => {
     });
     const flat = mk(0.12, { id: 2, planName: "Flat" });
     mount({ ...data, planCount: 2, plans: [steep, flat] });
-    await screen.findByText("Steep");
+    await ready();
     // 1,000 kWh: $100 against $120 -> Steep
     expect(cardNames()).toEqual(["Steep", "Flat"]);
     // 500 kWh: $100 against $60 -> Flat
@@ -121,7 +116,7 @@ describe("score v2: one ranked list", () => {
 
   it("recomputes the score over the plans left after a filter", async () => {
     mount();
-    await screen.findByText("Twelve Mid");
+    await ready();
     fireEvent.click(
       screen.getByRole("checkbox", { name: /100% renewable only/i }),
     );

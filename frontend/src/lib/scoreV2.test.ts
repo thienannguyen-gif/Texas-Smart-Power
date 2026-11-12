@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { SEASON, costAt } from "./contractCost";
 import {
+  riskAdjustedCost,
+  RISK_K,
   scorablePlans,
   scorePlansV2,
   termScoreV2,
@@ -176,5 +179,78 @@ describe("scorePlansV2", () => {
 
   it("returns an empty list for no plans", () => {
     expect(scorePlansV2([], [], 1000)).toEqual([]);
+  });
+});
+
+describe("riskAdjustedCost: CE = E + k * sigma- over the twelve seasonal months", () => {
+  const flat = mk(0.1, { id: 1 });
+
+  it("uses k = 1", () => {
+    expect(RISK_K).toBe(1);
+  });
+
+  it("matches the formula computed by hand for a flat rate", () => {
+    // flat 10c/kWh at 1,000 kWh: b_m = 100 * s_m, E = 100 (the factors average 1)
+    const b = SEASON.map((s) => 100 * s);
+    const E = b.reduce((x, y) => x + y, 0) / 12;
+    const sigma = Math.sqrt(
+      b.filter((x) => x > E).reduce((x, y) => x + (y - E) ** 2, 0) / 12,
+    );
+    expect(E).toBeCloseTo(100, 9);
+    expect(riskAdjustedCost(flat, 1000)).toBeCloseTo(E + sigma, 9);
+    expect(riskAdjustedCost(flat, 1000, 0)).toBeCloseTo(100, 9);
+    expect(riskAdjustedCost(flat, 1000, 2)).toBeCloseTo(E + 2 * sigma, 9);
+  });
+
+  it("counts only the months dearer than the average, divided by 12", () => {
+    const b = SEASON.map((s) => costAt(flat, 1000 * s)!);
+    const E = b.reduce((x, y) => x + y, 0) / 12;
+    const above = b.filter((x) => x > E);
+    expect(above.length).toBeLessThan(12); // some months are below: not all count
+    const all = Math.sqrt(b.reduce((x, y) => x + (y - E) ** 2, 0) / 12);
+    expect(riskAdjustedCost(flat, 1000)! - E).toBeLessThan(all);
+  });
+
+  it("is null when an anchor price is missing", () => {
+    const bad = mk(0.1, {
+      pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 },
+    });
+    expect(riskAdjustedCost(bad, 1000)).toBeNull();
+  });
+});
+
+describe("scorePlansV2 prices on CE, shows the plain bill", () => {
+  it("a plan cheap at 1,000 kWh but steep in summer can lose to one that is flatter", () => {
+    // both cost $100 at 1,000 kWh; "Summer" doubles its rate above 1,000 kWh,
+    // so the summer months (usage x 1.4) cost it far more than the flat plan
+    const flat = mk(0.1, { id: 1 });
+    const summer = mk(0.1, {
+      id: 2,
+      pricePerKwh: { at500: 0.1, at1000: 0.1, at2000: 0.2 },
+    });
+    const all = [summer, flat];
+    const r = scorePlansV2(all, all, 1000);
+    expect(r.map((s) => s.plan.id)).toEqual([1, 2]);
+    // the same plain bill on the card
+    expect(r.map((s) => s.bill)).toEqual([100, 100]);
+    expect(r[0].ce).toBeLessThan(r[1].ce);
+    expect(r[0].breakdown.cost).toBe(10);
+    expect(r[1].breakdown.cost).toBe(0);
+  });
+
+  it("S_cost is min-max over CE of the displayed plans", () => {
+    const a = mk(0.1, { id: 1 });
+    const b = mk(0.2, { id: 2 });
+    const c = mk(0.3, { id: 3 });
+    const all = [a, b, c];
+    const r = scorePlansV2(all, all, 1000);
+    const ce = (p: (typeof all)[number]) => riskAdjustedCost(p, 1000)!;
+    // flat rates: CE is proportional to the rate, so the middle plan is halfway
+    expect(r[0].breakdown.cost).toBe(10);
+    expect(r[1].breakdown.cost).toBeCloseTo(
+      (10 * (ce(c) - ce(b))) / (ce(c) - ce(a)),
+      1,
+    );
+    expect(r[2].breakdown.cost).toBe(0);
   });
 });

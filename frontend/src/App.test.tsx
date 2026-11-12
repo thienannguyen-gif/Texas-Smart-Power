@@ -455,35 +455,75 @@ describe("disclaimer page", () => {
   });
   afterEach(() => goToHash(""));
 
-  test("the header has no dead About link: just Home and More", () => {
+  test("the header has one link, Disclaimer, and it opens the disclaimer", () => {
     vi.stubGlobal("fetch", vi.fn());
     render(<App />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
+    const links = within(nav).getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual(["Disclaimer"]);
+    expect(links[0]).toHaveAttribute("href", "#disclaimer");
     expect(
-      within(nav).queryByRole("link", { name: /about/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(nav)
-        .getAllByRole("link")
-        .map((link) => link.textContent),
-    ).toEqual(["HOME", "MORE"]);
-    expect(within(nav).getByRole("link", { name: "MORE" })).toHaveAttribute(
-      "href",
-      "#disclaimer",
-    );
+      screen.queryByRole("link", { name: /^(home|more|about)$/i }),
+    ).toBeNull();
   });
 
-  test("every page has a footer link, and the header's MORE item opens the disclaimer", () => {
+  test("the footer also links to the disclaimer", () => {
     vi.stubGlobal("fetch", vi.fn());
     render(<App />);
-
     expect(
       screen.getByRole("link", { name: "Disclaimer & Terms of Use" }),
     ).toHaveAttribute("href", "#disclaimer");
-    expect(screen.getByRole("link", { name: "MORE" })).toHaveAttribute(
-      "href",
-      "#disclaimer",
+  });
+
+  test("the logo is a link that scrolls to the top without reloading or clearing results", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    stubSplitZips();
+    render(<App />);
+    submitZip("75201");
+    await screen.findByText("Oncor Plan");
+    const logo = screen.getByRole("link", {
+      name: "Texas Smart Power — back to top",
+    });
+    expect(logo).toHaveClass("hover:underline", "focus-visible:underline");
+
+    fireEvent.click(logo);
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    });
+    expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
+    expect(screen.getByLabelText("ZIP code")).toHaveValue("75201");
+  });
+
+  test("the logo scrolls without animation when the user prefers reduced motion", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+    }));
+    render(<App />);
+    fireEvent.click(
+      screen.getByRole("link", { name: "Texas Smart Power — back to top" }),
     );
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "auto",
+      block: "start",
+    });
+  });
+
+  test("the logo closes the disclaimer and returns to the app", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    vi.stubGlobal("fetch", vi.fn());
+    render(<App />);
+    const zipBox = screen.getByLabelText(/zip code/i);
+    goToHash("#disclaimer");
+    await screen.findByRole("article");
+    fireEvent.click(
+      screen.getByRole("link", { name: "Texas Smart Power — back to top" }),
+    );
+    await waitFor(() => expect(zipBox).toBeVisible());
   });
 
   test("#disclaimer shows the page, still with the footer; leaving it brings the app back", async () => {

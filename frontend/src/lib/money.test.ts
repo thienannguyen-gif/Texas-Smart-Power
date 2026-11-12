@@ -1,5 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatKwh, formatRate } from "./money";
+import {
+  formatAmount,
+  formatAmountCents,
+  formatKwh,
+  formatRate,
+  formatSignedAmount,
+} from "./money";
+
+describe("formatSignedAmount", () => {
+  it("rounds to whole dollars and always shows the sign", () => {
+    expect(formatSignedAmount(17.6)).toBe("+$18");
+    expect(formatSignedAmount(-9.2)).toBe("-$9");
+    expect(formatSignedAmount(1234.4)).toBe("+$1,234");
+    expect(formatSignedAmount(0.2)).toBe("$0");
+    expect(formatSignedAmount(null)).toBe("—");
+  });
+});
+
+describe("formatAmountCents", () => {
+  it("keeps two decimals and a comma thousands separator", () => {
+    expect(formatAmountCents(115.67)).toBe("$115.67");
+    expect(formatAmountCents(1347.9)).toBe("$1,347.90");
+    expect(formatAmountCents(0)).toBe("$0.00");
+  });
+
+  it("shows a dash for a missing value", () => {
+    expect(formatAmountCents(null)).toBe("—");
+    expect(formatAmountCents(Number.NaN)).toBe("—");
+  });
+});
 
 describe("formatKwh", () => {
   it("uses a comma thousands separator", () => {

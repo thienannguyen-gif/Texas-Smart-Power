@@ -34,7 +34,7 @@ const oncorFile: TduDataFile = {
       companyName: "Example Energy",
       termMonths: 12,
       rateType: "Fixed",
-      pricePerKwh: { at500: null, at1000: 0.15, at2000: null },
+      pricePerKwh: { at500: 0.15, at1000: 0.15, at2000: 0.15 },
       pricingDetails: null,
       isTimeOfUse: false,
       renewableDescription: null,

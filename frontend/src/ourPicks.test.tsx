@@ -1,9 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OurPicks } from "./components/OurPicks";
-import { PlansView } from "./components/PlansView";
 import { computeAwards } from "./lib/awards";
-import type { Plan, TduDataFile } from "./types/plan";
+import type { Plan } from "./types/plan";
 
 const mk = (over: Partial<Plan>): Plan =>
   ({
@@ -177,81 +176,5 @@ describe("OurPicks cards", () => {
       <OurPicks picks={[]} usageKwh={1000} onOpen={open} />,
     );
     expect(container).toBeEmptyDOMElement();
-  });
-});
-
-describe("OurPicks in the page", () => {
-  const data: TduDataFile = {
-    tdu: "oncor",
-    generatedAt: "2026-09-02T00:00:00.000Z",
-    planCount: 8,
-    plans: Array.from({ length: 8 }, (_, i) =>
-      mk({
-        id: i + 1,
-        planName: `Plan ${i + 1}`,
-        termMonths: i === 0 ? 24 : 12,
-        // Plan 2 has an unstable curve: it must not win although it ranks 2nd
-        pricePerKwh:
-          i === 1
-            ? { at500: 0.1, at1000: 0.09, at2000: 0.11 }
-            : {
-                at500: 0.14,
-                at1000: 0.12 - i * 0.001,
-                at2000: 0.11 - i * 0.001,
-              },
-        renewableDescription: i === 3 ? "100% Renewable" : "10% renewable",
-      }),
-    ),
-  };
-
-  function mount() {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({ ok: true, status: 200, json: async () => data })),
-    );
-    return render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  }
-
-  afterEach(() => vi.unstubAllGlobals());
-
-  it("sits above the plan list on page 1, picks from the ranked list, and opens the details modal", async () => {
-    mount();
-    const picks = await screen.findByRole("region", { name: "Our picks" });
-    const list = screen.getByRole("region", { name: "Plans" });
-    expect(
-      picks.compareDocumentPosition(list.querySelector("article")!) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-
-    const cards = within(picks).getAllByRole("button");
-    // Best overall = the best-scored 12-month plan: Plan 1 ranks first but is a
-    // 24-month plan, and Plan 2 is 12 months but has an unstable curve, so Plan 3
-    expect(within(cards[0]).getByText("Plan 3")).toBeInTheDocument();
-    expect(within(cards[0]).getByText("Best overall")).toBeInTheDocument();
-    expect(within(picks).queryByText("Plan 1")).toBeNull();
-    expect(within(picks).queryByText("Plan 2")).toBeNull();
-    expect(within(picks).getByText("Lowest bill")).toBeInTheDocument();
-    expect(within(picks).queryByText(/green/i)).toBeNull();
-    expect(within(picks).queryByText("Cheapest 12-month")).toBeNull();
-
-    fireEvent.click(cards[0]);
-    expect(screen.getByRole("dialog", { name: /plan 3/i })).toBeInTheDocument();
-  });
-
-  it("follows the usage in its header", async () => {
-    mount();
-    const picks = await screen.findByRole("region", { name: "Our picks" });
-    expect(within(picks).getByText(/at 1,000 kWh/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-      target: { value: "2334" },
-    });
-    expect(within(picks).getByText(/at 2,334 kWh/)).toBeInTheDocument();
-  });
-
-  it("appears on page 1 only", async () => {
-    mount();
-    await screen.findByRole("region", { name: "Our picks" });
-    fireEvent.click(screen.getByRole("button", { name: /next/i }));
-    expect(screen.queryByRole("region", { name: "Our picks" })).toBeNull();
   });
 });

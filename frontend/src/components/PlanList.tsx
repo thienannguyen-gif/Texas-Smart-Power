@@ -2,8 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
 import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
-import type { AwardPick } from "../lib/awards";
-import { OurPicks } from "./OurPicks";
+import { formatKwh } from "../lib/money";
+import {
+  MONTH_NAMES,
+  type CostedPlan,
+  type TermList,
+} from "../lib/contractCost";
+import { ContractCostCard } from "./ContractCostCard";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
 
@@ -14,8 +19,15 @@ const PAGE_BUTTON =
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
-// Plans arrive in rank order; the sidebar's preference filters have already
-// been applied by the time they reach this component.
+const LIST_OPTIONS: { value: TermList; label: string }[] = [
+  { value: "long", label: "12 months and longer" },
+  { value: "short", label: "Under 12 months" },
+];
+
+// The ranked plans arrive as the ONE list the user is looking at (short or long
+// contracts, never both and never merged), already priced over their own term
+// and ordered cheapest per month first; the sidebar's preference filters have
+// already been applied by the time they reach this component.
 //
 // Display-only pagination over the in-memory list. The current page lives in
 // the parent (`page`, 1-based) so it is the parent that resets it on a filter
@@ -28,20 +40,29 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 export function PlanList({
   plans,
   totalCount,
+  list,
+  onListChange,
+  listCounts,
+  startMonth,
   timeOfUsePlans = [],
   showRanked = true,
-  picks = [],
   generatedAt,
   page,
   onPageChange,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
-  plans: Plan[];
+  /** The chosen list, cheapest per month first. */
+  plans: CostedPlan[];
+  /** How many plans that list has before any filter. */
   totalCount: number;
+  list: TermList;
+  onListChange: (next: TermList) => void;
+  /** How many plans each list shows under the current filters. */
+  listCounts: Record<TermList, number>;
+  /** 0 = January: the month the costed contracts start in. */
+  startMonth: number;
   timeOfUsePlans?: Plan[];
   showRanked?: boolean;
-  /** The "Our picks" winners, from the ranked plans being shown. */
-  picks?: AwardPick[];
   generatedAt: string;
   page: number;
   onPageChange: (next: number) => void;
@@ -108,9 +129,38 @@ export function PlanList({
 
   return (
     <section aria-label="Plans">
-      {/* Above the list, on its first page only, like the time-of-use section. */}
-      {showRanked && current === 1 && (
-        <OurPicks picks={picks} usageKwh={usageKwh} onOpen={setSelected} />
+      {showRanked && (
+        <div className="mb-4">
+          <div
+            role="group"
+            aria-label="Contract length"
+            className="flex flex-wrap gap-2"
+          >
+            {LIST_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={list === option.value}
+                onClick={() =>
+                  option.value !== list && onListChange(option.value)
+                }
+                className={`min-h-11 rounded-full px-4 py-2 text-sm font-bold ${
+                  list === option.value
+                    ? "bg-brand text-brand-ink"
+                    : "bg-brand-soft text-ink hover:bg-surface-alt"
+                }`}
+              >
+                {option.label} ({listCounts[option.value]})
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-ink-soft sm:text-sm">
+            Ranked by what each plan costs per month over its own contract, at{" "}
+            {formatKwh(usageKwh)} kWh a month, starting in{" "}
+            {MONTH_NAMES[startMonth]}. Summer months cost more, so the months a
+            contract covers matter.
+          </p>
+        </div>
       )}
 
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -136,11 +186,11 @@ export function PlanList({
         ) : (
           <>
             <ul className="space-y-4">
-              {visible.map((plan) => (
+              {visible.map(({ plan, cost }) => (
                 <li key={plan.id}>
-                  <PlanCard
+                  <ContractCostCard
                     plan={plan}
-                    usageKwh={usageKwh}
+                    cost={cost}
                     onMoreDetails={() => setSelected(plan)}
                   />
                 </li>

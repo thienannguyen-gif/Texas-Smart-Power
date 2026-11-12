@@ -22,9 +22,9 @@ export function FilterDrawer({
   providers: string[];
   /** The filters currently in effect; the draft starts as a copy. */
   applied: PlanFilters;
-  /** The sort in effect; the draft starts as a copy. */
-  appliedSort: SortMode;
-  onApply: (next: PlanFilters, sort: SortMode) => void;
+  /** The sort in effect, if the page has a sort control; the draft starts as a copy. */
+  appliedSort?: SortMode;
+  onApply: (next: PlanFilters, sort: SortMode | undefined) => void;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState(applied);
@@ -83,7 +83,7 @@ export function FilterDrawer({
             value={draft}
             onChange={setDraft}
             sort={draftSort}
-            onSortChange={setDraftSort}
+            onSortChange={appliedSort === undefined ? undefined : setDraftSort}
           />
         </div>
 

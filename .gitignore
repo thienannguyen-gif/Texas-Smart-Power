@@ -7,3 +7,8 @@ coverage
 
 *.local
 .DS_Store
+
+# one-off analysis output (scripts/analyze-k-sensitivity.mjs)
+analysis/k-sensitivity.csv
+analysis/term-and-price.csv
+analysis/total-cost.csv

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
-import { DEFAULT_USAGE_KWH } from "../lib/usage";
+import { DEFAULT_USAGE_KWH, formatUsageText } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import type { AwardPick } from "../lib/awards";
 import { OurPicks } from "./OurPicks";
@@ -79,12 +79,14 @@ export function PlanList({
     summaryRef.current?.focus({ preventScroll: true });
   }, [current]);
 
-  // The plan count: all of them, or "Showing N of M" under a filter. In the
-  // time-of-use-only view the count is of those plans.
+  // The plan count and the usage it is priced at: "20 plans at 1,150 kWh", or
+  // "Showing N of M plans at ..." under a filter. In the time-of-use-only view
+  // the count is of those plans.
+  const atUsage = ` at ${formatUsageText(usageKwh)} kWh`;
   const summaryLine = showRanked
     ? filtered
-      ? `Showing ${plans.length} of ${totalCount} ${plural(totalCount, "plan", "plans")}`
-      : `${totalCount} ${plural(totalCount, "plan", "plans")}`
+      ? `Showing ${plans.length} of ${totalCount} ${plural(totalCount, "plan", "plans")}${atUsage}`
+      : `${totalCount} ${plural(totalCount, "plan", "plans")}${atUsage}`
     : `${touCount} time-of-use ${plural(touCount, "plan", "plans")}`;
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlansView } from "./components/PlansView";
 import type { Plan, TduDataFile } from "./types/plan";
 
@@ -58,7 +58,12 @@ const cardNames = () =>
     .map((a) => within(a).getByRole("heading").textContent);
 const ready = () => screen.findAllByRole("article");
 
-afterEach(() => vi.unstubAllGlobals());
+// written for 1,000 kWh, so start from it by way of the address
+beforeEach(() => window.history.replaceState(null, "", "/?usage=1000"));
+afterEach(() => {
+  vi.unstubAllGlobals();
+  window.history.replaceState(null, "", "/");
+});
 
 describe("score v2 in the list", () => {
   it("Best match follows the score, not the bill: the 12-month plan beats a cheaper 3-month one", async () => {
@@ -108,9 +113,9 @@ describe("score v2 in the list", () => {
     // 1,000 kWh: $100 against $120 -> Steep
     expect(cardNames()).toEqual(["Steep", "Flat"]);
     // 500 kWh: $100 against $60 -> Flat
-    fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-      target: { value: "500" },
-    });
+    const box = screen.getByLabelText(/monthly usage in kWh/i);
+    fireEvent.change(box, { target: { value: "500" } });
+    fireEvent.blur(box); // applies at once; typing alone waits 250 ms
     expect(cardNames()).toEqual(["Flat", "Steep"]);
   });
 
@@ -121,6 +126,8 @@ describe("score v2 in the list", () => {
       screen.getByRole("checkbox", { name: /100% renewable only/i }),
     );
     expect(cardNames()).toEqual(["Thirty-six Dear"]);
-    expect(screen.getByText("Showing 1 of 4 plans")).toBeInTheDocument();
+    expect(
+      screen.getByText("Showing 1 of 4 plans at 1,000 kWh"),
+    ).toBeInTheDocument();
   });
 });

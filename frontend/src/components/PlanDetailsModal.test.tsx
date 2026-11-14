@@ -33,7 +33,9 @@ describe("PlanDetailsModal", () => {
   });
 
   it("shows all three price tiers in ¢/kWh, never with a $ sign", () => {
-    render(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
+    render(
+      <PlanDetailsModal plan={plan()} onClose={vi.fn()} usageKwh={1000} />,
+    );
     expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument();
     // 13.9¢ is both the 1,000 kWh tier and the AVG PRICE at the default usage
     expect(screen.getAllByText("13.9¢/kWh")).toHaveLength(2);
@@ -55,8 +57,10 @@ describe("PlanDetailsModal", () => {
     expect(screen.getByText("100%")).toBeInTheDocument();
   });
 
-  it("shows the bill, avg price and fee at the default 1,000 kWh", () => {
-    render(<PlanDetailsModal plan={plan()} onClose={vi.fn()} />);
+  it("shows the bill, avg price and fee at 1,000 kWh", () => {
+    render(
+      <PlanDetailsModal plan={plan()} onClose={vi.fn()} usageKwh={1000} />,
+    );
     expect(screen.getByText("ESTIMATED MONTHLY BILL")).toBeInTheDocument();
     expect(screen.getByText("$139")).toBeInTheDocument(); // 0.139 x 1000
     expect(screen.getByText("at 1,000 kWh")).toBeInTheDocument();
@@ -84,6 +88,7 @@ describe("PlanDetailsModal", () => {
           pricePerKwh: { at500: 1.14, at1000: 1.14, at2000: 1.14 },
         })}
         onClose={vi.fn()}
+        usageKwh={1000}
       />,
     );
     expect(screen.getByText("$1,140")).toBeInTheDocument();

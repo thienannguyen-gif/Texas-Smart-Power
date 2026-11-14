@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   clampUsage,
+  DEFAULT_USAGE_KWH,
   estimatedMonthlyBill,
+  formatUsageText,
+  parseUsageText,
+  presetForUsage,
   pricePerKwhAtUsage,
-  snapToAnchor,
-  snapToSlider,
-  USAGE_ANCHORS_KWH,
-  usageBand,
+  searchWithUsage,
+  USAGE_MAX,
+  USAGE_MIN,
+  USAGE_PRESETS,
+  usageFromSearch,
 } from "./usage";
 import { formatAmount } from "./money";
 import type { Plan } from "../types/plan";
@@ -97,60 +102,77 @@ describe("estimatedMonthlyBill", () => {
   });
 });
 
+describe("usage constants", () => {
+  it("the default is the Small home preset, and the three presets are 850, 1150 and 1450", () => {
+    expect(DEFAULT_USAGE_KWH).toBe(1150);
+    expect(USAGE_PRESETS.map((p) => [p.id, p.label, p.kwh])).toEqual([
+      ["apartment", "Apartment", 850],
+      ["small_home", "Small home", 1150],
+      ["large_home", "Large home", 1450],
+    ]);
+    expect(presetForUsage(DEFAULT_USAGE_KWH)?.id).toBe("small_home");
+    expect(USAGE_MIN).toBe(100);
+    expect(USAGE_MAX).toBe(5000);
+  });
+});
+
 describe("clampUsage", () => {
-  it("keeps values inside 100–4000 and rounds", () => {
+  it("keeps values inside 100–5000 and rounds", () => {
     expect(clampUsage(1350.7)).toBe(1351);
     expect(clampUsage(0)).toBe(100);
-    expect(clampUsage(99999)).toBe(4000);
+    expect(clampUsage(50)).toBe(100);
+    expect(clampUsage(99999)).toBe(5000);
   });
 
   it("falls back to the default on NaN", () => {
-    expect(clampUsage(Number.NaN)).toBe(1000);
+    expect(clampUsage(Number.NaN)).toBe(1150);
   });
 });
 
-describe("usageBand", () => {
-  it.each([
-    [100, "Efficient"],
-    [499, "Efficient"],
-    [500, "Average Home"],
-    [750, "Average Home"],
-    [1000, "Average Home"],
-    [1001, "Power User"],
-    [1500, "Power User"],
-    [2000, "Power User"],
-    [2001, "Heavy User"],
-    [4000, "Heavy User"],
-  ])("%i kWh is %s", (kwh, band) => {
-    expect(usageBand(kwh)).toBe(band);
+describe("presetForUsage", () => {
+  it("matches only an exact preset number", () => {
+    expect(presetForUsage(850)?.id).toBe("apartment");
+    expect(presetForUsage(1450)?.id).toBe("large_home");
+    expect(presetForUsage(1451)).toBeNull();
+    expect(presetForUsage(null)).toBeNull();
   });
 });
 
-describe("snapToSlider", () => {
-  it("lands on a slider step (a multiple of 50 from 100) and stays in range", () => {
-    expect(snapToSlider(1000)).toBe(1000);
-    expect(snapToSlider(1234)).toBe(1250);
-    expect(snapToSlider(1224)).toBe(1200);
-    expect(snapToSlider(9999)).toBe(4000);
-    expect(snapToSlider(0)).toBe(100);
-    expect(snapToSlider(Number.NaN)).toBe(1000);
+describe("parseUsageText / formatUsageText", () => {
+  it("reads 1680 and 1,680, and nothing else", () => {
+    expect(parseUsageText("1680")).toBe(1680);
+    expect(parseUsageText("1,680")).toBe(1680);
+    expect(parseUsageText(" 1,150 ")).toBe(1150);
+    expect(parseUsageText("")).toBeNull();
+    expect(parseUsageText("abc")).toBeNull();
+    expect(parseUsageText("12.5")).toBeNull();
+    expect(parseUsageText("1,68")).toBeNull();
+    expect(parseUsageText("-5")).toBeNull();
+  });
+
+  it("writes a comma every three digits", () => {
+    expect(formatUsageText(850)).toBe("850");
+    expect(formatUsageText(1150)).toBe("1,150");
+    expect(formatUsageText(5000)).toBe("5,000");
   });
 });
 
-describe("snapToAnchor", () => {
-  it("snaps to an anchor within 25 kWh, either side, and leaves other values alone", () => {
-    expect(snapToAnchor(1000)).toBe(1000);
-    expect(snapToAnchor(1025)).toBe(1000);
-    expect(snapToAnchor(975)).toBe(1000);
-    expect(snapToAnchor(1026)).toBe(1026);
-    expect(snapToAnchor(520)).toBe(500);
-    expect(snapToAnchor(1980)).toBe(2000);
-    expect(snapToAnchor(1500)).toBe(1500);
-    expect(snapToAnchor(100)).toBe(100);
-    expect(snapToAnchor(4000)).toBe(4000);
+describe("the usage in the address", () => {
+  it("reads usage, clamped, and falls back to the default", () => {
+    expect(usageFromSearch("")).toBe(1150);
+    expect(usageFromSearch("?zip=79424")).toBe(1150);
+    expect(usageFromSearch("?zip=79424&usage=1680")).toBe(1680);
+    expect(usageFromSearch("?usage=99999")).toBe(5000);
+    expect(usageFromSearch("?usage=abc")).toBe(1150);
   });
 
-  it("the anchors are the three published price levels", () => {
-    expect([...USAGE_ANCHORS_KWH]).toEqual([500, 1000, 2000]);
+  it("writes usage and leaves other parameters alone; the default is left out", () => {
+    expect(searchWithUsage("", 1680)).toBe("?usage=1680");
+    expect(searchWithUsage("?zip=79424", 1680)).toBe("?zip=79424&usage=1680");
+    expect(searchWithUsage("?zip=79424&usage=1680", 900)).toBe(
+      "?zip=79424&usage=900",
+    );
+    expect(searchWithUsage("?zip=79424&usage=1680", 1150)).toBe("?zip=79424");
+    expect(searchWithUsage("?usage=1680", 1150)).toBe("");
   });
 });

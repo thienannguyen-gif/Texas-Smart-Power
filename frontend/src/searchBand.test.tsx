@@ -76,16 +76,14 @@ describe("the search band", () => {
         zip="79424"
         onSubmitZip={() => {}}
         zipBusy={false}
-        usageKwh={1000}
-        onUsageChange={() => {}}
         serviceArea="Lubbock Power & Light"
       />,
     );
     expect(screen.getByTestId("service-area")).toHaveTextContent(
       "Service area Lubbock Power & Light",
     );
-    expect(screen.getByText("Average Home")).toBeInTheDocument();
-    expect(screen.getByText("100 kWh")).toBeInTheDocument();
-    expect(screen.getByText("4,000 kWh")).toBeInTheDocument();
+    // the usage block is not part of the search band any more (UsageInput)
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(screen.queryByText("Average Home")).toBeNull();
   });
 });

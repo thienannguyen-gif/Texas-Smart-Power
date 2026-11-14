@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { PlansView } from "./PlansView";
 import type { Plan, TduDataFile } from "../types/plan";
 
@@ -38,7 +38,19 @@ const file: TduDataFile = {
   ],
 };
 
-afterEach(() => vi.unstubAllGlobals());
+// These tests were written for 1,000 kWh, so they start from it by way of the
+// address (the real default is 1,150, covered in usageInput.test.tsx).
+beforeEach(() => window.history.replaceState(null, "", "/?usage=1000"));
+afterEach(() => {
+  vi.unstubAllGlobals();
+  window.history.replaceState(null, "", "/");
+});
+
+/** Types a usage and leaves the box, so it applies at once (typing alone waits 250 ms). */
+function enterUsage(box: HTMLElement, value: string) {
+  fireEvent.change(box, { target: { value } });
+  fireEvent.blur(box);
+}
 
 function mockPlans(data: TduDataFile = file) {
   vi.stubGlobal(
@@ -79,7 +91,7 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   const card = screen.getByRole("article");
   expect(within(card).getByText("12.3¢/kWh")).toBeInTheDocument();
   const box = screen.getByLabelText(/monthly usage in kWh/i);
-  expect(box).toHaveValue(1000);
+  expect(box).toHaveValue("1,000");
   expect(
     screen.queryByRole("button", { name: /your usage/i }),
   ).not.toBeInTheDocument();
@@ -90,7 +102,7 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   expect(within(dialog).getAllByText("12.3¢/kWh")).toHaveLength(2);
 
   fireEvent.click(within(dialog).getByRole("button", { name: /close/i }));
-  fireEvent.change(box, { target: { value: "850" } });
+  enterUsage(box, "850");
   expect(within(card).getByText("at 850 kWh")).toBeInTheDocument();
   expect(within(card).getByText("12.4¢/kWh")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /more details/i }));
@@ -104,15 +116,14 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   fireEvent.click(
     within(updatedDialog).getByRole("button", { name: /close/i }),
   );
-  fireEvent.change(box, { target: { value: "9999" } });
-  fireEvent.blur(box);
-  expect(box).toHaveValue(4000); // clamped
+  enterUsage(box, "9999");
+  expect(box).toHaveValue("5,000"); // clamped
   expect(within(card).getByText("12.1¢/kWh")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /more details/i }));
   const cappedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
   });
-  expect(within(cappedDialog).getByText("$484")).toBeInTheDocument();
+  expect(within(cappedDialog).getByText("$605")).toBeInTheDocument();
   expect(within(cappedDialog).getAllByText("12.1¢/kWh")).toHaveLength(2);
 });
 
@@ -245,14 +256,11 @@ test("left/right arrow keys change page and stop at the ends", async () => {
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
 });
 
-test("arrow keys typed in the usage box or slider do not change the page", async () => {
+test("arrow keys typed in the usage box do not change the page", async () => {
   renderMany();
   await screen.findByText("Page 1 of 3");
 
   fireEvent.keyDown(screen.getByLabelText(/monthly usage in kWh/i), {
-    key: "ArrowRight",
-  });
-  fireEvent.keyDown(screen.getByLabelText("Monthly usage slider"), {
     key: "ArrowRight",
   });
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
@@ -277,9 +285,7 @@ test("a usage change keeps the same page number", async () => {
   fireEvent.click(next());
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
 
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "500" },
-  });
+  enterUsage(screen.getByLabelText(/monthly usage in kWh/i), "500");
   expect(screen.getAllByText("at 500 kWh")).toHaveLength(6);
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
   expect(screen.getByText("Plan 7")).toBeInTheDocument();
@@ -366,9 +372,7 @@ test("the header's search box submits a new ZIP; invalid ones are refused; usage
   const onSubmitZip = vi.fn();
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={onSubmitZip} />);
   await screen.findByText("Page 1 of 3");
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "750" },
-  });
+  enterUsage(screen.getByLabelText(/monthly usage in kWh/i), "750");
   pickProvider("bet", "Beta");
 
   const input = screen.getByLabelText("ZIP code");
@@ -381,7 +385,7 @@ test("the header's search box submits a new ZIP; invalid ones are refused; usage
   fireEvent.change(input, { target: { value: "77002" } });
   fireEvent.click(screen.getByRole("button", { name: "Find plans" }));
   expect(onSubmitZip).toHaveBeenCalledWith("77002");
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
   expect(screen.getByRole("button", { name: "Remove Beta" })).toBeVisible();
 });
 
@@ -465,7 +469,7 @@ function stubPhone() {
   }));
 }
 
-test("the header holds the search and the usage control in normal flow; desktop shows the sidebar, not a Filters button", async () => {
+test("the header holds the search, with the usage block under it, in normal flow; desktop shows the sidebar, not a Filters button", async () => {
   renderMany();
   await screen.findByText("Page 1 of 3");
 
@@ -474,12 +478,13 @@ test("the header holds the search and the usage control in normal flow; desktop 
   expect(header).toContainElement(
     screen.getByRole("button", { name: "Find plans" }),
   );
-  expect(header).toContainElement(
-    screen.getByLabelText(/monthly usage in kWh/i),
-  );
-  expect(header).toContainElement(
-    screen.getByLabelText("Monthly usage slider"),
-  );
+  // the usage block is its own band right under the search, not a slider in it
+  expect(screen.queryByLabelText("Monthly usage slider")).toBeNull();
+  expect(
+    header.compareDocumentPosition(
+      screen.getByLabelText(/monthly usage in kWh/i),
+    ) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   // the full header scrolls away; only the slim bar (below) is fixed
   expect(header.className).not.toMatch(/sticky|fixed/);
   expect(screen.queryByLabelText(/top bar/i)).not.toBeInTheDocument();
@@ -600,7 +605,7 @@ test("the results line is just the plan count and the Updated stamp, and the cou
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
-  expect(await screen.findByText("4 plans")).toBeInTheDocument();
+  expect(await screen.findByText("4 plans at 1,000 kWh")).toBeInTheDocument();
   // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
   expect(screen.queryByText(/ · /)).not.toBeInTheDocument();
   expect(
@@ -613,9 +618,13 @@ test("the results line is just the plan count and the Updated stamp, and the cou
   fireEvent.click(
     screen.getByRole("checkbox", { name: /100% renewable only/i }),
   );
-  expect(screen.getByText("Showing 2 of 4 plans")).toBeInTheDocument();
+  expect(
+    screen.getByText("Showing 2 of 4 plans at 1,000 kWh"),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("checkbox", { name: /13[+] months/i }));
-  expect(screen.getByText("Showing 1 of 4 plans")).toBeInTheDocument();
+  expect(
+    screen.getByText("Showing 1 of 4 plans at 1,000 kWh"),
+  ).toBeInTheDocument();
 });
 
 // ---- Sort: Best match / Lowest bill
@@ -703,17 +712,17 @@ test("in Lowest bill mode, changing the usage re-sorts the list", async () => {
 
   const usage = screen.getByLabelText(/monthly usage in kWh/i);
 
-  fireEvent.change(usage, { target: { value: "500" } }); // C 50, A 60, B 100
+  enterUsage(usage, "500"); // C 50, A 60, B 100
   expect(cardNames()).toEqual(["C Unstable", "A Flat", "B Credit"]);
 
-  fireEvent.change(usage, { target: { value: "2000" } }); // B 200, C 220, A 240
+  enterUsage(usage, "2000"); // B 200, C 220, A 240
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
   expect(within(first).getByText("$200")).toBeInTheDocument();
 
   // and back to Best match at 1,000 kWh: the score order again (the score
   // moves with the usage, so this is checked at the usage it was written for)
-  fireEvent.change(usage, { target: { value: "1000" } });
+  enterUsage(usage, "1000");
   fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
 });
@@ -791,9 +800,7 @@ test("desktop: the sort in the sidebar still sorts by bill and follows the usage
 
   fireEvent.click(within(sidebar).getByRole("radio", { name: "Lowest bill" }));
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "2000" },
-  });
+  enterUsage(screen.getByLabelText(/monthly usage in kWh/i), "2000");
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
 });
 
@@ -858,56 +865,41 @@ test("phone: closing the drawer discards a sort change; Clear empties filters bu
   expect(cardNames()[0]).toBe("C Unstable");
 });
 
-// ---- Usage slider in the sticky bar
+// ---- Usage block and the slim bar
 
-test("moving the slider re-prices and re-sorts the list live, and the number box follows", async () => {
+test("typing a usage re-prices and re-sorts the list live", async () => {
   renderSortable();
   await screen.findByText("A Flat");
   fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]); // at 1,000 kWh
 
-  const slider = screen.getByLabelText("Monthly usage slider");
-  fireEvent.change(slider, { target: { value: "2000" } }); // B 200, C 220, A 240
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(2000);
+  const box = screen.getByLabelText(/monthly usage in kWh/i);
+  enterUsage(box, "2000"); // B 200, C 220, A 240
+  expect(box).toHaveValue("2,000");
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
   expect(within(first).getByText("$200")).toBeInTheDocument();
   expect(within(first).getAllByText("at 2,000 kWh").length).toBeGreaterThan(0);
 
-  // typing moves the slider back
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "500" },
-  });
-  expect(slider).toHaveValue("500");
+  enterUsage(box, "500");
   expect(cardNames()).toEqual(["C Unstable", "A Flat", "B Credit"]); // 50, 60, 100
 });
 
-test("usage block: band pill, then the number box, then the slider with its two end labels under it", async () => {
-  stubPhone();
+test("order on the results page: header, then the usage block, then the filters, then the plans", async () => {
   renderSortable();
   await screen.findByText("A Flat");
 
+  const follows = (first: Element, second: Element) =>
+    (first.compareDocumentPosition(second) &
+      Node.DOCUMENT_POSITION_FOLLOWING) !==
+    0;
   const header = screen.getByRole("region", { name: "Your search" });
-  const numberBox = screen.getByLabelText(/monthly usage in kWh/i);
-  const slider = screen.getByLabelText("Monthly usage slider");
-  const band = within(header).getByText("Average Home");
-
-  // band pill, then the number box, then the slider
-  expect(
-    band.compareDocumentPosition(numberBox) & Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
-  expect(
-    numberBox.compareDocumentPosition(slider) &
-      Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
-  expect(slider).toHaveClass("usage-range");
-  // the end labels come after the slider
-  for (const end of ["100 kWh", "4,000 kWh"]) {
-    expect(
-      slider.compareDocumentPosition(within(header).getByText(end)) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  }
+  const usage = screen.getByRole("region", { name: "Your usage" });
+  const filters = screen.getByRole("complementary", { name: "Filters" });
+  const plans = screen.getByRole("region", { name: "Plans" });
+  expect(follows(header, usage)).toBe(true);
+  expect(follows(usage, filters)).toBe(true);
+  expect(follows(filters, plans)).toBe(true);
 });
 
 test("once the full header has scrolled away, a slim bar keeps the ZIP, area and usage in reach", async () => {
@@ -939,7 +931,7 @@ test("once the full header has scrolled away, a slim bar keeps the ZIP, area and
 
   // it drives the same usage as the header's own box
   fireEvent.change(topUsage, { target: { value: "2000" } });
-  expect(screen.getByLabelText("Monthly usage in kWh")).toHaveValue(2000);
+  expect(screen.getByLabelText("Monthly usage in kWh")).toHaveValue("2,000");
 
   // Edit takes the user back up
   fireEvent.click(within(bar).getByRole("button", { name: "Edit" }));
@@ -1062,7 +1054,7 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
 
   expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]); // 80, 100, 150 at 1,000 kWh
 
-  fireEvent.change(usage, { target: { value: "500" } }); // 50, 75, 150
+  enterUsage(usage, "500"); // 50, 75, 150
   expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
 
   // Lowest bill re-sorts the ranked list only; the section is always cheapest first
@@ -1075,7 +1067,7 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
 test("the results line counts only the ranked plans and says nothing about the time-of-use ones", async () => {
   renderTou();
   await screen.findByText("Ranked A");
-  expect(screen.getByText("2 plans")).toBeInTheDocument();
+  expect(screen.getByText("2 plans at 1,000 kWh")).toBeInTheDocument();
   expect(screen.queryByText(/shown separately/)).not.toBeInTheDocument();
   expect(screen.getByText(/^Updated /)).toBeInTheDocument();
 });
@@ -1129,7 +1121,9 @@ test("the other filters apply to the time-of-use section too, and its count foll
   expect(
     screen.getByText(/no ranked plans match these filters/i),
   ).toBeInTheDocument();
-  expect(screen.getByText("Showing 0 of 2 plans")).toBeInTheDocument();
+  expect(
+    screen.getByText("Showing 0 of 2 plans at 1,000 kWh"),
+  ).toBeInTheDocument();
 });
 
 test("with no time-of-use plans in the area the filter is greyed out and says so, and there is no section", async () => {
@@ -1146,7 +1140,7 @@ test("with no time-of-use plans in the area the filter is greyed out and says so
   expect(
     screen.queryByRole("region", { name: /time-of-use plans/i }),
   ).not.toBeInTheDocument();
-  expect(screen.getByText("2 plans")).toBeInTheDocument();
+  expect(screen.getByText("2 plans at 1,000 kWh")).toBeInTheDocument();
 });
 
 test("data written before the split (time-of-use plans inside plans) is still shown separately", async () => {
@@ -1158,7 +1152,7 @@ test("data written before the split (time-of-use plans inside plans) is still sh
   await screen.findByText("Ranked A");
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
   expect(sectionNames()).toEqual(["Night Owl"]);
-  expect(screen.getByText("2 plans")).toBeInTheDocument();
+  expect(screen.getByText("2 plans at 1,000 kWh")).toBeInTheDocument();
 });
 
 test("a ZIP whose only plans are time-of-use still shows them", async () => {
@@ -1242,7 +1236,9 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
     within(sidebar).getByRole("checkbox", { name: /^12 months/ }),
   );
   expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
-  expect(screen.getByText("Showing 3 of 7 plans")).toBeInTheDocument();
+  expect(
+    screen.getByText("Showing 3 of 7 plans at 1,000 kWh"),
+  ).toBeInTheDocument();
 });
 
 const cardNamesOnPage = () =>
@@ -1305,7 +1301,9 @@ test("renewable is a single '100% renewable only' toggle with a count; there is 
 
   fireEvent.click(toggle);
   expect(cardNamesOnPage()).toEqual(["R100 a", "R100 b"]);
-  expect(screen.getByText(/Showing 2 of 4 plans/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Showing 2 of 4 plans at 1,000 kWh/),
+  ).toBeInTheDocument();
 
   // the count follows the other filters
   fireEvent.click(toggle);
@@ -1423,7 +1421,7 @@ test("the time-of-use-only view still shows its section, whatever page the list 
 test("changing page scrolls to the top smoothly, after the new rows are in, and focuses the results line", async () => {
   renderManyWithTou();
   await screen.findByText("Page 1 of 3");
-  const summary = screen.getByText("14 plans");
+  const summary = screen.getByText("14 plans at 1,000 kWh");
   expect(summary).toHaveAttribute("tabindex", "-1");
   expect(window.scrollTo).not.toHaveBeenCalled();
 

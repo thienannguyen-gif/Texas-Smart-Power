@@ -1,11 +1,20 @@
 import type { Plan } from "../types/plan.js";
 
-// The usage level the app prices plans at by default, and the ranking/display
-// anchor referenced in docs/student-build-guide.md §8.
-export const DEFAULT_USAGE_KWH = 1000;
+// The usage level the app prices plans at until the user enters their own: the
+// "Small home" preset below.
+export const DEFAULT_USAGE_KWH = 1150;
 
-export const MIN_USAGE_KWH = 100;
-export const MAX_USAGE_KWH = 4000;
+/** The three home types offered next to the usage box. */
+export const USAGE_PRESETS = [
+  { id: "apartment", label: "Apartment", kwh: 850 },
+  { id: "small_home", label: "Small home", kwh: 1150 },
+  { id: "large_home", label: "Large home", kwh: 1450 },
+] as const;
+
+export const USAGE_MIN = 100;
+export const USAGE_MAX = 5000;
+export const MIN_USAGE_KWH = USAGE_MIN;
+export const MAX_USAGE_KWH = USAGE_MAX;
 
 /** Clamp a typed usage value into the allowed range (falls back to default). */
 export function clampUsage(value: number): number {
@@ -48,53 +57,41 @@ export function estimatedMonthlyBill(
   return rate === null ? null : rate * usageKwh;
 }
 
-/** The slider and the number box both move in steps of this many kWh. */
-export const USAGE_STEP_KWH = 50;
-
-export type UsageBand =
-  "Efficient" | "Average Home" | "Power User" | "Heavy User";
-
-/**
- * Names the usage level, the one place these thresholds live. A boundary value
- * belongs to the band below it: 500 and 1,000 are both "Average Home".
- *
- *   kWh < 500           Efficient
- *   500 to 1,000        Average Home
- *   1,000 to 2,000      Power User   (above 1,000, up to and including 2,000)
- *   above 2,000         Heavy User
- */
-export function usageBand(kwh: number): UsageBand {
-  if (kwh < 500) return "Efficient";
-  else if (kwh <= 1000) return "Average Home";
-  else if (kwh <= 2000) return "Power User";
-  else return "Heavy User";
-}
-
-/** The nearest slider position (a multiple of the step, from the minimum) to a typed value. */
-export function snapToSlider(kwh: number): number {
-  const clamped = clampUsage(kwh);
-  return (
-    MIN_USAGE_KWH +
-    Math.round((clamped - MIN_USAGE_KWH) / USAGE_STEP_KWH) * USAGE_STEP_KWH
-  );
+/** The preset whose kWh is exactly `kwh`, or null when it is the user's own number. */
+export function presetForUsage(kwh: number | null) {
+  return USAGE_PRESETS.find((preset) => preset.kwh === kwh) ?? null;
 }
 
 /**
- * The only three usage levels Power to Choose publishes a price for; every other
- * usage is interpolated (see pricePerKwhAtUsage).
+ * Reads what was typed in the usage box: digits with optional thousands commas
+ * ("1,680" or "1680"), whole numbers only. Anything else is null.
  */
-export const USAGE_ANCHORS_KWH = [500, 1000, 2000] as const;
-
-/** Releasing the slider this close to an anchor (or closer) snaps to it. */
-export const ANCHOR_SNAP_KWH = 25;
-
-/** The anchor within ANCHOR_SNAP_KWH of `kwh`, else `kwh` unchanged. */
-export function snapToAnchor(kwh: number): number {
-  const near = USAGE_ANCHORS_KWH.find(
-    (anchor) => Math.abs(kwh - anchor) <= ANCHOR_SNAP_KWH,
-  );
-  return near ?? kwh;
+export function parseUsageText(text: string): number | null {
+  const trimmed = text.trim();
+  if (!/^\d{1,3}(,\d{3})+$|^\d+$/.test(trimmed)) return null;
+  return Number(trimmed.replace(/,/g, ""));
 }
 
-/** PageUp / PageDown move the slider by this much. */
-export const USAGE_PAGE_KWH = 500;
+/** 1680 -> "1,680" (always a comma, whatever the machine's locale). */
+export function formatUsageText(kwh: number): string {
+  return String(Math.round(kwh)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/** The `usage` query parameter, clamped; the default when it is absent or not a number. */
+export function usageFromSearch(search: string): number {
+  const raw = new URLSearchParams(search).get("usage");
+  const kwh = raw === null ? null : parseUsageText(raw);
+  return kwh === null ? DEFAULT_USAGE_KWH : clampUsage(kwh);
+}
+
+/**
+ * `search` with the `usage` parameter set (and dropped when it is the default),
+ * every other parameter left as it was. Returns "" or a string starting with "?".
+ */
+export function searchWithUsage(search: string, kwh: number): string {
+  const params = new URLSearchParams(search);
+  if (kwh === DEFAULT_USAGE_KWH) params.delete("usage");
+  else params.set("usage", String(kwh));
+  const next = params.toString();
+  return next === "" ? "" : `?${next}`;
+}

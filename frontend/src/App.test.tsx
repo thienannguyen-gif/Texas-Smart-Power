@@ -11,6 +11,8 @@ import type { TduDataFile } from "./types/plan";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  // the usage box writes `usage` into the address: do not carry it to the next test
+  window.history.replaceState(null, "", "/");
 });
 
 // These tests are about the plan list; the Our picks cards repeat plan names, so
@@ -174,9 +176,9 @@ test("changing the ZIP on the plans page stays on the page, keeps usage, and loa
   render(<App />);
   submitZip("75201");
   expect(await screen.findByText(/example plan 12/i)).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "750" },
-  });
+  const usageBox = screen.getByLabelText(/monthly usage in kWh/i);
+  fireEvent.change(usageBox, { target: { value: "750" } });
+  fireEvent.blur(usageBox); // applies at once; typing alone waits 250 ms
 
   // an unknown ZIP: message shown, old plans and ZIP stay
   changeZip("99999");
@@ -189,7 +191,7 @@ test("changing the ZIP on the plans page stays on the page, keeps usage, and loa
   changeZip("77002");
   expect(await screen.findByText(/houston plan 24/i)).toBeInTheDocument();
   expect(screen.getByLabelText("ZIP code")).toHaveValue("77002");
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
   expect(
     screen.queryByRole("heading", { name: /texas smart power/i }),
   ).not.toBeInTheDocument();
@@ -270,7 +272,7 @@ test("75201 returns one company: the picker is skipped and plans load", async ()
   expect(screen.queryByText(/^AREA:/)).not.toBeInTheDocument();
 });
 
-test("first load for a split ZIP defaults usage to 1000 kWh, same as a single-area ZIP", async () => {
+test("first load for a split ZIP defaults usage to 1,150 kWh (Small home), same as a single-area ZIP", async () => {
   stubSplitZips();
   const { unmount } = render(<App />);
   submitZip("75067");
@@ -278,13 +280,13 @@ test("first load for a split ZIP defaults usage to 1000 kWh, same as a single-ar
     await screen.findByRole("button", { name: /oncor electric delivery/i }),
   );
   await screen.findByText("Oncor Plan");
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(1000);
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("1,150");
   unmount();
 
   render(<App />);
   submitZip("75201");
   await screen.findByText("Oncor Plan");
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(1000);
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("1,150");
 });
 
 const areaLine = () => screen.queryByText(/^Utility area:/);
@@ -341,9 +343,9 @@ test("Change opens the card in place: pills on the right, the chosen one filled 
 
 test("choosing the other area loads its plans, collapses the card, and keeps ZIP, usage and filters", async () => {
   await openSplitZip();
-  fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-    target: { value: "750" },
-  });
+  const usageBox = screen.getByLabelText(/monthly usage in kWh/i);
+  fireEvent.change(usageBox, { target: { value: "750" } });
+  fireEvent.blur(usageBox); // applies at once; typing alone waits 250 ms
   fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
 
   fireEvent.click(changeArea());
@@ -354,14 +356,14 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
   expect(areaLine()).toHaveTextContent("Utility area: TNMP");
   expect(areaPicker()).not.toBeInTheDocument();
   expect(screen.getByLabelText("ZIP code")).toHaveValue("75067");
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
   expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeChecked();
 
   // and back again
   fireEvent.click(changeArea());
   fireEvent.click(within(areaPicker()!).getByRole("button", { name: "Oncor" }));
   expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
-  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+  expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
 });
 
 test("the opened card can be closed again with Cancel, changing nothing", async () => {
@@ -550,9 +552,9 @@ describe("disclaimer page", () => {
     render(<App />);
     submitZip("75201");
     await screen.findByText("Oncor Plan");
-    fireEvent.change(screen.getByLabelText(/monthly usage in kWh/i), {
-      target: { value: "750" },
-    });
+    const usageBox = screen.getByLabelText(/monthly usage in kWh/i);
+    fireEvent.change(usageBox, { target: { value: "750" } });
+    fireEvent.blur(usageBox); // applies at once; typing alone waits 250 ms
     fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
 
     goToHash("#disclaimer");
@@ -562,7 +564,7 @@ describe("disclaimer page", () => {
     await waitFor(() =>
       expect(screen.getByLabelText(/monthly usage in kWh/i)).toBeVisible(),
     );
-    expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue(750);
+    expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
     expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeChecked();
     expect(screen.getByLabelText("ZIP code")).toHaveValue("75201");
     expect(screen.getByText("Oncor Plan")).toBeInTheDocument();

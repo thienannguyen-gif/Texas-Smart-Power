@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { TduId } from "../types/plan";
 import { useTduPlans } from "../hooks/useTduPlans";
 import { useIsDesktop } from "../hooks/useIsDesktop";
-import { DEFAULT_USAGE_KWH } from "../lib/usage";
+import { searchWithUsage, usageFromSearch } from "../lib/usage";
 import {
   activeFilterCount,
   EMPTY_FILTERS,
@@ -15,6 +15,7 @@ import { scorablePlans, scorePlansV2 } from "../lib/scoreV2";
 import { PlanList } from "./PlanList";
 import { PlansHeader } from "./PlansHeader";
 import { CompactBar } from "./CompactBar";
+import { UsageInput } from "./UsageInput";
 import type { AreaChoice } from "./AreaCard";
 import { FilterPanel } from "./FilterPanel";
 import { FilterDrawer } from "./FilterDrawer";
@@ -60,7 +61,22 @@ export function PlansView({
   ].sort();
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [usageKwh, setUsageKwh] = useState(DEFAULT_USAGE_KWH);
+  // The usage the plans are priced at: the `usage` in the address when there is
+  // one, else the Small home default. It survives a change of ZIP (this
+  // component stays mounted) and is written back to the address as it changes.
+  const [usageKwh, setUsageKwh] = useState(() =>
+    usageFromSearch(window.location.search),
+  );
+  useEffect(() => {
+    const search = searchWithUsage(window.location.search, usageKwh);
+    if (search === window.location.search) return;
+    // replaceState, not pushState: typing a number must not fill the Back button
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${search}${window.location.hash}`,
+    );
+  }, [usageKwh]);
   const [sortMode, setSortMode] = useState<SortMode>("best");
   // Current page (1-based) of the filtered, rank-ordered list. A filter
   // change goes back to page 1; a usage change leaves it alone.
@@ -144,11 +160,10 @@ export function PlansView({
           zip={zip}
           onSubmitZip={onSubmitZip}
           zipBusy={zipBusy}
-          usageKwh={usageKwh}
-          onUsageChange={setUsageKwh}
           areaChoice={areaChoice}
           serviceArea={serviceArea}
         />
+        <UsageInput value={usageKwh} onChange={setUsageKwh} />
       </div>
 
       {showCompact && (

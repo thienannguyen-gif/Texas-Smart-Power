@@ -1,17 +1,13 @@
 import { useEffect, useId, useState } from "react";
 import { AreaCard, type AreaChoice } from "./AreaCard";
-import { UsageControl } from "./UsageControl";
 
-// The top of the results page, a white band with two columns:
-//   left  — the ZIP search and "Service area <name>"
-//   right — the monthly usage (number box, slider)
+// The top of the results page, a white band with the ZIP search and
+// "Service area <name>". (The usage block sits right under it, UsageInput.)
 // For a ZIP that returned several utilities, the area card sits below the band.
 export function PlansHeader({
   zip,
   onSubmitZip,
   zipBusy,
-  usageKwh,
-  onUsageChange,
   serviceArea,
   areaChoice,
 }: {
@@ -19,8 +15,6 @@ export function PlansHeader({
   /** Called with a valid 5-digit ZIP; the parent looks up its area. */
   onSubmitZip: (zip: string) => void;
   zipBusy: boolean;
-  usageKwh: number;
-  onUsageChange: (kwh: number) => void;
   /** Name of the utility area whose plans are showing. */
   serviceArea?: string;
   /** Set only when this ZIP returned several utilities. */
@@ -42,8 +36,8 @@ export function PlansHeader({
       aria-label="Your search"
       className="border-b border-line-soft bg-surface font-sans text-ink"
     >
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:items-end md:gap-14 md:py-8">
-        <div>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8">
+        <div className="md:max-w-[22rem]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -89,8 +83,6 @@ export function PlansHeader({
             </p>
           )}
         </div>
-
-        <UsageControl value={usageKwh} onChange={onUsageChange} />
       </div>
 
       {areaChoice && (

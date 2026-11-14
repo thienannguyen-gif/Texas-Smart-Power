@@ -26,7 +26,7 @@ const plan = (over: Partial<Plan> = {}): Plan => ({ ...base, ...over });
 
 describe("PlanCard", () => {
   it("shows the plan name, company and the three headline stats", () => {
-    render(<PlanCard plan={plan()} />);
+    render(<PlanCard plan={plan()} usageKwh={1000} />);
     expect(
       screen.getByRole("heading", { name: "Steady 12" }),
     ).toBeInTheDocument();

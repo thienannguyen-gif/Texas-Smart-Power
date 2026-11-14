@@ -97,7 +97,7 @@ body {
   overflow-x: clip;
 }
 
-/* The search band's captions: "ZIP CODE", "YOUR MONTHLY USAGE". */
+/* The search band's caption: "ZIP CODE". */
 @utility band-caption {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -105,71 +105,6 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-faint);
-}
-
-/* The usage slider: a thin track filled up to the thumb (--pct is set inline). */
-.usage-range {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  width: 100%;
-  height: 1.25rem;
-  background: transparent;
-  cursor: pointer;
-}
-.usage-range::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 9999px;
-  border: 1px solid var(--line);
-  background: linear-gradient(
-    to right,
-    var(--brand) var(--pct, 0%),
-    var(--line) var(--pct, 0%)
-  );
-}
-.usage-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -7px;
-  border-radius: 9999px;
-  background: var(--brand);
-  border: 3px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--ink-faint);
-}
-.usage-range::-moz-range-track {
-  height: 6px;
-  border-radius: 9999px;
-  border: 1px solid var(--line);
-  background: var(--line);
-}
-.usage-range::-moz-range-progress {
-  height: 6px;
-  border-radius: 9999px;
-  background: var(--brand);
-}
-.usage-range::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 9999px;
-  background: var(--brand);
-  border: 3px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--ink-faint);
-}
-/* Keyboard focus: a ring on the thumb only, so it never traces the track. */
-.usage-range:focus-visible {
-  outline: none;
-}
-.usage-range:focus-visible::-webkit-slider-thumb {
-  box-shadow:
-    0 0 0 3px var(--brand-soft),
-    0 0 0 4px var(--brand);
-}
-.usage-range:focus-visible::-moz-range-thumb {
-  box-shadow:
-    0 0 0 3px var(--brand-soft),
-    0 0 0 4px var(--brand);
 }
 
 /* Phone filter drawer slides up from the bottom edge. */

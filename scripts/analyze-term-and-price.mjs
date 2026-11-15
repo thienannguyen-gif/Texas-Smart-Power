@@ -1,3 +1,4 @@
+// NOTE: the old-formula numbers here come from scorePlans (ranking.ts, @deprecated): a HISTORICAL BASELINE, not the formula the app runs (scorePlansV2 in scoreV2.ts).
 // One-off 2x2: how much do the price factor and the term scoring each move the top of the list?
 //
 //   node scripts/analyze-term-and-price.mjs [tdu] [--plan "<plan name fragment>"]

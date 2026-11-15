@@ -183,6 +183,10 @@ export interface CostedPlan {
  * plans with the same per-month figure keep the order they arrived in (floating
  * point noise of 1e-14 would otherwise decide it). A plan that cannot be costed
  * is left out. Never mutates `plans`.
+ *
+ * Not yet wired to the page; see Dec 5 item 1. (The page ranks with
+ * `scorePlansV2` for now.) Used today by contractCost.test.ts and the scripts in
+ * scripts/ (analyze-curvature, dollar-ranking-comparison, score-v2-comparison).
  */
 export function rankByContractCost(
   plans: Plan[],

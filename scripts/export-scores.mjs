@@ -1,3 +1,4 @@
+// NOTE: the old-formula numbers here come from scorePlans (ranking.ts, @deprecated): a HISTORICAL BASELINE, not the formula the app runs (scorePlansV2 in scoreV2.ts). This CSV is therefore the OLD formula, not what the page shows.
 // Export one TDU's ranking breakdown to CSV for checking the formula by hand.
 //
 //   node scripts/export-scores.mjs [tdu]      (default: oncor)

@@ -1,3 +1,4 @@
+// NOTE: the old-formula numbers here come from scorePlans (ranking.ts, @deprecated): a HISTORICAL BASELINE, not the formula the app runs (scorePlansV2 in scoreV2.ts).
 // Builds analysis/score-v2-comparison.md: the score-v2 ranking (this branch) next
 // to the dollar ranking (feat/dollar-ranking) and the current live scoring, for
 // the newest Oncor file in Vercel Blob.

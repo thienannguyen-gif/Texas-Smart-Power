@@ -12,3 +12,7 @@ coverage
 analysis/k-sensitivity.csv
 analysis/term-and-price.csv
 analysis/total-cost.csv
+
+# local trial files (not for commit)
+frontend/.try/
+frontend/vite.try.config.ts

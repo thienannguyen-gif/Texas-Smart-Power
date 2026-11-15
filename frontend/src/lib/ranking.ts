@@ -1,6 +1,8 @@
 import type { Plan } from "../types/plan.js";
 import { parseExitFee } from "./cancellationFee.js";
 import { renewablePct } from "./filters.js";
+import { scorePlansV2 } from "./scoreV2.js";
+import { DEFAULT_USAGE_KWH } from "./usage.js";
 
 const EPSILON = 1e-9;
 
@@ -30,6 +32,10 @@ interface EligiblePlan {
   greenScore: number;
 }
 
+/**
+ * @deprecated Part of the old formula (`scorePlans`); only scorePlans and
+ * ranking.test.ts still call it. The app uses CE-based S_cost in scoreV2.ts.
+ */
 export function calculatePriceScore(
   price: number,
   pMin: number,
@@ -148,6 +154,11 @@ function eligiblePlans(plans: Plan[]): EligiblePlan[] {
   return eligible;
 }
 
+/**
+ * @deprecated Historical baseline, NOT the formula the app runs (that is
+ * `scorePlansV2` in scoreV2.ts). Still used by: ranking.test.ts and the
+ * comparison/analysis scripts in scripts/ (as the "old formula" column).
+ */
 export function scorePlans(
   plans: Plan[],
 ): Array<{ plan: Plan; breakdown: PlanScoreBreakdown }> {
@@ -201,6 +212,14 @@ export function scorePlans(
     .sort((a, b) => b.breakdown.total - a.breakdown.total);
 }
 
+/**
+ * The order stored for an area (the nightly job writes it): score v3 (scoreV2.ts,
+ * S_cost on CE = E + k*sigma-) at the default usage, over every non-TOU plan.
+ * The page re-scores at the visitor's own usage and filters; this order is only
+ * the tie-break there. `scorePlans` above is the old formula, kept for the
+ * analysis scripts.
+ */
 export function rankPlans(plans: Plan[]): Plan[] {
-  return scorePlans(plans).map(({ plan }) => plan);
+  // scorePlansV2 itself leaves time-of-use and unscorable plans out.
+  return scorePlansV2(plans, plans, DEFAULT_USAGE_KWH).map(({ plan }) => plan);
 }

@@ -4,8 +4,10 @@ import { estimatedMonthlyBill } from "./usage.js";
 export type SortMode = "best" | "lowestBill";
 
 /**
- * "best"       — the order the plans arrive in: ranked by the four-factor score
- *                during ingestion (BRIEF.md). Returned untouched.
+ * "best"       — the order the plans arrive in. On the page that is score v3
+ *                (`scorePlansV2`, scoreV2.ts) at the visitor's usage; the stored
+ *                order (`rankPlans`, score v3 at the default usage) only breaks
+ *                exact ties. Returned untouched.
  * "lowestBill" — purely the estimated monthly bill at `usageKwh`, cheapest
  *                first. No score and no stability weighting. A plan whose bill
  *                cannot be estimated (a missing anchor price) goes last. Two

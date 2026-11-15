@@ -1,3 +1,4 @@
+// NOTE: the old-formula numbers here come from scorePlans (ranking.ts, @deprecated): a HISTORICAL BASELINE, not the formula the app runs (scorePlansV2 in scoreV2.ts).
 // One-off check: does the ranking depend on k, the risk weight in CE = E + k * semiSd?
 //
 //   node scripts/analyze-k-sensitivity.mjs [tdu]      (default: oncor)

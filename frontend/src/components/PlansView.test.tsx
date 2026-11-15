@@ -634,7 +634,9 @@ test("the results line is just the plan count and the Updated stamp, and the cou
     await screen.findByText("Showing 2 of 4 plans at 1,000 kWh"),
   ).toBeInTheDocument();
   // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
-  expect(screen.queryByText(/ · /)).not.toBeInTheDocument();
+  expect(
+    screen.getByText("Showing 2 of 4 plans at 1,000 kWh").textContent,
+  ).not.toMatch(/ · /);
   expect(
     screen.queryByText(
       /(is|are) 100% renewable|(is|are) 12 months|shown separately/,
@@ -722,7 +724,11 @@ test("sort control: Lowest total cost is the default, cheapest first, with its d
   // usage is 1,000 kWh: C 90, B 100, A 120, and D (no estimate) is not listed
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  expect(within(first).getByText("$90")).toBeInTheDocument();
+  // total = 12 x C(1000) = 12 x $90.00 = $1,080.00
+  expect(within(first).getByText("$1,080.00")).toBeInTheDocument();
+  expect(
+    within(first).getByText("over 12 months · $90.00/mo"),
+  ).toBeInTheDocument();
   expect(
     screen.getByText(
       "Sorted by what the contract costs at your usage level. Cheapest first.",
@@ -756,7 +762,8 @@ test("in Lowest total cost mode, changing the usage re-sorts the list", async ()
   enterUsage(usage, "2000"); // B 200, C 220, A 240
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  expect(within(first).getByText("$200")).toBeInTheDocument();
+  // B at 2,000 kWh: C2000 = 20 x 10c = $200.00; total = 12 x 200.00 = $2,400.00
+  expect(within(first).getByText("$2,400.00")).toBeInTheDocument();
 
   // and Best match at 1,000 kWh: the score order (it moves with the usage, so
   // this is checked at the usage it was worked out for)
@@ -926,7 +933,8 @@ test("typing a usage re-prices and re-sorts the list live", async () => {
   expect(box).toHaveValue("2,000");
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  expect(within(first).getByText("$200")).toBeInTheDocument();
+  // B at 2,000 kWh: C2000 = 20 x 10c = $200.00; total = 12 x 200.00 = $2,400.00
+  expect(within(first).getByText("$2,400.00")).toBeInTheDocument();
   expect(within(first).getAllByText("at 2,000 kWh").length).toBeGreaterThan(0);
 
   enterUsage(box, "500");

@@ -32,7 +32,9 @@ describe("PlanCard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Example Energy")).toBeInTheDocument();
     expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 0.139 * 100, 1dp
-    expect(screen.getByText("$139")).toBeInTheDocument(); // 0.139 * 1000 kWh
+    // total cost = L x C(1000) = 12 x (10 x 13.9c = $139.00) = $1,668.00
+    expect(screen.getByText("$1,668.00")).toBeInTheDocument();
+    expect(screen.getByText("over 12 months · $139.00/mo")).toBeInTheDocument();
     expect(screen.getByText("12 mos")).toBeInTheDocument();
     expect(screen.getByText("6%")).toBeInTheDocument();
   });
@@ -87,17 +89,21 @@ describe("PlanCard", () => {
     const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
     expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
     expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
-    expect(screen.getByText("$76")).toBeInTheDocument(); // C500 = 5 x 15.1 = $75.50
+    // C500 = 5 x 15.1 = $75.50; total = 12 x 75.50 = $906.00
+    expect(screen.getByText("$906.00")).toBeInTheDocument();
+    expect(screen.getByText("over 12 months · $75.50/mo")).toBeInTheDocument();
 
     rerender(<PlanCard plan={plan()} usageKwh={1500} />);
     expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
     // by hand, r500 = 15.1c, r1000 = 13.9c, r2000 = 14.5c:
     //   C1000 = 10 x 13.9 = $139.00, C2000 = 20 x 14.5 = $290.00
     //   m2 = (290.00 - 139.00) / 1000 = 0.151 $/kWh
-    //   C(1500) = 139.00 + 0.151 x (1500 - 1000) = $214.50  -> "$215"
+    //   C(1500) = 139.00 + 0.151 x (1500 - 1000) = $214.50
+    //   total = 12 x 214.50 = $2,574.00
     //   rate = 214.50 / 1500 = 0.143 -> "14.3¢/kWh"
     expect(screen.getByText("14.3¢/kWh")).toBeInTheDocument();
-    expect(screen.getByText("$215")).toBeInTheDocument();
+    expect(screen.getByText("$2,574.00")).toBeInTheDocument();
+    expect(screen.getByText("over 12 months · $214.50/mo")).toBeInTheDocument();
   });
 
   it("has no hide-provider action", () => {
@@ -148,7 +154,49 @@ describe("PlanCard for an unranked time-of-use plan", () => {
     render(<PlanCard plan={plan()} />);
     expect(screen.queryByText(/unranked/i)).not.toBeInTheDocument();
     expect(screen.getByText("Price per kWh")).toBeInTheDocument();
-    expect(screen.getByText("per month")).toBeInTheDocument();
+    // an ordinary card shows the total cost of the contract, not a monthly bill
+    expect(screen.getByText("Total cost")).toBeInTheDocument();
+    expect(screen.queryByText("per month")).not.toBeInTheDocument();
+  });
+
+  it("keeps the monthly bill on a time-of-use card, whose price is only a reference rate", () => {
+    render(<PlanCard plan={plan({ isTimeOfUse: true })} unranked />);
+    expect(screen.getByText("Est. monthly bill")).toBeInTheDocument();
+    expect(screen.getByText("at reference rate")).toBeInTheDocument();
+    expect(screen.queryByText("Total cost")).not.toBeInTheDocument();
+  });
+});
+
+describe("PlanCard total cost and the short-contract warning", () => {
+  const warn = (months: number) =>
+    `Ends in ${months} months. The price after is not capped.`;
+
+  it("a 3-month plan shows its own total, per-month figure and the exact warning", () => {
+    // C(1000) = 10 x 13.9c = $139.00; 3 x 139.00 = $417.00
+    render(<PlanCard plan={plan({ termMonths: 3 })} usageKwh={1000} />);
+    expect(screen.getByText("$417.00")).toBeInTheDocument();
+    expect(screen.getByText("over 3 months · $139.00/mo")).toBeInTheDocument();
+    expect(screen.getByText(`⚠ ${warn(3)}`)).toBeInTheDocument();
+  });
+
+  it("11 months warns; 12, 13 and 24 months do not", () => {
+    const { rerender } = render(
+      <PlanCard plan={plan({ termMonths: 11 })} usageKwh={1000} />,
+    );
+    expect(screen.getByText(`⚠ ${warn(11)}`)).toBeInTheDocument();
+    for (const termMonths of [12, 13, 24]) {
+      rerender(<PlanCard plan={plan({ termMonths })} usageKwh={1000} />);
+      expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument();
+    }
+    // 24 months of $139.00 = $3,336.00
+    expect(screen.getByText("$3,336.00")).toBeInTheDocument();
+  });
+
+  it("a plan with no usable term keeps the monthly bill and no warning", () => {
+    render(<PlanCard plan={plan({ termMonths: null })} usageKwh={1000} />);
+    expect(screen.getByText("Est. monthly bill")).toBeInTheDocument();
+    expect(screen.getByText("$139")).toBeInTheDocument();
+    expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument();
   });
 });
 

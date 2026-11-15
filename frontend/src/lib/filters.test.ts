@@ -3,7 +3,6 @@ import {
   activeFilterCount,
   countRenewable100,
   countTimeOfUse,
-  DEFAULT_FILTERS,
   EMPTY_FILTERS,
   filterPlans,
   isFiltering,
@@ -265,31 +264,25 @@ describe("time-of-use lists", () => {
   });
 });
 
-describe("the default contract length (12 months)", () => {
-  it("is exactly one value, 12 months, and is not counted as a filter the visitor chose", () => {
-    expect(DEFAULT_FILTERS.contractBuckets).toEqual(["m12"]);
-    expect(activeFilterCount(DEFAULT_FILTERS)).toBe(0);
-    expect(isFiltering(DEFAULT_FILTERS)).toBe(false);
-  });
-
-  it("another length, or a length plus another filter, is counted", () => {
-    expect(
-      activeFilterCount({ ...DEFAULT_FILTERS, contractBuckets: ["m13plus"] }),
-    ).toBe(1);
-    expect(activeFilterCount({ ...DEFAULT_FILTERS, providers: ["Gexa"] })).toBe(
-      1,
-    );
-    expect(isFiltering({ ...DEFAULT_FILTERS, contractBuckets: ["m1_6"] })).toBe(
-      true,
-    );
-  });
-
-  it("only 12 months shows, and EMPTY_FILTERS still means no constraint", () => {
+describe("the contract length when the page opens", () => {
+  it("has no length chosen: nothing is counted as a filter and every term shows", () => {
+    expect(EMPTY_FILTERS.contractBuckets).toEqual([]);
+    expect(activeFilterCount(EMPTY_FILTERS)).toBe(0);
+    expect(isFiltering(EMPTY_FILTERS)).toBe(false);
     const three = make({ id: 1, termMonths: 3 });
     const twelve = make({ id: 2, termMonths: 12 });
-    expect(
-      filterPlans([three, twelve], DEFAULT_FILTERS).map((p) => p.id),
-    ).toEqual([2]);
     expect(filterPlans([three, twelve], EMPTY_FILTERS)).toHaveLength(2);
+  });
+
+  it("each chosen length is counted, and lengths in the group are OR'd", () => {
+    const some = withFilters({ contractBuckets: ["m1_6", "m12"] });
+    expect(activeFilterCount(some)).toBe(2);
+    expect(isFiltering(some)).toBe(true);
+    const three = make({ id: 1, termMonths: 3 });
+    const twelve = make({ id: 2, termMonths: 12 });
+    const long = make({ id: 3, termMonths: 24 });
+    expect(filterPlans([three, twelve, long], some).map((p) => p.id)).toEqual([
+      1, 2,
+    ]);
   });
 });

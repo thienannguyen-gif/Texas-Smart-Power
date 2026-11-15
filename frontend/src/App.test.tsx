@@ -375,8 +375,10 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
   expect(
     screen.getByRole("button", { name: "Remove Example Energy" }),
   ).toBeVisible();
-  // the contract length is still the page's default
-  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
+  // no contract length is ticked
+  expect(
+    screen.getByRole("checkbox", { name: /^12 months/i }),
+  ).not.toBeChecked();
 
   // and back again
   fireEvent.click(changeArea());
@@ -587,7 +589,9 @@ describe("disclaimer page", () => {
     expect(
       screen.getByRole("button", { name: "Remove Example Energy" }),
     ).toBeVisible();
-    expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: /^12 months/i }),
+    ).not.toBeChecked();
     expect(screen.getByLabelText("ZIP code")).toHaveValue("75201");
     expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
   });

@@ -188,7 +188,7 @@ export interface CostedPlan {
  * missing anchor price, no usable term) are left out. Never mutates `plans`.
  *
  * Plans of different terms are not comparable on this key, so the page ranks
- * one term at a time (the contract-length filter always has a value).
+ * one term at a time, by ticking a contract length in the filter.
  */
 export function rankByContractCost(
   plans: Plan[],

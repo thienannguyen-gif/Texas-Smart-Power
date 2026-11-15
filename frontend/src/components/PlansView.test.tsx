@@ -323,15 +323,15 @@ test("the sidebar has no PRODUCT TYPE section any more; the other sections are s
     "RENEWABLE ENERGY",
     "PROVIDER",
   ]);
-  // no product-type checkbox is left: time-of-use and 100% renewable. The four
-  // contract lengths are a pick-one (radio), next to the two sort options.
+  // no product-type checkbox is left: time-of-use, the four contract lengths,
+  // 100% renewable. The two sort options are radios.
   const checkboxes = within(sidebar)
     .getAllByRole("checkbox")
     .map((box) => box.closest("label")?.textContent);
-  expect(checkboxes).toHaveLength(2);
+  expect(checkboxes).toHaveLength(6);
   expect(checkboxes.join(" ")).toMatch(/only time-of-use plans/i);
   expect(checkboxes.join(" ")).toMatch(/100% renewable only/i);
-  expect(within(sidebar).getAllByRole("radio")).toHaveLength(2 + 4);
+  expect(within(sidebar).getAllByRole("radio")).toHaveLength(2);
 });
 
 test("plan cards have no hide-provider action; the sidebar has no Show All or hidden-provider chips, but provider search remains", async () => {
@@ -357,11 +357,14 @@ test("a contract length with no plans in the area is disabled and says so", asyn
   mockPlans(); // both sample plans are 12 months
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
-  const none = screen.getByRole("radio", { name: /^13\+ months/i });
+  const none = screen.getByRole("checkbox", { name: /^13\+ months/i });
   expect(none).toBeDisabled();
   expect(none.closest("label")).toHaveTextContent("No plans available");
-  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeEnabled();
-  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeEnabled();
+  // nothing is ticked when the page opens
+  expect(
+    screen.getByRole("checkbox", { name: /^12 months/i }),
+  ).not.toBeChecked();
 });
 
 test("1–6 months becomes selectable when the area has a short plan", async () => {
@@ -370,16 +373,15 @@ test("1–6 months becomes selectable when the area has a short plan", async () 
     plans: [mk({ id: 1, planName: "Short 3", termMonths: 3 }), ...file.plans],
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  await screen.findByText("Gexa 12");
-  // the page opens on 12 months, so the 3-month plan is not in the list yet
-  expect(screen.queryByText("Short 3")).not.toBeInTheDocument();
-  const box = screen.getByRole("radio", { name: /^1–6 months/i });
+  await screen.findByText("Short 3");
+  // no length is ticked, so every plan is in the list
+  expect(screen.getByText("Gexa 12")).toBeInTheDocument();
+  const box = screen.getByRole("checkbox", { name: /^1–6 months/i });
   expect(box).toBeEnabled();
   fireEvent.click(box);
   expect(screen.getByText("Short 3")).toBeInTheDocument();
   expect(screen.queryByText("Gexa 12")).not.toBeInTheDocument();
   expect(box).toBeChecked();
-  expect(screen.getByRole("radio", { name: /^12 months/i })).not.toBeChecked();
 });
 
 test("the header's search box submits a new ZIP; invalid ones are refused; usage and filters are kept", async () => {
@@ -438,7 +440,7 @@ test("every option shows its match count, reflecting the other active filters; e
   await screen.findByText("Page 1 of 3");
 
   const row = (name: RegExp) =>
-    screen.getByRole("radio", { name }).closest("label")!;
+    screen.getByRole("checkbox", { name }).closest("label")!;
   expect(row(/^12 months/i)).toHaveTextContent("12 months (14)");
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
 
@@ -449,10 +451,10 @@ test("every option shows its match count, reflecting the other active filters; e
   // zero-match options stay on screen, greyed
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
   expect(row(/13\+ months/i)).toHaveClass("text-ink-faint");
-  expect(screen.getByRole("radio", { name: /13\+ months/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /13\+ months/i })).toBeDisabled();
 
   // a contract length is counted against the provider, ignoring its own group
-  fireEvent.click(screen.getByRole("radio", { name: /^12 months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
   expect(row(/1–6 months/i)).toHaveTextContent("1–6 months (0)");
   expect(row(/^12 months/i)).toHaveTextContent("12 months (6)");
 });
@@ -629,14 +631,11 @@ test("the results line is just the plan count and the Updated stamp, and the cou
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
-  // the page opens on 12 months: A and B of the four
-  expect(
-    await screen.findByText("Showing 2 of 4 plans at 1,000 kWh"),
-  ).toBeInTheDocument();
+  expect(await screen.findByText("4 plans at 1,000 kWh")).toBeInTheDocument();
   // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
-  expect(
-    screen.getByText("Showing 2 of 4 plans at 1,000 kWh").textContent,
-  ).not.toMatch(/ · /);
+  expect(screen.getByText("4 plans at 1,000 kWh").textContent).not.toMatch(
+    / · /,
+  );
   expect(
     screen.queryByText(
       /(is|are) 100% renewable|(is|are) 12 months|shown separately/,
@@ -648,22 +647,17 @@ test("the results line is just the plan count and the Updated stamp, and the cou
     screen.getByRole("checkbox", { name: /100% renewable only/i }),
   );
   expect(
-    screen.getByText("Showing 1 of 4 plans at 1,000 kWh"), // A only
+    screen.getByText("Showing 2 of 4 plans at 1,000 kWh"), // A and C
   ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("radio", { name: /13[+] months/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /13[+] months/i }));
   expect(
     screen.getByText("Showing 1 of 4 plans at 1,000 kWh"), // C only
-  ).toBeInTheDocument();
-  expect(screen.getByText("C")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("radio", { name: /1–6 months/i }));
-  expect(
-    screen.getByText("Showing 0 of 4 plans at 1,000 kWh"), // D is only 5% renewable
   ).toBeInTheDocument();
 });
 
 // ---- Sort: Best match / Lowest bill
 
-// All 12 months (the page opens on 12 months). Lowest total cost at 1,000 kWh is
+// All 12 months, so the terms do not mix. Lowest total cost at 1,000 kWh is
 // C, B, A. Best match (score v3) is B, C, A: C has the lowest bill but a $700 fee
 // and 0% renewable, B is 100% renewable. By hand at 1,000 kWh, S_cost from
 // CE = E + sigma- (A 142.4, B 123.5, C 116.6 dollars): score x 12 = 8 S_cost +
@@ -914,8 +908,6 @@ test("phone: closing the drawer discards a sort change; Clear empties filters bu
   expect(
     screen.queryByRole("button", { name: "Remove Sample Co" }),
   ).not.toBeInTheDocument();
-  // Clear goes back to what the page opens on: 12 months
-  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
   expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: "Apply" }));
   expect(cardNames()[0]).toBe("B Credit");
@@ -1270,15 +1262,10 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
     ),
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  await screen.findByText("Term 12 #4");
+  await screen.findByText("Term 3 #1");
   const sidebar = screen.getByRole("complementary", { name: "Filters" });
   const row = (name: RegExp) =>
-    within(sidebar).getByRole("radio", { name }).closest("label")!;
-  // the page opens on 12 months: three of the seven
-  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
-  expect(
-    within(sidebar).getByRole("radio", { name: /^12 months/ }),
-  ).toBeChecked();
+    within(sidebar).getByRole("checkbox", { name }).closest("label")!;
 
   expect(row(/^1–6 months/)).toHaveTextContent("1–6 months (2)");
   expect(row(/^7–11 months/)).toHaveTextContent("7–11 months (1)");
@@ -1291,24 +1278,34 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
   expect(within(sidebar).queryByText(/^12\+ months/)).not.toBeInTheDocument();
   expect(within(sidebar).queryByText(/7–12 months/)).not.toBeInTheDocument();
 
+  // nothing ticked: all seven, six to a page
+  expect(cardNamesOnPage()).toHaveLength(6);
+
+  // each length shows exactly its own plans when it is ticked, on its own
+  const tick = (name: RegExp) =>
+    fireEvent.click(within(sidebar).getByRole("checkbox", { name }));
+  tick(/^1–6 months/);
+  expect(cardNamesOnPage()).toEqual(["Term 3 #1", "Term 3 #2"]);
+  tick(/^1–6 months/); // untick
+  tick(/^7–11 months/);
+  expect(cardNamesOnPage()).toEqual(["Term 9 #3"]);
+  tick(/^7–11 months/);
+  tick(/^13\+ months/);
+  expect(cardNamesOnPage()).toEqual(["Term 24 #7"]);
+  tick(/^13\+ months/);
+  tick(/^12 months/);
+  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
   expect(
     screen.getByText("Showing 3 of 7 plans at 1,000 kWh"),
   ).toBeInTheDocument();
-
-  // each other length shows exactly its own plans when it is picked (one at a time)
-  const pick = (name: RegExp) =>
-    fireEvent.click(within(sidebar).getByRole("radio", { name }));
-  pick(/^1–6 months/);
-  expect(cardNamesOnPage()).toEqual(["Term 3 #1", "Term 3 #2"]);
-  expect(
-    within(sidebar).getByRole("radio", { name: /^12 months/ }),
-  ).not.toBeChecked();
-  pick(/^7–11 months/);
-  expect(cardNamesOnPage()).toEqual(["Term 9 #3"]);
-  pick(/^13\+ months/);
-  expect(cardNamesOnPage()).toEqual(["Term 24 #7"]);
-  pick(/^12 months/);
-  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
+  // lengths in one group are OR'd
+  tick(/^13\+ months/);
+  expect(cardNamesOnPage()).toEqual([
+    "Term 12 #4",
+    "Term 12 #5",
+    "Term 12 #6",
+    "Term 24 #7",
+  ]);
 });
 
 const cardNamesOnPage = () =>

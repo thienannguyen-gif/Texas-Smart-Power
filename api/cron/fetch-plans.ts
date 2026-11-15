@@ -20,6 +20,10 @@ import {
 import { normalizePlan } from "../../pipeline/normalize.js";
 import { applyPipeline } from "../../pipeline/pipeline.js";
 import { buildTduDataFile } from "../../pipeline/data-file.js";
+import {
+  summarizeIngest,
+  type IngestStats,
+} from "../../pipeline/ingest-stats.js";
 import samplePlans from "../../pipeline/__fixtures__/plans.sample.json" with { type: "json" };
 
 const POWER_TO_CHOOSE_URL = "https://www.powertochoose.org/en-us/service/v1/";
@@ -76,6 +80,8 @@ interface IngestResult {
   timeOfUseCount: number;
   url: string;
   removedOldFiles: number;
+  /** What the normalizer received and produced (measurement only). */
+  stats: IngestStats;
 }
 
 // Local-dev escape hatch. powertochoose.org is behind Cloudflare and 403s from
@@ -129,6 +135,11 @@ async function ingestTdu(
     .map(normalizePlan)
     .filter((plan): plan is Plan => plan !== null);
 
+  // Measurement only: nothing below depends on it. Shows in the function logs
+  // (Vercel > Logs, search "[ingest-stats]") and in the response of the job.
+  const stats = summarizeIngest(tdu, raw.length, normalized);
+  console.log("[ingest-stats]", JSON.stringify(stats));
+
   const result = applyPipeline(normalized);
 
   const file = buildTduDataFile(tdu, result);
@@ -157,6 +168,7 @@ async function ingestTdu(
     timeOfUseCount: result.timeOfUse.length,
     url,
     removedOldFiles: stale.length,
+    stats,
   };
 }
 

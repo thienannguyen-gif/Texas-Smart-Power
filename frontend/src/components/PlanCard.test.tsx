@@ -169,7 +169,7 @@ describe("PlanCard for an unranked time-of-use plan", () => {
 
 describe("PlanCard total cost and the short-contract warning", () => {
   const warn = (months: number) =>
-    `Ends in ${months} months. The price after is not capped.`;
+    `Ends in ${months} ${months === 1 ? "month" : "months"}. The price after is not capped.`;
 
   it("a 3-month plan shows its own total, per-month figure and the exact warning", () => {
     // C(1000) = 10 x 13.9c = $139.00; 3 x 139.00 = $417.00
@@ -177,6 +177,16 @@ describe("PlanCard total cost and the short-contract warning", () => {
     expect(screen.getByText("$417.00")).toBeInTheDocument();
     expect(screen.getByText("over 3 months · $139.00/mo")).toBeInTheDocument();
     expect(screen.getByText(`⚠ ${warn(3)}`)).toBeInTheDocument();
+  });
+
+  it("a 1-month plan says '1 month', not '1 months', in both lines", () => {
+    // C(1000) = $139.00; 1 x 139.00 = $139.00
+    render(<PlanCard plan={plan({ termMonths: 1 })} usageKwh={1000} />);
+    expect(screen.getByText("over 1 month · $139.00/mo")).toBeInTheDocument();
+    expect(
+      screen.getByText("⚠ Ends in 1 month. The price after is not capped."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/1 months/)).not.toBeInTheDocument();
   });
 
   it("11 months warns; 12, 13 and 24 months do not", () => {

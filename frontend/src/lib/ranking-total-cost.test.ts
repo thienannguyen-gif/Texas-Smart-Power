@@ -4,7 +4,7 @@ import { costAt, rankByContractCost } from "./contractCost";
 import { DEFAULT_FILTERS, filterPlans } from "./filters";
 import { rankPlans } from "./ranking";
 import { sortPlans } from "./sort";
-import { estimatedMonthlyBill } from "./usage";
+import { estimatedMonthlyBill, pricePerKwhAtUsage } from "./usage";
 
 const mk = (over: Partial<Plan> & { id: number }): Plan =>
   ({
@@ -32,10 +32,16 @@ afterEach(() => vi.useRealTimers());
 
 describe("costAt is the bill, linear in the total between the anchors", () => {
   // r500 = 15c, r1000 = 13c: the bill is $75 at 500 and $130 at 1,000
-  const p = mk({ id: 1, pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.13 } });
+  const p = mk({
+    id: 1,
+    pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.13 },
+  });
 
   it("is continuous at 500, 1000 and 2000 (both sides give one value)", () => {
-    const q = mk({ id: 2, pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.12 } });
+    const q = mk({
+      id: 2,
+      pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.12 },
+    });
     for (const u of [500, 1000, 2000]) {
       expect(costAt(q, u - 1e-9)!).toBeCloseTo(costAt(q, u)!, 6);
       expect(costAt(q, u + 1e-9)!).toBeCloseTo(costAt(q, u)!, 6);
@@ -47,7 +53,10 @@ describe("costAt is the bill, linear in the total between the anchors", () => {
 
   it("is never negative, even at 0 kWh", () => {
     expect(costAt(p, 0)!).toBeGreaterThanOrEqual(0);
-    const steep = mk({ id: 3, pricePerKwh: { at500: 0.3, at1000: 0.1, at2000: 0.1 } });
+    const steep = mk({
+      id: 3,
+      pricePerKwh: { at500: 0.3, at1000: 0.1, at2000: 0.1 },
+    });
     expect(costAt(steep, 0)!).toBeGreaterThanOrEqual(0);
   });
 
@@ -59,6 +68,47 @@ describe("costAt is the bill, linear in the total between the anchors", () => {
     // unit price (14c) and multiplying gives $105.00
     expect(costAt(p, 750)).toBeCloseTo(102.5, 9);
     expect(estimatedMonthlyBill(p, 750)).toBeCloseTo(105, 9);
+  });
+});
+
+// A plan whose two slopes differ, so a mix-up of m1 and m2 (or of the two
+// branches) cannot pass. r500 = 15c, r1000 = 13c, r2000 = 12.5c, by hand:
+//   C500 = 5 x 15 = $75.00     C1000 = 10 x 13 = $130.00    C2000 = 20 x 12.5 = $250.00
+//   m1 = (130 - 75) / 500 = 0.11 $/kWh     m2 = (250 - 130) / 1000 = 0.12 $/kWh
+describe("costAt with m1 != m2", () => {
+  const p = mk({
+    id: 50,
+    pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.125 },
+  });
+
+  it.each([
+    // below 500: max(0, C500 - m1 x (500 - u))
+    [100, 75 - 0.11 * 400], // 75 - 44 = $31.00
+    [300, 75 - 0.11 * 200], // 75 - 22 = $53.00
+    // 500 to 1000: C500 + m1 x (u - 500)
+    [500, 75],
+    [850, 75 + 0.11 * 350], // 75 + 38.5 = $113.50
+    [1000, 130],
+    // 1000 to 2000: C1000 + m2 x (u - 1000)
+    [1500, 130 + 0.12 * 500], // 130 + 60 = $190.00
+    [2000, 250],
+    // above 2000: C2000 + m2 x (u - 2000)
+    [3000, 250 + 0.12 * 1000], // $370.00
+    [4000, 250 + 0.12 * 2000], // $490.00
+  ])("is the hand-worked bill at %i kWh", (usage, bill) => {
+    expect(costAt(p, usage)).toBeCloseTo(bill, 9);
+  });
+
+  it("uses m1 below 1000 and m2 above it: the two slopes are not interchangeable", () => {
+    // if m2 (0.12) were used below 1000, 850 kWh would be 75 + 0.12 x 350 = $117
+    expect(costAt(p, 850)).not.toBeCloseTo(117, 2);
+    // if m1 (0.11) were used above 1000, 1500 kWh would be 130 + 0.11 x 500 = $185
+    expect(costAt(p, 1500)).not.toBeCloseTo(185, 2);
+  });
+
+  it("the rate shown is that bill over the usage", () => {
+    expect(pricePerKwhAtUsage(p, 850)).toBeCloseTo(113.5 / 850, 9);
+    expect(pricePerKwhAtUsage(p, 3000)).toBeCloseTo(370 / 3000, 9);
   });
 });
 
@@ -78,8 +128,16 @@ describe("rankByContractCost", () => {
   });
 
   it("two bills less than half a cent apart tie on the cent, then the lower cancellation fee wins", () => {
-    const a = mk({ id: 20, pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 }, pricingDetails: "Cancellation fee: $300." });
-    const b = mk({ id: 10, pricePerKwh: { at500: 0.12, at1000: 0.120000004, at2000: 0.12 }, pricingDetails: "Cancellation fee: $50." });
+    const a = mk({
+      id: 20,
+      pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 },
+      pricingDetails: "Cancellation fee: $300.",
+    });
+    const b = mk({
+      id: 10,
+      pricePerKwh: { at500: 0.12, at1000: 0.120000004, at2000: 0.12 },
+      pricingDetails: "Cancellation fee: $50.",
+    });
     expect(costAt(a, 1000)).not.toBe(costAt(b, 1000));
     expect(ids(rankByContractCost([a, b], 1000))).toEqual([10, 20]);
     expect(ids(rankByContractCost([b, a], 1000))).toEqual([10, 20]);
@@ -95,7 +153,11 @@ describe("rankByContractCost", () => {
     const run = (iso: string) => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(iso));
-      const out = rankByContractCost(plans, 1150).map((x) => [x.plan.id, x.perMonth, x.total]);
+      const out = rankByContractCost(plans, 1150).map((x) => [
+        x.plan.id,
+        x.perMonth,
+        x.total,
+      ]);
       vi.useRealTimers();
       return out;
     };
@@ -104,8 +166,13 @@ describe("rankByContractCost", () => {
 
   it("leaves time-of-use plans and plans with a missing anchor out", () => {
     const tou = mk({ id: 30, isTimeOfUse: true });
-    const hole = mk({ id: 31, pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 } });
-    expect(ids(rankByContractCost([tou, hole, ...plans], 1000))).toEqual([2, 3, 1]);
+    const hole = mk({
+      id: 31,
+      pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 },
+    });
+    expect(ids(rankByContractCost([tou, hole, ...plans], 1000))).toEqual([
+      2, 3, 1,
+    ]);
   });
 
   it("rankPlans (the nightly order) is this ranking at the default usage", () => {
@@ -113,8 +180,13 @@ describe("rankByContractCost", () => {
   });
 
   it("sortPlans('lowestCost') is the same order, with an uncostable plan last", () => {
-    const hole = mk({ id: 31, pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 } });
-    expect(sortPlans([hole, ...plans], "lowestCost", 1000).map((p) => p.id)).toEqual([2, 3, 1, 31]);
+    const hole = mk({
+      id: 31,
+      pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 },
+    });
+    expect(
+      sortPlans([hole, ...plans], "lowestCost", 1000).map((p) => p.id),
+    ).toEqual([2, 3, 1, 31]);
   });
 });
 
@@ -123,6 +195,8 @@ describe("the contract-length filter", () => {
     expect(DEFAULT_FILTERS.contractBuckets).toEqual(["m12"]);
     const three = mk({ id: 1, termMonths: 3 });
     const twelve = mk({ id: 2, termMonths: 12 });
-    expect(filterPlans([three, twelve], DEFAULT_FILTERS).map((p) => p.id)).toEqual([2]);
+    expect(
+      filterPlans([three, twelve], DEFAULT_FILTERS).map((p) => p.id),
+    ).toEqual([2]);
   });
 });

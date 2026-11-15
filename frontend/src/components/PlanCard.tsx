@@ -132,7 +132,8 @@ export function PlanCard({
       </dl>
       {endsSoon && (
         <p className="mt-3 rounded-xl bg-surface-alt px-3 py-2 text-sm font-semibold text-ink">
-          ⚠ Ends in {months} months. The price after is not capped.
+          ⚠ Ends in {months} {months === 1 ? "month" : "months"}. The price
+          after is not capped.
         </p>
       )}
     </article>

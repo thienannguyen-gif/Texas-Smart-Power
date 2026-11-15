@@ -1,9 +1,9 @@
 import type { Plan } from "../types/plan";
 import {
   DEFAULT_USAGE_KWH,
-  estimatedMonthlyBill,
   pricePerKwhAtUsage,
 } from "../lib/usage";
+import { costAt } from "../lib/contractCost";
 import { formatAmount, formatKwh, formatRate } from "../lib/money";
 import { renewablePct } from "../lib/filters";
 import { PriceCurveBadge } from "./PriceCurveBadge";
@@ -70,7 +70,7 @@ export function PlanCard({
             {unranked ? "at reference rate" : "per month"}
           </p>
           <dd className="mt-1 text-2xl font-extrabold">
-            {formatAmount(estimatedMonthlyBill(plan, usageKwh))}
+            {formatAmount(costAt(plan, usageKwh))}
           </dd>
         </div>
         <div className="rounded-xl bg-surface-alt px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
@@ -96,7 +96,7 @@ export function PlanCard({
               renewable === 100 ? "text-sage" : "text-ink-faint"
             }`}
           >
-            {renewable !== null ? `${renewable}%` : "—"}
+            {renewable !== null ? `${renewable}%` : "Not listed"}
           </dd>
         </div>
       </dl>

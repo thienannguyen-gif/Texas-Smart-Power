@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
-import { EMPTY_FILTERS, splitForView, type PlanFilters } from "../lib/filters";
+import { DEFAULT_FILTERS, splitForView, type PlanFilters } from "../lib/filters";
 import type { SortMode } from "../lib/sort";
 import { FilterPanel } from "./FilterPanel";
 
@@ -94,7 +94,7 @@ export function FilterDrawer({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setDraft(EMPTY_FILTERS)}
+              onClick={() => setDraft(DEFAULT_FILTERS)}
               className="min-h-11 flex-1 rounded-full border-2 border-line px-4 py-2 text-sm font-bold text-ink"
             >
               Clear

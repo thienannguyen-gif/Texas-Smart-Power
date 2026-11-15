@@ -218,7 +218,9 @@ describe("termListOf", () => {
   });
 });
 
-describe("rankByContractCost", () => {
+describe("rankByContractCost: one list, by the monthly bill C(u0), no season", () => {
+  // bills at 1,000 kWh are rate x 1,000: id 4 $90, id 2 $100, id 6 $105,
+  // id 3 $110, id 1 $120, id 5 $130
   const plans = [
     flat(0.12, { id: 1, termMonths: 12 }),
     flat(0.1, { id: 2, termMonths: 36 }),
@@ -227,46 +229,59 @@ describe("rankByContractCost", () => {
     flat(0.13, { id: 5, termMonths: 6 }),
     flat(0.105, { id: 6, termMonths: 12 }),
   ];
+  const ids = (list: { plan: Plan }[]) => list.map((c) => c.plan.id);
 
-  it("keeps the two lists apart and sorts each by per-month cost, cheapest first", () => {
-    const long = rankByContractCost(plans, "long", 1000, 0).map(
-      (c) => c.plan.id,
-    );
-    const short = rankByContractCost(plans, "short", 1000, 0).map(
-      (c) => c.plan.id,
-    );
-    // 12, 24 and 36 months are compared on one footing: only the rate differs
-    expect(long).toEqual([2, 6, 3, 1]);
-    expect(short).toEqual([4, 5]);
+  // Old test: "keeps the two lists apart and sorts each by per-month cost" (the
+  // short and long list, split at 12 months). Now there is one list; the page
+  // separates the terms with its contract-length filter instead.
+  it("returns one list, cheapest monthly bill first, whatever the term", () => {
+    expect(ids(rankByContractCost(plans, 1000))).toEqual([4, 2, 6, 3, 1, 5]);
   });
 
-  it("keeps the arrival order of plans that cost the same, whatever the term", () => {
-    // 12, 24 and 36 months of one rate differ only by floating point noise
-    const same = [36, 12, 24].map((termMonths, i) =>
-      flat(0.13, { id: i + 1, termMonths }),
-    );
-    const ids = rankByContractCost(same, "long", 1000, 0).map((c) => c.plan.id);
-    expect(ids).toEqual([1, 2, 3]);
+  // Old test: "keeps the arrival order of plans that cost the same, whatever the
+  // term". Arrival order no longer decides: the lower fee does, then the plan id.
+  it("plans with the same bill go to the lower cancellation fee, then the lower id, not arrival order", () => {
+    const same = [
+      flat(0.13, {
+        id: 3,
+        termMonths: 36,
+        pricingDetails: "Cancellation fee $50",
+      }),
+      flat(0.13, {
+        id: 2,
+        termMonths: 12,
+        pricingDetails: "Cancellation fee $50",
+      }),
+      flat(0.13, {
+        id: 1,
+        termMonths: 24,
+        pricingDetails: "Cancellation fee $300",
+      }),
+    ];
+    expect(ids(rankByContractCost(same, 1000))).toEqual([2, 3, 1]);
+    expect(ids(rankByContractCost([...same].reverse(), 1000))).toEqual([
+      2, 3, 1,
+    ]);
   });
 
-  it("sorts by perMonth, not total", () => {
-    const [first] = rankByContractCost(plans, "long", 1000, 0);
-    expect(first.plan.id).toBe(2); // 36 months: the biggest total, the lowest per month
-    const totals = rankByContractCost(plans, "long", 1000, 0).map(
-      (c) => c.cost.total,
-    );
-    expect(totals[0]).toBeGreaterThan(totals[3]);
+  // Old test: "sorts by perMonth, not total". Still true, now with C(u0): the
+  // 36-month plan has the biggest total and is second by the monthly bill.
+  it("sorts by the monthly bill C(u0); the total is L x C(u0) and does not decide", () => {
+    const r = rankByContractCost(plans, 1000);
+    expect(ids(r).slice(0, 2)).toEqual([4, 2]);
+    const byId = new Map(r.map((c) => [c.plan.id, c]));
+    expect(byId.get(2)!.perMonth).toBeCloseTo(100, 9); // 10 x 10c
+    expect(byId.get(2)!.total).toBeCloseTo(3600, 9); // 36 x $100
+    expect(byId.get(4)!.total).toBeCloseTo(270, 9); // 3 x $90
+    expect(byId.get(2)!.total).toBeGreaterThan(byId.get(1)!.total);
   });
 
+  // Old test: "leaves out a plan that cannot be costed and does not mutate its input".
   it("leaves out a plan that cannot be costed and does not mutate its input", () => {
     const broken = plan({ id: 9, termMonths: null });
     const input = [broken, ...plans];
     const copy = [...input];
-    const ids = [
-      ...rankByContractCost(input, "long", 1000, 0),
-      ...rankByContractCost(input, "short", 1000, 0),
-    ].map((c) => c.plan.id);
-    expect(ids).not.toContain(9);
+    expect(ids(rankByContractCost(input, 1000))).not.toContain(9);
     expect(input).toEqual(copy);
   });
 });

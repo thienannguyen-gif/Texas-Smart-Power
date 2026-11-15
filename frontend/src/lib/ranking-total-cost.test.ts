@@ -1,0 +1,128 @@
+import { describe, expect, it, vi, afterEach } from "vitest";
+import type { Plan } from "../types/plan";
+import { costAt, rankByContractCost } from "./contractCost";
+import { DEFAULT_FILTERS, filterPlans } from "./filters";
+import { rankPlans } from "./ranking";
+import { sortPlans } from "./sort";
+import { estimatedMonthlyBill } from "./usage";
+
+const mk = (over: Partial<Plan> & { id: number }): Plan =>
+  ({
+    planName: `Plan ${over.id}`,
+    companyName: "Co",
+    termMonths: 12,
+    rateType: "Fixed",
+    pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 },
+    pricingDetails: "Cancellation fee: $100.",
+    isTimeOfUse: false,
+    renewableDescription: "10% renewable",
+    prepaid: false,
+    companyLogo: null,
+    website: null,
+    goToPlanUrl: null,
+    factSheetUrl: null,
+    termsUrl: null,
+    enrollPhone: null,
+    ...over,
+  }) as Plan;
+
+const ids = (r: { plan: Plan }[]) => r.map((x) => x.plan.id);
+
+afterEach(() => vi.useRealTimers());
+
+describe("costAt is the bill, linear in the total between the anchors", () => {
+  // r500 = 15c, r1000 = 13c: the bill is $75 at 500 and $130 at 1,000
+  const p = mk({ id: 1, pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.13 } });
+
+  it("is continuous at 500, 1000 and 2000 (both sides give one value)", () => {
+    const q = mk({ id: 2, pricePerKwh: { at500: 0.15, at1000: 0.13, at2000: 0.12 } });
+    for (const u of [500, 1000, 2000]) {
+      expect(costAt(q, u - 1e-9)!).toBeCloseTo(costAt(q, u)!, 6);
+      expect(costAt(q, u + 1e-9)!).toBeCloseTo(costAt(q, u)!, 6);
+    }
+    expect(costAt(q, 500)).toBeCloseTo(75, 9);
+    expect(costAt(q, 1000)).toBeCloseTo(130, 9);
+    expect(costAt(q, 2000)).toBeCloseTo(240, 9);
+  });
+
+  it("is never negative, even at 0 kWh", () => {
+    expect(costAt(p, 0)!).toBeGreaterThanOrEqual(0);
+    const steep = mk({ id: 3, pricePerKwh: { at500: 0.3, at1000: 0.1, at2000: 0.1 } });
+    expect(costAt(steep, 0)!).toBeGreaterThanOrEqual(0);
+  });
+
+  it("agrees with the old estimate exactly at 500, 1000 and 2000 and differs between: costAt is the right one", () => {
+    for (const u of [500, 1000, 2000]) {
+      expect(costAt(p, u)!).toBeCloseTo(estimatedMonthlyBill(p, u)!, 9);
+    }
+    // 750 kWh: $75 + (130 - 75) / 500 * 250 = $102.50 is exact; interpolating the
+    // unit price (14c) and multiplying gives $105.00
+    expect(costAt(p, 750)).toBeCloseTo(102.5, 9);
+    expect(estimatedMonthlyBill(p, 750)).toBeCloseTo(105, 9);
+  });
+});
+
+describe("rankByContractCost", () => {
+  const plans = [
+    mk({ id: 1, pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 } }),
+    mk({ id: 2, pricePerKwh: { at500: 0.1, at1000: 0.1, at2000: 0.1 } }),
+    mk({ id: 3, pricePerKwh: { at500: 0.11, at1000: 0.11, at2000: 0.11 } }),
+  ];
+
+  it("with one L, the order by C(u0) is the order by L x C(u0)", () => {
+    const r = rankByContractCost(plans, 1000);
+    expect(ids(r)).toEqual([2, 3, 1]);
+    const byTotal = [...r].sort((a, b) => a.total - b.total);
+    expect(ids(byTotal)).toEqual(ids(r));
+    expect(r[0].total).toBeCloseTo(12 * r[0].perMonth, 9);
+  });
+
+  it("two bills less than half a cent apart tie on the cent, then the lower cancellation fee wins", () => {
+    const a = mk({ id: 20, pricePerKwh: { at500: 0.12, at1000: 0.12, at2000: 0.12 }, pricingDetails: "Cancellation fee: $300." });
+    const b = mk({ id: 10, pricePerKwh: { at500: 0.12, at1000: 0.120000004, at2000: 0.12 }, pricingDetails: "Cancellation fee: $50." });
+    expect(costAt(a, 1000)).not.toBe(costAt(b, 1000));
+    expect(ids(rankByContractCost([a, b], 1000))).toEqual([10, 20]);
+    expect(ids(rankByContractCost([b, a], 1000))).toEqual([10, 20]);
+  });
+
+  it("then the lower plan id when the fee is the same too", () => {
+    const a = mk({ id: 9 });
+    const b = mk({ id: 4 });
+    expect(ids(rankByContractCost([a, b], 1000))).toEqual([4, 9]);
+  });
+
+  it("does not depend on the time of the year", () => {
+    const run = (iso: string) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(iso));
+      const out = rankByContractCost(plans, 1150).map((x) => [x.plan.id, x.perMonth, x.total]);
+      vi.useRealTimers();
+      return out;
+    };
+    expect(run("2026-01-15T12:00:00Z")).toEqual(run("2026-08-15T12:00:00Z"));
+  });
+
+  it("leaves time-of-use plans and plans with a missing anchor out", () => {
+    const tou = mk({ id: 30, isTimeOfUse: true });
+    const hole = mk({ id: 31, pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 } });
+    expect(ids(rankByContractCost([tou, hole, ...plans], 1000))).toEqual([2, 3, 1]);
+  });
+
+  it("rankPlans (the nightly order) is this ranking at the default usage", () => {
+    expect(rankPlans(plans).map((p) => p.id)).toEqual([2, 3, 1]);
+  });
+
+  it("sortPlans('lowestCost') is the same order, with an uncostable plan last", () => {
+    const hole = mk({ id: 31, pricePerKwh: { at500: 0.1, at1000: null, at2000: 0.1 } });
+    expect(sortPlans([hole, ...plans], "lowestCost", 1000).map((p) => p.id)).toEqual([2, 3, 1, 31]);
+  });
+});
+
+describe("the contract-length filter", () => {
+  it("opens on 12 months only", () => {
+    expect(DEFAULT_FILTERS.contractBuckets).toEqual(["m12"]);
+    const three = mk({ id: 1, termMonths: 3 });
+    const twelve = mk({ id: 2, termMonths: 12 });
+    expect(filterPlans([three, twelve], DEFAULT_FILTERS).map((p) => p.id)).toEqual([2]);
+  });
+});

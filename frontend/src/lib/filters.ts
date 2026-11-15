@@ -27,6 +27,17 @@ export const EMPTY_FILTERS: PlanFilters = {
   onlyTimeOfUse: false,
 };
 
+/**
+ * What the page opens with: the contract-length filter always has one value, 12
+ * months. A 3-month and a 12-month plan do not buy the same thing, so their
+ * costs are not set side by side. EMPTY_FILTERS (no constraint) stays for the
+ * option counts and the tests.
+ */
+export const DEFAULT_FILTERS: PlanFilters = {
+  ...EMPTY_FILTERS,
+  contractBuckets: ["m12"],
+};
+
 /** Add `name` to the selected providers (no duplicates). */
 export function selectProvider(
   filters: PlanFilters,
@@ -150,10 +161,22 @@ export function countRenewable100(plans: Plan[], filters: PlanFilters): number {
   return filterPlans(plans, { ...filters, renewable100Only: true }).length;
 }
 
-/** How many separate filter choices are active (shown on the phone header). */
+/** The contract length the page opens on is not a choice the visitor made. */
+function contractLengthChosen(filters: PlanFilters): number {
+  const { contractBuckets: buckets } = filters;
+  return buckets.length === 1 &&
+    buckets[0] === DEFAULT_FILTERS.contractBuckets[0]
+    ? 0
+    : buckets.length;
+}
+
+/**
+ * How many separate filter choices are active (shown on the phone header). The
+ * default 12 months is not counted: the page opens on it.
+ */
 export function activeFilterCount(filters: PlanFilters): number {
   return (
-    filters.contractBuckets.length +
+    contractLengthChosen(filters) +
     filters.providers.length +
     (filters.renewable100Only ? 1 : 0) +
     (filters.onlyTimeOfUse ? 1 : 0)
@@ -162,7 +185,7 @@ export function activeFilterCount(filters: PlanFilters): number {
 
 export function isFiltering(filters: PlanFilters): boolean {
   return (
-    filters.contractBuckets.length > 0 ||
+    contractLengthChosen(filters) > 0 ||
     filters.providers.length > 0 ||
     filters.renewable100Only ||
     filters.onlyTimeOfUse

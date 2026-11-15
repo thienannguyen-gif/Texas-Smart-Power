@@ -1,7 +1,7 @@
 import type { Plan } from "../types/plan.js";
 import { parseExitFee } from "./cancellationFee.js";
 import { renewablePct } from "./filters.js";
-import { scorePlansV2 } from "./scoreV2.js";
+import { rankByContractCost } from "./contractCost.js";
 import { DEFAULT_USAGE_KWH } from "./usage.js";
 
 const EPSILON = 1e-9;
@@ -213,13 +213,12 @@ export function scorePlans(
 }
 
 /**
- * The order stored for an area (the nightly job writes it): score v3 (scoreV2.ts,
- * S_cost on CE = E + k*sigma-) at the default usage, over every non-TOU plan.
- * The page re-scores at the visitor's own usage and filters; this order is only
- * the tie-break there. `scorePlans` above is the old formula, kept for the
- * analysis scripts.
+ * The order stored for an area (the nightly job writes it): what the page
+ * orders by default, `rankByContractCost` (contractCost.ts) at the default
+ * usage. The page re-ranks at the visitor's own usage and filters; this order
+ * only reaches it as the arrival order. `scorePlans` above is the old formula,
+ * kept for the analysis scripts.
  */
 export function rankPlans(plans: Plan[]): Plan[] {
-  // scorePlansV2 itself leaves time-of-use and unscorable plans out.
-  return scorePlansV2(plans, plans, DEFAULT_USAGE_KWH).map(({ plan }) => plan);
+  return rankByContractCost(plans, DEFAULT_USAGE_KWH).map(({ plan }) => plan);
 }

@@ -1,4 +1,5 @@
 import type { Plan } from "../types/plan.js";
+import { parseExitFee } from "./cancellationFee.js";
 
 // What a plan costs in dollars over the length of its own contract.
 //
@@ -169,39 +170,51 @@ export function termListOf(plan: Plan): TermList | null {
   return L < 12 ? "short" : "long";
 }
 
+/** A plan with what it costs at the usage it was ranked at. */
 export interface CostedPlan {
   plan: Plan;
-  cost: ContractCost;
+  /** C(u0): the monthly bill in dollars, from `costAt`. */
+  perMonth: number;
+  /** L x C(u0): the whole contract at that bill (a plan with no change in price). */
+  total: number;
 }
 
 /**
- * The plans of one list, cheapest first by `rankedPerMonth` (not by total: in
- * the long list every plan is priced on the same first twelve months, so 12, 14,
- * 18, 24 and 36-month plans are comparable and the term says only how long the
- * rate is locked; a short plan is judged by what it costs each month of its own
- * term). Plans are compared to the cent, the precision they are shown at, so two
- * plans with the same per-month figure keep the order they arrived in (floating
- * point noise of 1e-14 would otherwise decide it). A plan that cannot be costed
- * is left out. Never mutates `plans`.
+ * Plans cheapest first by what the contract costs at `usage` kWh: L x C(u0),
+ * where C is `costAt`. L is the same for every plan of one term, so the key is
+ * C(u0) alone, rounded to the cent (two plans a float-noise apart are a tie).
+ * Ties go to the lower cancellation fee, then the lower plan id. No seasonal
+ * factor and no risk term. Time-of-use plans and plans that cannot be costed (a
+ * missing anchor price, no usable term) are left out. Never mutates `plans`.
  *
- * Not yet wired to the page; see Dec 5 item 1. (The page ranks with
- * `scorePlansV2` for now.) Used today by contractCost.test.ts and the scripts in
- * scripts/ (analyze-curvature, dollar-ranking-comparison, score-v2-comparison).
+ * Plans of different terms are not comparable on this key, so the page ranks
+ * one term at a time (the contract-length filter always has a value).
  */
 export function rankByContractCost(
   plans: Plan[],
-  list: TermList,
   usage: number,
-  startMonth: number = currentStartMonth(),
 ): CostedPlan[] {
-  const costed: (CostedPlan & { index: number })[] = [];
-  plans.forEach((plan, index) => {
-    if (termListOf(plan) !== list) return;
-    const cost = contractCost(plan, usage, startMonth);
-    if (cost !== null) costed.push({ plan, cost, index });
-  });
-  const cents = (c: ContractCost) => Math.round(c.rankedPerMonth * 100);
+  const costed: (CostedPlan & { cents: number; fee: number })[] = [];
+  for (const plan of plans) {
+    if (plan.isTimeOfUse) continue;
+    const L = plan.termMonths;
+    if (L === null || !Number.isInteger(L) || L < 1) continue;
+    const perMonth = costAt(plan, usage);
+    if (perMonth === null || !Number.isFinite(perMonth)) continue;
+    costed.push({
+      plan,
+      perMonth,
+      total: L * perMonth,
+      cents: Math.round(perMonth * 100),
+      fee: parseExitFee(plan.pricingDetails, L) ?? Number.POSITIVE_INFINITY,
+    });
+  }
   return costed
-    .sort((a, b) => cents(a.cost) - cents(b.cost) || a.index - b.index)
-    .map(({ plan, cost }) => ({ plan, cost }));
+    .sort(
+      (a, b) =>
+        a.cents - b.cents ||
+        (a.fee === b.fee ? 0 : a.fee < b.fee ? -1 : 1) ||
+        a.plan.id - b.plan.id,
+    )
+    .map(({ plan, perMonth, total }) => ({ plan, perMonth, total }));
 }

@@ -5,12 +5,12 @@ import { useIsDesktop } from "../hooks/useIsDesktop";
 import { searchWithUsage, usageFromSearch } from "../lib/usage";
 import {
   activeFilterCount,
-  EMPTY_FILTERS,
+  DEFAULT_FILTERS,
   splitForView,
   type PlanFilters,
 } from "../lib/filters";
 import { computeAwards } from "../lib/awards";
-import { sortPlans, type SortMode } from "../lib/sort";
+import { sortPlans, sortTimeOfUse, type SortMode } from "../lib/sort";
 import { scorablePlans, scorePlansV2 } from "../lib/scoreV2";
 import { PlanList } from "./PlanList";
 import { PlansHeader } from "./PlansHeader";
@@ -60,7 +60,7 @@ export function PlansView({
     ...new Set([...allPlans, ...timeOfUsePlans].map((p) => p.companyName)),
   ].sort();
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   // The usage the plans are priced at: the `usage` in the address when there is
   // one, else the Small home default. It survives a change of ZIP (this
   // component stays mounted) and is written back to the address as it changes.
@@ -77,7 +77,7 @@ export function PlansView({
       `${window.location.pathname}${search}${window.location.hash}`,
     );
   }, [usageKwh]);
-  const [sortMode, setSortMode] = useState<SortMode>("best");
+  const [sortMode, setSortMode] = useState<SortMode>("lowestCost");
   // Current page (1-based) of the filtered, rank-ordered list. A filter
   // change goes back to page 1; a usage change leaves it alone.
   const [page, setPage] = useState(1);
@@ -124,7 +124,7 @@ export function PlansView({
   // Our picks come from the ranked plans being shown, in score order (view.ranked
   // keeps the order from ingestion), priced at the current usage.
   const picks = computeAwards(scored, usageKwh);
-  const visibleTimeOfUse = sortPlans(view.timeOfUse, "lowestBill", usageKwh);
+  const visibleTimeOfUse = sortTimeOfUse(view.timeOfUse, usageKwh);
   const activeCount = activeFilterCount(filters);
 
   function changeSort(next: SortMode) {

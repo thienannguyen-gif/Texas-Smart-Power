@@ -1,3 +1,4 @@
+// NOTE: the dollar ranking below is the SEASONAL BASELINE (scripts/_seasonal-baseline.mjs), not the app's current ranking (rankByContractCost in contractCost.ts: C(u0), no season, no start month).
 // One-off check: are the plans that carry the V-trap / Hump badge materially curved?
 //
 //   node scripts/analyze-curvature.mjs [tdu] [--usage 1000] [--month 10]
@@ -15,11 +16,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { list } from "@vercel/blob";
 import { tsImport } from "tsx/esm/api";
+import { seasonalRanker } from "./_seasonal-baseline.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const parentURL = pathToFileURL(root + "/").href;
 const load = (path) => tsImport(path, { parentURL });
-const { rankByContractCost, currentStartMonth, MONTH_NAMES } = await load(
+const { contractCost, termListOf, currentStartMonth, MONTH_NAMES } = await load(
   "./frontend/src/lib/contractCost.ts",
 );
 const { priceCurveWarning } = await load("./frontend/src/lib/ranking.ts");
@@ -35,6 +37,11 @@ const tdu =
   "oncor";
 const usage =
   flag("--usage") !== null ? Number(flag("--usage")) : DEFAULT_USAGE_KWH;
+const rankSeasonal = seasonalRanker({
+  contractCost,
+  termListOf,
+  currentStartMonth,
+});
 const startMonth =
   flag("--month") !== null ? Number(flag("--month")) : currentStartMonth();
 
@@ -59,8 +66,8 @@ console.log("");
 
 // ---------- per plan ----------
 const ranked = {
-  long: rankByContractCost(plans, "long", usage, startMonth),
-  short: rankByContractCost(plans, "short", usage, startMonth),
+  long: rankSeasonal(plans, "long", usage, startMonth),
+  short: rankSeasonal(plans, "short", usage, startMonth),
 };
 const info = new Map();
 for (const which of ["long", "short"]) {

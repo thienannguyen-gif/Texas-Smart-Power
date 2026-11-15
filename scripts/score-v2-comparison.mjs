@@ -1,3 +1,4 @@
+// NOTE: the dollar ranking below is the SEASONAL BASELINE (scripts/_seasonal-baseline.mjs), not the app's current ranking (rankByContractCost in contractCost.ts: C(u0), no season, no start month).
 // NOTE: the old-formula numbers here come from scorePlans (ranking.ts, @deprecated): a HISTORICAL BASELINE, not the formula the app runs (scorePlansV2 in scoreV2.ts).
 // Builds analysis/score-v2-comparison.md: the score-v2 ranking (this branch) next
 // to the dollar ranking (feat/dollar-ranking) and the current live scoring, for
@@ -16,11 +17,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { list } from "@vercel/blob";
 import { tsImport } from "tsx/esm/api";
+import { seasonalRanker } from "./_seasonal-baseline.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const parentURL = pathToFileURL(root + "/").href;
 const load = (path) => tsImport(path, { parentURL });
-const { rankByContractCost, currentStartMonth, MONTH_NAMES } = await load(
+const { contractCost, termListOf, currentStartMonth, MONTH_NAMES } = await load(
   "./frontend/src/lib/contractCost.ts",
 );
 const { scorePlans, priceCurveWarning } = await load(
@@ -43,6 +45,11 @@ const tdu =
   "oncor";
 const usage =
   flag("--usage") !== null ? Number(flag("--usage")) : DEFAULT_USAGE_KWH;
+const rankSeasonal = seasonalRanker({
+  contractCost,
+  termListOf,
+  currentStartMonth,
+});
 const startMonth =
   flag("--month") !== null ? Number(flag("--month")) : currentStartMonth();
 
@@ -77,8 +84,8 @@ const liveBreakdown = new Map(
 );
 
 const dollar = {
-  long: rankByContractCost(plans, "long", usage, startMonth),
-  short: rankByContractCost(plans, "short", usage, startMonth),
+  long: rankSeasonal(plans, "long", usage, startMonth),
+  short: rankSeasonal(plans, "short", usage, startMonth),
 };
 const dollarPos = new Map(); // id -> { list, rank }
 for (const which of ["long", "short"]) {

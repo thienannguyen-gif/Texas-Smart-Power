@@ -3,6 +3,7 @@ import {
   activeFilterCount,
   countRenewable100,
   countTimeOfUse,
+  DEFAULT_FILTERS,
   EMPTY_FILTERS,
   filterPlans,
   isFiltering,
@@ -261,5 +262,34 @@ describe("time-of-use lists", () => {
     expect(activeFilterCount(on)).toBe(1);
     expect(isFiltering(on)).toBe(true);
     expect(activeFilterCount(EMPTY_FILTERS)).toBe(0);
+  });
+});
+
+describe("the default contract length (12 months)", () => {
+  it("is exactly one value, 12 months, and is not counted as a filter the visitor chose", () => {
+    expect(DEFAULT_FILTERS.contractBuckets).toEqual(["m12"]);
+    expect(activeFilterCount(DEFAULT_FILTERS)).toBe(0);
+    expect(isFiltering(DEFAULT_FILTERS)).toBe(false);
+  });
+
+  it("another length, or a length plus another filter, is counted", () => {
+    expect(
+      activeFilterCount({ ...DEFAULT_FILTERS, contractBuckets: ["m13plus"] }),
+    ).toBe(1);
+    expect(activeFilterCount({ ...DEFAULT_FILTERS, providers: ["Gexa"] })).toBe(
+      1,
+    );
+    expect(isFiltering({ ...DEFAULT_FILTERS, contractBuckets: ["m1_6"] })).toBe(
+      true,
+    );
+  });
+
+  it("only 12 months shows, and EMPTY_FILTERS still means no constraint", () => {
+    const three = make({ id: 1, termMonths: 3 });
+    const twelve = make({ id: 2, termMonths: 12 });
+    expect(
+      filterPlans([three, twelve], DEFAULT_FILTERS).map((p) => p.id),
+    ).toEqual([2]);
+    expect(filterPlans([three, twelve], EMPTY_FILTERS)).toHaveLength(2);
   });
 });

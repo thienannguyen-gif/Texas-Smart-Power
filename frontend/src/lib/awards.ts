@@ -1,6 +1,6 @@
 import type { Plan } from "../types/plan.js";
 import { priceCurveWarning } from "./ranking.js";
-import { estimatedMonthlyBill } from "./usage.js";
+import { costAt } from "./contractCost.js";
 
 export type AwardId = "best-overall" | "lowest-bill";
 
@@ -55,7 +55,7 @@ function lowestBill(plans: Plan[], usageKwh: number): Plan | undefined {
   let best: Plan | undefined;
   let bestBill = Infinity;
   for (const plan of plans) {
-    const bill = estimatedMonthlyBill(plan, usageKwh);
+    const bill = costAt(plan, usageKwh);
     if (bill === null || !Number.isFinite(bill)) continue;
     if (bill < bestBill) {
       best = plan;

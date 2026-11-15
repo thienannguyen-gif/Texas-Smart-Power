@@ -110,7 +110,10 @@ test("updates card and bill/average prices immediately when usage changes", asyn
     name: /interpolated plan/i,
   });
   expect(within(updatedDialog).getByText("at 850 kWh")).toBeInTheDocument();
-  expect(within(updatedDialog).getByText("$106")).toBeInTheDocument();
+  // by hand: C500 = 5 x 12.7 = $63.50, C1000 = 10 x 12.3 = $123.00,
+  // m1 = (123.00 - 63.50) / 500 = 0.119; C(850) = 63.50 + 0.119 x 350 = $105.15 -> "$105";
+  // rate = 105.15 / 850 = 12.37 cents -> "12.4¢/kWh"
+  expect(within(updatedDialog).getByText("$105")).toBeInTheDocument();
   expect(within(updatedDialog).getByText("12.4¢/kWh")).toBeInTheDocument();
 
   fireEvent.click(
@@ -118,13 +121,18 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   );
   enterUsage(box, "9999");
   expect(box).toHaveValue("5,000"); // clamped
-  expect(within(card).getByText("12.1¢/kWh")).toBeInTheDocument();
+  // by hand: C2000 = 20 x 12.1 = $242.00, m2 = (242.00 - 123.00) / 1000 = 0.119;
+  // C(5000) = 242.00 + 0.119 x 3000 = $599.00; rate = 599 / 5000 = 11.98 cents -> "12.0¢/kWh"
+  expect(within(card).getByText("12.0¢/kWh")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /more details/i }));
   const cappedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
   });
-  expect(within(cappedDialog).getByText("$605")).toBeInTheDocument();
-  expect(within(cappedDialog).getAllByText("12.1¢/kWh")).toHaveLength(2);
+  expect(within(cappedDialog).getByText("$599")).toBeInTheDocument();
+  // the average price (12.0) is no longer the 2,000 kWh tier (12.1): it is the exact
+  // bill over the usage, 599 / 5000, so each shows once
+  expect(within(cappedDialog).getAllByText("12.0¢/kWh")).toHaveLength(1);
+  expect(within(cappedDialog).getAllByText("12.1¢/kWh")).toHaveLength(1);
 });
 
 // Type into the provider box, then click the matching suggestion.

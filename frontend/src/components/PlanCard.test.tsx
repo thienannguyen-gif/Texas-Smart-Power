@@ -84,12 +84,17 @@ describe("PlanCard", () => {
     const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
     expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
     expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
-    expect(screen.getByText("$76")).toBeInTheDocument(); // 0.151 * 500 = 75.5
+    expect(screen.getByText("$76")).toBeInTheDocument(); // C500 = 5 x 15.1 = $75.50
 
     rerender(<PlanCard plan={plan()} usageKwh={1500} />);
     expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
-    expect(screen.getByText("14.2¢/kWh")).toBeInTheDocument();
-    expect(screen.getByText("$213")).toBeInTheDocument(); // 0.142 * 1500
+    // by hand, r500 = 15.1c, r1000 = 13.9c, r2000 = 14.5c:
+    //   C1000 = 10 x 13.9 = $139.00, C2000 = 20 x 14.5 = $290.00
+    //   m2 = (290.00 - 139.00) / 1000 = 0.151 $/kWh
+    //   C(1500) = 139.00 + 0.151 x (1500 - 1000) = $214.50  -> "$215"
+    //   rate = 214.50 / 1500 = 0.143 -> "14.3¢/kWh"
+    expect(screen.getByText("14.3¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("$215")).toBeInTheDocument();
   });
 
   it("has no hide-provider action", () => {

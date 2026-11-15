@@ -14,30 +14,59 @@ import {
   usageFromSearch,
 } from "./usage";
 import { formatAmount } from "./money";
+import { costAt } from "./contractCost";
 import type { Plan } from "../types/plan";
 
 const plan = {
   pricePerKwh: { at500: 0.127, at1000: 0.123, at2000: 0.121 },
 } as Plan;
 
+// The rate shown is the bill from costAt divided by the usage, so it always
+// agrees with the bill. Every expected number below is worked by hand from the
+// fixture's r500 = 12.7c, r1000 = 12.3c, r2000 = 12.1c:
+//   C500  = 5 x 12.7  = $63.50     C1000 = 10 x 12.3 = $123.00   C2000 = 20 x 12.1 = $242.00
+//   m1 = (123.00 - 63.50) / 500  = 0.119 $/kWh
+//   m2 = (242.00 - 123.00) / 1000 = 0.119 $/kWh
 describe("pricePerKwhAtUsage", () => {
   it.each([
-    [850, 0.1242],
-    [1500, 0.122],
-  ])("linearly interpolates %i kWh to %s dollars/kWh", (usage, rate) => {
-    expect(pricePerKwhAtUsage(plan, usage)).toBeCloseTo(rate, 10);
+    // 850 kWh (between 500 and 1000): C = 63.50 + 0.119 x (850 - 500) = 63.50 + 41.65 = $105.15; 105.15 / 850
+    [850, 105.15 / 850],
+    // 1500 kWh (between 1000 and 2000): C = 123.00 + 0.119 x (1500 - 1000) = $182.50; 182.50 / 1500
+    [1500, 182.5 / 1500],
+  ])("interpolates the bill, not the rate: %i kWh -> %s dollars/kWh", (usage, rate) => {
+    expect(pricePerKwhAtUsage(plan, usage)).toBeCloseTo(rate, 9);
   });
 
   it.each([
-    [500, 0.127],
-    [1000, 0.123],
-    [2000, 0.121],
-    [300, 0.127],
-    [100, 0.127],
-    [3000, 0.121],
-    [4000, 0.121],
-  ])("returns the expected rate at %i kWh", (usage, rate) => {
-    expect(pricePerKwhAtUsage(plan, usage)).toBe(rate);
+    [500, 0.127], // C500 / 500 = 63.50 / 500
+    [1000, 0.123], // 123.00 / 1000
+    [2000, 0.121], // 242.00 / 2000
+  ])("returns the published rate at the anchor %i kWh", (usage, rate) => {
+    expect(pricePerKwhAtUsage(plan, usage)).toBeCloseTo(rate, 12);
+  });
+
+  it.each([
+    // below 500 the first segment carries on, floored at 0:
+    // 300 kWh: C = max(0, 63.50 - 0.119 x (500 - 300)) = 63.50 - 23.80 = $39.70
+    [300, 39.7 / 300],
+    // 100 kWh: C = max(0, 63.50 - 0.119 x 400) = 63.50 - 47.60 = $15.90
+    [100, 15.9 / 100],
+    // above 2000 the last segment carries on:
+    // 3000 kWh: C = 242.00 + 0.119 x (3000 - 2000) = $361.00
+    [3000, 361 / 3000],
+    // 4000 kWh: C = 242.00 + 0.119 x 2000 = $480.00
+    [4000, 480 / 4000],
+  ])("extends the nearest segment outside 500-2000: %i kWh", (usage, rate) => {
+    expect(pricePerKwhAtUsage(plan, usage)).toBeCloseTo(rate, 9);
+  });
+
+  it("the bill never goes below $0: a steeply rising first segment floors at 0", () => {
+    // r500 = 2c, r1000 = 20c: C500 = $10, C1000 = $200, m1 = (200 - 10) / 500 = 0.38.
+    // At 100 kWh: 10 - 0.38 x (500 - 100) = 10 - 152 = -$142, floored to $0.
+    const rising = {
+      pricePerKwh: { at500: 0.02, at1000: 0.2, at2000: 0.2 },
+    } as Plan;
+    expect(pricePerKwhAtUsage(rising, 100)).toBe(0);
   });
 
   it("returns null when any anchor is missing", () => {
@@ -68,12 +97,17 @@ describe("estimatedMonthlyBill", () => {
     expect(formatAmount(estimatedMonthlyBill(p, 2000))).toBe("$224");
   });
 
-  it("prices 850 kWh at 12.22 cents and about $104 for 12.5/12.1/11.9", () => {
+  it("at 850 kWh the old unit-price estimate and the exact bill differ; costAt is the right one", () => {
+    // r500 = 12.5c, r1000 = 12.1c: C500 = $62.50, C1000 = $121.00,
+    // m1 = (121.00 - 62.50) / 500 = 0.117; C(850) = 62.50 + 0.117 x 350 = $103.45.
+    // The old way: rate = 12.5 + (12.1 - 12.5) x 350 / 500 = 12.22c, x 850 = $103.87.
     const p850 = {
       pricePerKwh: { at500: 0.125, at1000: 0.121, at2000: 0.119 },
     } as Plan;
-    expect(pricePerKwhAtUsage(p850, 850)).toBeCloseTo(0.1222, 10);
-    expect(formatAmount(estimatedMonthlyBill(p850, 850))).toBe("$104");
+    expect(costAt(p850, 850)).toBeCloseTo(103.45, 9);
+    expect(pricePerKwhAtUsage(p850, 850)).toBeCloseTo(103.45 / 850, 9);
+    expect(estimatedMonthlyBill(p850, 850)).toBeCloseTo(103.87, 9);
+    expect(formatAmount(costAt(p850, 850))).toBe("$103");
   });
 
   it("calculates a bill using the interpolated rate", () => {

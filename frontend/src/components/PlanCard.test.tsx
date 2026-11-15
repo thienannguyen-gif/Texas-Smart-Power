@@ -37,7 +37,7 @@ describe("PlanCard", () => {
     expect(screen.getByText("6%")).toBeInTheDocument();
   });
 
-  it("shows an em dash for missing term / price / bill / renewable", () => {
+  it("shows an em dash for missing term / price / bill, and 'Not listed' for a missing renewable %", () => {
     render(
       <PlanCard
         plan={plan({
@@ -47,7 +47,10 @@ describe("PlanCard", () => {
         })}
       />,
     );
-    expect(screen.getAllByText("—")).toHaveLength(4);
+    expect(screen.getAllByText("—")).toHaveLength(3);
+    // never a blank and never 0%
+    expect(screen.getByText("Not listed")).toBeInTheDocument();
+    expect(screen.queryByText("0%")).not.toBeInTheDocument();
   });
 
   it("uses the logo (with company alt) instead of the company text when present", () => {
@@ -226,7 +229,7 @@ describe("PlanCard renewable cell", () => {
     }
   });
 
-  it("is sage at 100% and muted below it, and a dash when unknown", () => {
+  it("is sage at 100% and muted below it, and 'Not listed' when unknown", () => {
     const { rerender } = render(
       <PlanCard plan={plan({ renewableDescription: "100% Renewable" })} />,
     );
@@ -237,7 +240,7 @@ describe("PlanCard renewable cell", () => {
     expect(screen.getByText("15%")).toHaveClass("text-ink-faint");
     expect(screen.getByText("15%")).not.toHaveClass("text-sage");
     rerender(<PlanCard plan={plan({ renewableDescription: null })} />);
-    expect(screen.getByText("—", { selector: "dd" })).toHaveClass(
+    expect(screen.getByText("Not listed", { selector: "dd" })).toHaveClass(
       "text-ink-faint",
     );
   });

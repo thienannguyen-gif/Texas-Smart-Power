@@ -2,7 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import type { Plan } from "../types/plan";
 import { costAt, rankByContractCost } from "./contractCost";
 import { DEFAULT_FILTERS, filterPlans } from "./filters";
-import { rankPlans } from "./ranking";
+import { rankPlans, scorePlans } from "./ranking";
 import { sortPlans } from "./sort";
 import { estimatedMonthlyBill, pricePerKwhAtUsage } from "./usage";
 
@@ -175,8 +175,38 @@ describe("rankByContractCost", () => {
     ]);
   });
 
-  it("rankPlans (the nightly order) is this ranking at the default usage", () => {
-    expect(rankPlans(plans).map((p) => p.id)).toEqual([2, 3, 1]);
+  it("rankPlans (the nightly order) is score v3 at the default usage, not the cost order", () => {
+    // flat rates, so CE is proportional to the rate (S_cost = 10 (0.13 - r) / 0.03):
+    //   Cheap 10c, fee $700 (S_fee 0), 0% renewable:  80 + 3 x 5  + 0  = 95
+    //   Mid 10.5c, fee $0, 100% renewable:  66.7 + 3 x 10 + 10 = 106.7
+    //   Dear 13c, fee $0, 0% renewable:      0 + 3 x 10 + 0   = 30
+    const cheap = mk({
+      id: 61,
+      pricePerKwh: { at500: 0.1, at1000: 0.1, at2000: 0.1 },
+      pricingDetails: "Cancellation fee: $700.",
+      renewableDescription: "0% renewable",
+    });
+    const mid = mk({
+      id: 62,
+      pricePerKwh: { at500: 0.105, at1000: 0.105, at2000: 0.105 },
+      pricingDetails: "Cancellation fee: $0.",
+      renewableDescription: "100% renewable",
+    });
+    const dear = mk({
+      id: 63,
+      pricePerKwh: { at500: 0.13, at1000: 0.13, at2000: 0.13 },
+      pricingDetails: "Cancellation fee: $0.",
+      renewableDescription: "0% renewable",
+    });
+    expect(rankPlans([cheap, mid, dear]).map((p) => p.id)).toEqual([
+      62, 61, 63,
+    ]);
+    expect(
+      rankByContractCost([cheap, mid, dear], 1150).map((c) => c.plan.id),
+    ).toEqual([61, 62, 63]);
+    expect(scorePlans([dear, cheap, mid]).map((s) => s.plan.id)).toEqual([
+      62, 61, 63,
+    ]);
   });
 
   it("sortPlans('lowestCost') is the same order, with an uncostable plan last", () => {

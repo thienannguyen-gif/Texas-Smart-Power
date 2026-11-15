@@ -27,9 +27,12 @@ import { tsImport } from "tsx/esm/api";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const parentURL = pathToFileURL(root + "/").href;
-const { scorePlans } = await tsImport("./frontend/src/lib/ranking.ts", {
-  parentURL,
-});
+const { scorePlansLegacy: scorePlans } = await tsImport(
+  "./frontend/src/lib/ranking.ts",
+  {
+    parentURL,
+  },
+);
 const { parseExitFee } = await tsImport(
   "./frontend/src/lib/cancellationFee.ts",
   { parentURL },

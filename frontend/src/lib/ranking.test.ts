@@ -4,7 +4,7 @@ import {
   calculatePriceScore,
   priceCurveWarning,
   rankPlans,
-  scorePlans,
+  scorePlansLegacy as scorePlans,
 } from "./ranking";
 
 const base: Plan = {

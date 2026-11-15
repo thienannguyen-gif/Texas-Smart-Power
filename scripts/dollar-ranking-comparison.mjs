@@ -28,7 +28,9 @@ const {
   termListOf,
   describeMonths,
 } = await load("./frontend/src/lib/contractCost.ts");
-const { scorePlans } = await load("./frontend/src/lib/ranking.ts");
+const { scorePlansLegacy: scorePlans } = await load(
+  "./frontend/src/lib/ranking.ts",
+);
 const { parseExitFee } = await load("./frontend/src/lib/cancellationFee.ts");
 const { renewablePct } = await load("./frontend/src/lib/filters.ts");
 const { DEFAULT_USAGE_KWH } = await load("./frontend/src/lib/usage.ts");

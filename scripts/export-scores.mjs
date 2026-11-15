@@ -21,7 +21,7 @@ const lib = (name) =>
     parentURL: pathToFileURL(root + "/").href,
   });
 
-const { scorePlans } = await lib("ranking");
+const { scorePlansLegacy: scorePlans } = await lib("ranking");
 const { parseExitFee } = await lib("cancellationFee");
 const { renewablePct } = await lib("filters");
 

@@ -162,7 +162,7 @@ describe("scorePlansV2", () => {
     expect(ids(scorePlansV2(all, all, 1000))).toEqual([1, 2]);
   });
 
-  it("leaves out time-of-use plans and plans with a missing ranking input", () => {
+  it("leaves out only time-of-use plans and plans with no term or no price; a missing fee or renewable % stays", () => {
     const ok = mk(0.1, { id: 1 });
     const tou = mk(0.05, { id: 2, isTimeOfUse: true });
     const noTerm = mk(0.05, { id: 3, termMonths: null });
@@ -173,8 +173,21 @@ describe("scorePlansV2", () => {
       pricePerKwh: { at500: 0.05, at1000: null, at2000: 0.05 },
     });
     const all = [ok, tou, noTerm, noFee, noGreen, noPrice];
-    expect(ids(scorePlansV2(all, all, 1000))).toEqual([1]);
-    expect(scorablePlans(all, 1000).map((p) => p.id)).toEqual([1]);
+    // By hand, flat rates so CE is proportional to the rate: S_cost is 10 for the
+    // two 5c plans and 0 for the 10c plan. The known fees are all $0, so S_fee is 10
+    // where it is listed and 0 where it is not. score x 12 = 8 S_cost + 3 S_flex + S_green:
+    //   id 5 (no renewable %): 80 + 3 x (0.5 x 10 + 0.5 x 10) + 0 = 110
+    //   id 4 (no fee):         80 + 3 x (0.5 x 10 + 0.5 x 0)  + 1 = 96
+    //   id 1 (listed, 10c):     0 + 30                         + 1 = 31
+    expect(ids(scorePlansV2(all, all, 1000))).toEqual([5, 4, 1]);
+    expect(scorablePlans(all, 1000).map((p) => p.id)).toEqual([1, 4, 5]);
+    const [, noFeeScore] = scorePlansV2(all, all, 1000);
+    expect(noFeeScore.breakdown.fee).toBe(0); // never a fee of $0 or a 10
+  });
+
+  it("clamps a renewable % outside 0-100", () => {
+    const over = mk(0.1, { id: 1, renewableDescription: "150% renewable" });
+    expect(scorePlansV2([over], [over], 1000)[0].breakdown.green).toBe(10);
   });
 
   it("returns an empty list for no plans", () => {

@@ -25,7 +25,7 @@ const load = (path) => tsImport(path, { parentURL });
 const { contractCost, termListOf, currentStartMonth, MONTH_NAMES } = await load(
   "./frontend/src/lib/contractCost.ts",
 );
-const { scorePlans, priceCurveWarning } = await load(
+const { scorePlansLegacy: scorePlans, priceCurveWarning } = await load(
   "./frontend/src/lib/ranking.ts",
 );
 const { scorePlansV2, WEIGHTS_V2 } = await load(

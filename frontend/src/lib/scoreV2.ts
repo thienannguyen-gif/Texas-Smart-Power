@@ -90,13 +90,16 @@ interface Eligible {
   plan: Plan;
   bill: number;
   ce: number;
-  fee: number;
+  /** Cancellation fee in dollars, or null when the plan does not list one we can read. */
+  fee: number | null;
   term: number;
   green: number;
 }
 
-// A plan is scored only when every input is known (BRIEF.md: a missing ranking
-// input excludes it). Time-of-use plans are never scored.
+// Only time-of-use plans, and plans with no usable term or price, are left out.
+// A plan whose cancellation fee or renewable % is not listed stays: the missing
+// part scores 0 (S_fee or S_green), so it ranks behind a plan that lists it. A
+// renewable % outside 0-100 is clamped.
 function eligible(plan: Plan, usage: number): Eligible | null {
   if (plan.isTimeOfUse) return null;
   const term = plan.termMonths;
@@ -105,17 +108,16 @@ function eligible(plan: Plan, usage: number): Eligible | null {
   if (raw === null || !Number.isFinite(raw)) return null;
   const rawCe = riskAdjustedCost(plan, usage);
   if (rawCe === null || !Number.isFinite(rawCe)) return null;
-  const fee = parseExitFee(plan.pricingDetails, term);
-  if (fee === null || !Number.isFinite(fee) || fee < 0) return null;
-  const renewable = renewablePct(plan);
-  if (
-    renewable === null ||
-    !Number.isFinite(renewable) ||
-    renewable < 0 ||
-    renewable > 100
-  ) {
-    return null;
-  }
+  const parsedFee = parseExitFee(plan.pricingDetails, term);
+  const fee =
+    parsedFee !== null && Number.isFinite(parsedFee) && parsedFee >= 0
+      ? parsedFee
+      : null;
+  const parsedGreen = renewablePct(plan);
+  const renewable =
+    parsedGreen !== null && Number.isFinite(parsedGreen)
+      ? Math.min(100, Math.max(0, parsedGreen))
+      : 0;
   // Costs are compared to the cent, the precision they are shown at: equal
   // prices must score equally, not differ by floating point noise.
   return {
@@ -153,7 +155,8 @@ export function scorePlansV2(
   const fees = areaPlans
     .map((plan) => eligible(plan, usage))
     .filter((e): e is Eligible => e !== null)
-    .map((e) => e.fee);
+    .map((e) => e.fee)
+    .filter((fee): fee is number => fee !== null);
   const maxFee = fees.length > 0 ? Math.max(...fees) : 0;
   const minFee = fees.length > 0 ? Math.min(...fees) : 0;
 
@@ -171,9 +174,11 @@ export function scorePlansV2(
       const cost = hi - lo < EPSILON ? 10 : (10 * (hi - e.ce)) / (hi - lo);
       const term = termScoreV2(e.term);
       const fee =
-        maxFee === minFee
-          ? 10
-          : Math.max(0, Math.min(10, 10 * (1 - e.fee / maxFee)));
+        e.fee === null
+          ? 0
+          : maxFee === minFee
+            ? 10
+            : Math.max(0, Math.min(10, 10 * (1 - e.fee / maxFee)));
       const flexibility = 0.5 * term + 0.5 * fee;
       const total =
         WEIGHTS_V2.cost * cost +

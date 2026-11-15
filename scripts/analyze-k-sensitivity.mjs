@@ -21,9 +21,12 @@ import { list } from "@vercel/blob";
 import { tsImport } from "tsx/esm/api";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const { scorePlans } = await tsImport("./frontend/src/lib/ranking.ts", {
-  parentURL: pathToFileURL(root + "/").href,
-});
+const { scorePlansLegacy: scorePlans } = await tsImport(
+  "./frontend/src/lib/ranking.ts",
+  {
+    parentURL: pathToFileURL(root + "/").href,
+  },
+);
 
 const tdu = process.argv[2] ?? "oncor";
 const KS = [0.2, 0.3, 0.5, 0.7, 1.0];

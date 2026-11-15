@@ -36,8 +36,8 @@ export function PlansHeader({
       aria-label="Your search"
       className="border-b border-line-soft bg-surface font-sans text-ink"
     >
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8">
-        <div className="md:max-w-[22rem]">
+      <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 md:py-5">
+        <div className="md:flex md:items-end md:gap-x-6">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -48,7 +48,7 @@ export function PlansHeader({
             <label htmlFor="plans-zip" className="band-caption block">
               ZIP code
             </label>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-2 flex gap-2">
               <input
                 id="plans-zip"
                 inputMode="numeric"
@@ -77,7 +77,10 @@ export function PlansHeader({
           </form>
 
           {serviceArea && (
-            <p data-testid="service-area" className="mt-3 text-[15px]">
+            <p
+              data-testid="service-area"
+              className="mt-3 text-[15px] md:mt-0 md:pb-2.5"
+            >
               Service area{" "}
               <strong className="font-semibold">{serviceArea}</strong>
             </p>

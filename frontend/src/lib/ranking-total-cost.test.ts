@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import type { Plan } from "../types/plan";
 import { costAt, rankByContractCost } from "./contractCost";
-import { DEFAULT_FILTERS, filterPlans } from "./filters";
+import { EMPTY_FILTERS, filterPlans } from "./filters";
 import { rankPlans, scorePlans } from "./ranking";
 import { sortPlans } from "./sort";
 import { estimatedMonthlyBill, pricePerKwhAtUsage } from "./usage";
@@ -221,12 +221,11 @@ describe("rankByContractCost", () => {
 });
 
 describe("the contract-length filter", () => {
-  it("opens on 12 months only", () => {
-    expect(DEFAULT_FILTERS.contractBuckets).toEqual(["m12"]);
+  it("opens with no length chosen (every term is in) and a chosen length narrows it", () => {
     const three = mk({ id: 1, termMonths: 3 });
     const twelve = mk({ id: 2, termMonths: 12 });
-    expect(
-      filterPlans([three, twelve], DEFAULT_FILTERS).map((p) => p.id),
-    ).toEqual([2]);
+    expect(filterPlans([three, twelve], EMPTY_FILTERS)).toHaveLength(2);
+    const only12 = { ...EMPTY_FILTERS, contractBuckets: ["m12" as const] };
+    expect(filterPlans([three, twelve], only12).map((p) => p.id)).toEqual([2]);
   });
 });

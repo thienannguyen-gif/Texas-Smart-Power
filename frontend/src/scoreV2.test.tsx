@@ -24,7 +24,7 @@ const mk = (rate: number, over: Partial<Plan>): Plan =>
     ...over,
   }) as Plan;
 
-// The page opens on 12 months, so the four plans of the main fixture are all 12
+// The four plans of the main fixture are all 12
 // months. At 1,000 kWh a flat rate gives a bill of rate x 1,000. By hand, with
 // flat rates CE is proportional to the rate, so S_cost = 10 (0.20 - rate) / 0.11:
 //   Cheap Big Fee  $90   S_cost 10     fee $300 -> S_fee 0   S_flex 5    green 1
@@ -104,7 +104,7 @@ describe("score v2 in the list", () => {
     ]);
   });
 
-  it("a plan of another length is not in the list until its length is picked", async () => {
+  it("every length is in the list at first, and a ticked length narrows it", async () => {
     const withShort: TduDataFile = {
       ...data,
       planCount: 5,
@@ -115,12 +115,16 @@ describe("score v2 in the list", () => {
     };
     mount(withShort);
     await ready();
-    // 3 months and 12 months are not set side by side: the cheaper 3-month plan is not on the list
+    // nothing is ticked, so the 3-month plan is there; by the monthly bill ($80) it is first
+    expect(screen.getByText("5 plans at 1,000 kWh")).toBeInTheDocument();
+    expect(cardNames()[0]).toBe("Cheapest Three");
+    fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/ }));
     expect(cardNames()).not.toContain("Cheapest Three");
     expect(
       screen.getByText("Showing 4 of 5 plans at 1,000 kWh"),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("radio", { name: /^1–6 months/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^1–6 months/ }));
     expect(cardNames()).toEqual(["Cheapest Three"]);
   });
 

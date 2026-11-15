@@ -5,7 +5,7 @@ import { useIsDesktop } from "../hooks/useIsDesktop";
 import { searchWithUsage, usageFromSearch } from "../lib/usage";
 import {
   activeFilterCount,
-  DEFAULT_FILTERS,
+  EMPTY_FILTERS,
   splitForView,
   type PlanFilters,
 } from "../lib/filters";
@@ -60,7 +60,7 @@ export function PlansView({
     ...new Set([...allPlans, ...timeOfUsePlans].map((p) => p.companyName)),
   ].sort();
 
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   // The usage the plans are priced at: the `usage` in the address when there is
   // one, else the Small home default. It survives a change of ZIP (this
   // component stays mounted) and is written back to the address as it changes.

@@ -293,6 +293,18 @@ const areaLine = () => screen.queryByText(/^Utility area:/);
 const changeArea = () =>
   screen.getByRole("button", { name: "Change utility area" });
 
+// A filter that is not the page's default, so keeping it across a change of
+// area (or a visit to the disclaimer) is a real check: the provider "Example Energy".
+function pickExampleProvider() {
+  fireEvent.change(
+    screen.getByRole("combobox", { name: /search providers/i }),
+    {
+      target: { value: "exam" },
+    },
+  );
+  fireEvent.mouseDown(screen.getByRole("option", { name: /^Example Energy/ }));
+}
+
 async function openSplitZip() {
   stubSplitZips();
   render(<App />);
@@ -346,7 +358,10 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
   const usageBox = screen.getByLabelText(/monthly usage in kWh/i);
   fireEvent.change(usageBox, { target: { value: "750" } });
   fireEvent.blur(usageBox); // applies at once; typing alone waits 250 ms
-  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
+  pickExampleProvider();
+  expect(
+    screen.getByRole("button", { name: "Remove Example Energy" }),
+  ).toBeVisible();
 
   fireEvent.click(changeArea());
   fireEvent.click(within(areaPicker()!).getByRole("button", { name: "TNMP" }));
@@ -357,7 +372,11 @@ test("choosing the other area loads its plans, collapses the card, and keeps ZIP
   expect(areaPicker()).not.toBeInTheDocument();
   expect(screen.getByLabelText("ZIP code")).toHaveValue("75067");
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
-  expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeChecked();
+  expect(
+    screen.getByRole("button", { name: "Remove Example Energy" }),
+  ).toBeVisible();
+  // the contract length is still the page's default
+  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
 
   // and back again
   fireEvent.click(changeArea());
@@ -555,7 +574,7 @@ describe("disclaimer page", () => {
     const usageBox = screen.getByLabelText(/monthly usage in kWh/i);
     fireEvent.change(usageBox, { target: { value: "750" } });
     fireEvent.blur(usageBox); // applies at once; typing alone waits 250 ms
-    fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
+    pickExampleProvider();
 
     goToHash("#disclaimer");
     await screen.findByRole("article");
@@ -565,7 +584,10 @@ describe("disclaimer page", () => {
       expect(screen.getByLabelText(/monthly usage in kWh/i)).toBeVisible(),
     );
     expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
-    expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeChecked();
+    expect(
+      screen.getByRole("button", { name: "Remove Example Energy" }),
+    ).toBeVisible();
+    expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
     expect(screen.getByLabelText("ZIP code")).toHaveValue("75201");
     expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
   });

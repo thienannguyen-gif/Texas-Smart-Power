@@ -87,14 +87,24 @@ describe("OurPicks cards", () => {
     expect(screen.queryByText(/\/mo fee/)).toBeNull();
   });
 
-  it("says 'No cancellation fee' only for a parsed $0 fee, and nothing when the fee is unreadable", () => {
+  it("says 'No cancellation fee' only for a parsed $0 fee, and 'Not listed' when the fee is unreadable", () => {
     const { unmount } = renderPicks([
       mk({ id: 1, pricingDetails: "Cancellation fee: $0" }),
     ]);
     expect(screen.getByText("No cancellation fee")).toBeInTheDocument();
     unmount();
     renderPicks([mk({ id: 1, pricingDetails: "See the fact sheet" })]);
-    expect(screen.queryByText(/cancellation fee/i)).toBeNull();
+    expect(screen.queryByText("No cancellation fee")).toBeNull();
+    expect(screen.queryByText("$0 cancellation fee")).toBeNull();
+    expect(
+      screen.getByText("Cancellation fee: Not listed"),
+    ).toBeInTheDocument();
+  });
+
+  it("says 'Not listed' for a renewable % that cannot be read, never 0%", () => {
+    renderPicks([mk({ id: 1, renewableDescription: null })]);
+    expect(screen.getByText("Renewable: Not listed")).toBeInTheDocument();
+    expect(screen.queryByText(/^0% renewable/)).toBeNull();
   });
 
   it("shows the rate on the left and the bill, in ink, as the big figure with /mo", () => {

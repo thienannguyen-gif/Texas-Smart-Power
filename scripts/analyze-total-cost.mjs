@@ -1,3 +1,4 @@
+// NOTE: the old-formula numbers here come from scorePlans (ranking.ts, @deprecated): a HISTORICAL BASELINE, not the formula the app runs (scorePlansV2 in scoreV2.ts).
 // One-off: drop S_flex and put term and cancellation fee into the cost itself.
 //
 //   node scripts/analyze-total-cost.mjs [tdu]      (default: oncor)
@@ -26,9 +27,12 @@ import { tsImport } from "tsx/esm/api";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const parentURL = pathToFileURL(root + "/").href;
-const { scorePlans } = await tsImport("./frontend/src/lib/ranking.ts", {
-  parentURL,
-});
+const { scorePlansLegacy: scorePlans } = await tsImport(
+  "./frontend/src/lib/ranking.ts",
+  {
+    parentURL,
+  },
+);
 const { parseExitFee } = await tsImport(
   "./frontend/src/lib/cancellationFee.ts",
   { parentURL },

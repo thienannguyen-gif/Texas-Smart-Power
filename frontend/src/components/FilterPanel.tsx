@@ -19,21 +19,18 @@ import { ProviderPicker } from "./ProviderPicker";
 const SORT_OPTIONS: {
   value: SortMode;
   label: string;
-  /** Adds "(recommended)" after the label, inside the same <label>. */
-  recommended?: boolean;
   /** Shown under the options while this one is chosen; none for Best match. */
   description?: string;
 }[] = [
   {
-    value: "best",
-    label: "Best match",
-    recommended: true,
+    value: "lowestCost",
+    label: "Lowest total cost",
+    description:
+      "Sorted by what the contract costs at your usage level. Cheapest first.",
   },
   {
-    value: "lowestBill",
-    label: "Lowest bill",
-    description:
-      "Sorted by estimated monthly bill at your usage level. Cheapest first.",
+    value: "best",
+    label: "Best match",
   },
 ];
 
@@ -57,6 +54,7 @@ function OptionRow({
   noneInArea,
   checked,
   onToggle,
+  radioName,
 }: {
   label: string;
   count: number | null;
@@ -64,6 +62,8 @@ function OptionRow({
   noneInArea: boolean;
   checked: boolean;
   onToggle: () => void;
+  /** Set for a pick-one group: the row is a radio instead of a checkbox. */
+  radioName?: string;
 }) {
   const empty = count === 0;
   return (
@@ -73,7 +73,8 @@ function OptionRow({
       }`}
     >
       <input
-        type="checkbox"
+        type={radioName ? "radio" : "checkbox"}
+        name={radioName}
         disabled={empty && !checked}
         checked={checked}
         onChange={onToggle}
@@ -125,12 +126,6 @@ function SortSection({
             className="h-5 w-5 border-line accent-brand md:h-4 md:w-4"
           />
           {option.label}
-          {option.recommended && (
-            <>
-              {" "}
-              <span className="text-xs text-ink-faint">(recommended)</span>
-            </>
-          )}
         </label>
       ))}
       {current.description && (
@@ -195,13 +190,9 @@ export function FilterPanel({
             noneInArea={
               hasPlans && countForBucket(allPlans, EMPTY_FILTERS, key) === 0
             }
+            radioName="contract-length"
             checked={value.contractBuckets.includes(key)}
-            onToggle={() =>
-              onChange({
-                ...value,
-                contractBuckets: toggle(value.contractBuckets, key),
-              })
-            }
+            onToggle={() => onChange({ ...value, contractBuckets: [key] })}
           />
         ))}
       </div>

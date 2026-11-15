@@ -1,6 +1,6 @@
 import type { Plan } from "../types/plan.js";
 import { priceCurveWarning } from "./ranking.js";
-import { estimatedMonthlyBill } from "./usage.js";
+import { costAt } from "./contractCost.js";
 
 export type AwardId = "best-overall" | "lowest-bill";
 
@@ -22,7 +22,7 @@ export interface AwardPick {
  *   Lowest bill   lowest estimated bill at `usageKwh`, any term
  *
  * `plans` must be the ranked plans that are currently shown, best score first
- * (the order the ingestion pipeline stores them in). Plans with an unstable
+ * (score v3 at the visitor's usage, as PlansView passes them). Plans with an unstable
  * price curve (V-trap or hump) never win: their headline number is not
  * trustworthy. An award nobody qualifies for is simply absent, so there are at
  * most two picks and never an empty one; in particular, with no 12-month plan
@@ -55,7 +55,7 @@ function lowestBill(plans: Plan[], usageKwh: number): Plan | undefined {
   let best: Plan | undefined;
   let bestBill = Infinity;
   for (const plan of plans) {
-    const bill = estimatedMonthlyBill(plan, usageKwh);
+    const bill = costAt(plan, usageKwh);
     if (bill === null || !Number.isFinite(bill)) continue;
     if (bill < bestBill) {
       best = plan;

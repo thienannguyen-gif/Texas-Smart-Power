@@ -1,6 +1,8 @@
 import type { Plan } from "../types/plan.js";
 import { parseExitFee } from "./cancellationFee.js";
 import { renewablePct } from "./filters.js";
+import { scorePlansV2, type ScoredPlanV2 } from "./scoreV2.js";
+import { DEFAULT_USAGE_KWH } from "./usage.js";
 
 const EPSILON = 1e-9;
 
@@ -30,6 +32,10 @@ interface EligiblePlan {
   greenScore: number;
 }
 
+/**
+ * @deprecated Part of the old formula (`scorePlans`); only scorePlans and
+ * ranking.test.ts still call it. The app uses CE-based S_cost in scoreV2.ts.
+ */
 export function calculatePriceScore(
   price: number,
   pMin: number,
@@ -148,7 +154,13 @@ function eligiblePlans(plans: Plan[]): EligiblePlan[] {
   return eligible;
 }
 
-export function scorePlans(
+/**
+ * @deprecated The OLD formula (5/3/3/1 with S_slope), renamed from `scorePlans`
+ * when that name took the current formula. A historical baseline, not what the
+ * app runs. Still used by: ranking.test.ts and the comparison/analysis scripts in
+ * scripts/ (as the "old formula" column).
+ */
+export function scorePlansLegacy(
   plans: Plan[],
 ): Array<{ plan: Plan; breakdown: PlanScoreBreakdown }> {
   const eligible = eligiblePlans(plans);
@@ -201,6 +213,28 @@ export function scorePlans(
     .sort((a, b) => b.breakdown.total - a.breakdown.total);
 }
 
+/**
+ * Score v3 at `usage` (default 1,150 kWh), best first, over every plan given:
+ *   S_cost = 10 (CE_max - CE) / (CE_max - CE_min), CE = E + 1 sigma- over twelve
+ *   seasonal months of C(u0 x s_m); S_flex = 0.5 S_term + 0.5 S_fee;
+ *   score = (8 S_cost + 3 S_flex + S_green) / 12.
+ * The formula lives in scoreV2.ts (`scorePlansV2`); this is the same call with
+ * the whole list as the area and as what is shown. Time-of-use plans and plans
+ * with no term or price are left out. A plan whose fee or renewable % is not
+ * listed stays, with that part scoring 0.
+ */
+export function scorePlans(
+  plans: Plan[],
+  usage: number = DEFAULT_USAGE_KWH,
+): ScoredPlanV2[] {
+  return scorePlansV2(plans, plans, usage);
+}
+
+/**
+ * The order stored for an area (the nightly job writes it): `scorePlans` at the
+ * default usage. The page re-scores at the visitor's own usage and filters; this
+ * order only reaches it as the arrival order, the tie-break.
+ */
 export function rankPlans(plans: Plan[]): Plan[] {
   return scorePlans(plans).map(({ plan }) => plan);
 }

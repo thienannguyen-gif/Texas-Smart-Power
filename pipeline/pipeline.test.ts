@@ -31,9 +31,22 @@ describe("ingestion path over the sample fixture", () => {
     expect(normalized.find((p) => p.id === 900001)?.isTimeOfUse).toBe(false);
   });
 
-  it("ranks plans with complete inputs and excludes incomplete plans", () => {
+  // The stored order is score v3 at the default usage (1,150 kWh) over every plan
+  // with three prices and a term; 900004 has neither. By hand, months at
+  // u = 1,150 x s_m (s_m from SEASON), CE = E + sigma-:
+  //   900001 (16 / 15 / 15.5c: C500 $80, C1000 $150, C2000 $310; m1 0.14, m2 0.16)
+  //          E = 174.26, sigma- = 33.3, CE ~ 207.6
+  //   900002 (19 / 9 / 21c:    C500 $95, C1000 $90,  C2000 $420; m1 -0.01, m2 0.33)
+  //          E = 152.45, sigma- = 63.9, CE = 216.33
+  // Although 900002's bill at 1,150 kWh is lower ($139.50 against $174.00), its
+  // steep upper segment makes the hot months dear, so its CE is higher:
+  //   S_cost: 900001 = 10, 900002 = 0
+  //   fees $150 and $295 (max 295): S_fee 4.92 and 0; both terms >= 12: S_term 10
+  //   900001: (8 x 10 + 3 x 7.46 + 0.6) / 12 = 8.58   (6% renewable)
+  //   900002: (0 + 3 x 5 + 0) / 12 = 1.25             (no renewable %: scores 0, stays)
+  it("ranks every plan with three prices and a term by score v3 at the default usage, and leaves out the rest", () => {
     expect(applyPipeline(normalized).ranked.map((plan) => plan.id)).toEqual([
-      900001,
+      900001, 900002,
     ]);
   });
 
@@ -134,7 +147,7 @@ describe("Blob data-file shape", () => {
 
   it("keeps planCount in sync with the ranked array, and lists time-of-use plans separately", () => {
     expect(written.planCount).toBe(written.plans.length);
-    expect(written.planCount).toBe(1);
+    expect(written.planCount).toBe(2); // 900002 and 900001
     expect(written.timeOfUsePlans).toHaveLength(1);
     expect(written.timeOfUsePlans[0].isTimeOfUse).toBe(true);
     expect(

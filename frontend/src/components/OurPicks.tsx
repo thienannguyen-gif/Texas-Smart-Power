@@ -4,7 +4,8 @@ import { AWARD_LABELS, type AwardPick } from "../lib/awards";
 import { parseCancellationFee } from "../lib/cancellationFee";
 import { renewablePct } from "../lib/filters";
 import { formatAmount, formatRate } from "../lib/money";
-import { estimatedMonthlyBill, pricePerKwhAtUsage } from "../lib/usage";
+import { costAt } from "../lib/contractCost";
+import { pricePerKwhAtUsage } from "../lib/usage";
 import { ProviderMark } from "./ProviderLogo";
 
 const CHIP =
@@ -19,8 +20,9 @@ const COLUMNS: Record<number, string> = {
   2: "min-[760px]:grid-cols-2",
 };
 
-// The plan facts as chips, in this order. A chip is left out when the fact is
-// not known: an unreadable cancellation fee is not "no fee".
+// The plan facts as chips, in this order. A fact that is not known says
+// "Not listed": never a blank, never $0 or 0% (an unreadable cancellation fee is
+// not "no fee").
 function attributeChips(plan: Plan): { text: string; green?: boolean }[] {
   const chips: { text: string; green?: boolean }[] = [];
   if (plan.termMonths !== null) {
@@ -29,6 +31,8 @@ function attributeChips(plan: Plan): { text: string; green?: boolean }[] {
   const renewable = renewablePct(plan);
   if (renewable !== null) {
     chips.push({ text: `${renewable}% renewable`, green: renewable === 100 });
+  } else {
+    chips.push({ text: "Renewable: Not listed" });
   }
   const fee = parseCancellationFee(plan.pricingDetails);
   if (fee) {
@@ -38,6 +42,8 @@ function attributeChips(plan: Plan): { text: string; green?: boolean }[] {
           ? "No cancellation fee"
           : `${formatAmount(fee.amount)} cancellation fee`,
     });
+  } else {
+    chips.push({ text: "Cancellation fee: Not listed" });
   }
   return chips;
 }
@@ -59,7 +65,7 @@ function PickCard({
       open();
     }
   };
-  const bill = estimatedMonthlyBill(plan, usageKwh);
+  const bill = costAt(plan, usageKwh);
 
   return (
     <div

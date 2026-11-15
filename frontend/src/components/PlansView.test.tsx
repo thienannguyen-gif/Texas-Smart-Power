@@ -110,7 +110,10 @@ test("updates card and bill/average prices immediately when usage changes", asyn
     name: /interpolated plan/i,
   });
   expect(within(updatedDialog).getByText("at 850 kWh")).toBeInTheDocument();
-  expect(within(updatedDialog).getByText("$106")).toBeInTheDocument();
+  // by hand: C500 = 5 x 12.7 = $63.50, C1000 = 10 x 12.3 = $123.00,
+  // m1 = (123.00 - 63.50) / 500 = 0.119; C(850) = 63.50 + 0.119 x 350 = $105.15 -> "$105";
+  // rate = 105.15 / 850 = 12.37 cents -> "12.4¢/kWh"
+  expect(within(updatedDialog).getByText("$105")).toBeInTheDocument();
   expect(within(updatedDialog).getByText("12.4¢/kWh")).toBeInTheDocument();
 
   fireEvent.click(
@@ -118,13 +121,18 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   );
   enterUsage(box, "9999");
   expect(box).toHaveValue("5,000"); // clamped
-  expect(within(card).getByText("12.1¢/kWh")).toBeInTheDocument();
+  // by hand: C2000 = 20 x 12.1 = $242.00, m2 = (242.00 - 123.00) / 1000 = 0.119;
+  // C(5000) = 242.00 + 0.119 x 3000 = $599.00; rate = 599 / 5000 = 11.98 cents -> "12.0¢/kWh"
+  expect(within(card).getByText("12.0¢/kWh")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /more details/i }));
   const cappedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
   });
-  expect(within(cappedDialog).getByText("$605")).toBeInTheDocument();
-  expect(within(cappedDialog).getAllByText("12.1¢/kWh")).toHaveLength(2);
+  expect(within(cappedDialog).getByText("$599")).toBeInTheDocument();
+  // the average price (12.0) is no longer the 2,000 kWh tier (12.1): it is the exact
+  // bill over the usage, 599 / 5000, so each shows once
+  expect(within(cappedDialog).getAllByText("12.0¢/kWh")).toHaveLength(1);
+  expect(within(cappedDialog).getAllByText("12.1¢/kWh")).toHaveLength(1);
 });
 
 // Type into the provider box, then click the matching suggestion.
@@ -315,13 +323,15 @@ test("the sidebar has no PRODUCT TYPE section any more; the other sections are s
     "RENEWABLE ENERGY",
     "PROVIDER",
   ]);
-  // no product-type checkbox is left: time-of-use, the four contract lengths, 100% renewable
+  // no product-type checkbox is left: time-of-use and 100% renewable. The four
+  // contract lengths are a pick-one (radio), next to the two sort options.
   const checkboxes = within(sidebar)
     .getAllByRole("checkbox")
     .map((box) => box.closest("label")?.textContent);
-  expect(checkboxes).toHaveLength(6);
+  expect(checkboxes).toHaveLength(2);
   expect(checkboxes.join(" ")).toMatch(/only time-of-use plans/i);
   expect(checkboxes.join(" ")).toMatch(/100% renewable only/i);
+  expect(within(sidebar).getAllByRole("radio")).toHaveLength(2 + 4);
 });
 
 test("plan cards have no hide-provider action; the sidebar has no Show All or hidden-provider chips, but provider search remains", async () => {
@@ -347,10 +357,11 @@ test("a contract length with no plans in the area is disabled and says so", asyn
   mockPlans(); // both sample plans are 12 months
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Gexa 12");
-  const none = screen.getByRole("checkbox", { name: /^13\+ months/i });
+  const none = screen.getByRole("radio", { name: /^13\+ months/i });
   expect(none).toBeDisabled();
   expect(none.closest("label")).toHaveTextContent("No plans available");
-  expect(screen.getByRole("checkbox", { name: /^12 months/i })).toBeEnabled();
+  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeEnabled();
+  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
 });
 
 test("1–6 months becomes selectable when the area has a short plan", async () => {
@@ -359,12 +370,16 @@ test("1–6 months becomes selectable when the area has a short plan", async () 
     plans: [mk({ id: 1, planName: "Short 3", termMonths: 3 }), ...file.plans],
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  await screen.findByText("Short 3");
-  const box = screen.getByRole("checkbox", { name: /^1–6 months/i });
+  await screen.findByText("Gexa 12");
+  // the page opens on 12 months, so the 3-month plan is not in the list yet
+  expect(screen.queryByText("Short 3")).not.toBeInTheDocument();
+  const box = screen.getByRole("radio", { name: /^1–6 months/i });
   expect(box).toBeEnabled();
   fireEvent.click(box);
   expect(screen.getByText("Short 3")).toBeInTheDocument();
   expect(screen.queryByText("Gexa 12")).not.toBeInTheDocument();
+  expect(box).toBeChecked();
+  expect(screen.getByRole("radio", { name: /^12 months/i })).not.toBeChecked();
 });
 
 test("the header's search box submits a new ZIP; invalid ones are refused; usage and filters are kept", async () => {
@@ -423,7 +438,7 @@ test("every option shows its match count, reflecting the other active filters; e
   await screen.findByText("Page 1 of 3");
 
   const row = (name: RegExp) =>
-    screen.getByRole("checkbox", { name }).closest("label")!;
+    screen.getByRole("radio", { name }).closest("label")!;
   expect(row(/^12 months/i)).toHaveTextContent("12 months (14)");
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
 
@@ -434,10 +449,10 @@ test("every option shows its match count, reflecting the other active filters; e
   // zero-match options stay on screen, greyed
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
   expect(row(/13\+ months/i)).toHaveClass("text-ink-faint");
-  expect(screen.getByRole("checkbox", { name: /13\+ months/i })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: /13\+ months/i })).toBeDisabled();
 
   // a contract length is counted against the provider, ignoring its own group
-  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
+  fireEvent.click(screen.getByRole("radio", { name: /^12 months/i }));
   expect(row(/1–6 months/i)).toHaveTextContent("1–6 months (0)");
   expect(row(/^12 months/i)).toHaveTextContent("12 months (6)");
 });
@@ -501,7 +516,16 @@ test("the header holds the search, with the usage block under it, in normal flow
 
 test("phone: a Filters button under the header opens a drawer; Apply commits, and the button shows the active count", async () => {
   stubPhone();
-  renderMany();
+  // Alpha's six plans are 100% renewable, Beta's eight are not
+  mockPlans({
+    ...many,
+    plans: many.plans.map((p) =>
+      p.companyName === "Alpha"
+        ? { ...p, renewableDescription: "100% Renewable" }
+        : p,
+    ),
+  });
+  render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Page 1 of 3");
 
   const header = screen.getByRole("region", { name: "Your search" });
@@ -519,7 +543,7 @@ test("phone: a Filters button under the header opens a drawer; Apply commits, an
   const drawer = screen.getByRole("dialog", { name: "Filters" });
   pickProvider("alp", "Alpha");
   fireEvent.click(
-    within(drawer).getByRole("checkbox", { name: /^12 months/i }),
+    within(drawer).getByRole("checkbox", { name: /100% renewable only/i }),
   );
   expect(within(drawer).getByText("6 plans match")).toBeInTheDocument();
   // nothing applied until Apply: the list behind is unchanged
@@ -566,7 +590,7 @@ test("phone drawer: Clear empties the draft only; closing without Apply discards
 
   // Escape also discards
   fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
+  pickProvider("bet", "Beta");
   fireEvent.keyDown(document, { key: "Escape" });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
@@ -605,9 +629,14 @@ test("the results line is just the plan count and the Updated stamp, and the cou
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
-  expect(await screen.findByText("4 plans at 1,000 kWh")).toBeInTheDocument();
+  // the page opens on 12 months: A and B of the four
+  expect(
+    await screen.findByText("Showing 2 of 4 plans at 1,000 kWh"),
+  ).toBeInTheDocument();
   // nothing else in the sentence: no renewable / 12-month / time-of-use counts, no dots
-  expect(screen.queryByText(/ · /)).not.toBeInTheDocument();
+  expect(
+    screen.getByText("Showing 2 of 4 plans at 1,000 kWh").textContent,
+  ).not.toMatch(/ · /);
   expect(
     screen.queryByText(
       /(is|are) 100% renewable|(is|are) 12 months|shown separately/,
@@ -619,19 +648,27 @@ test("the results line is just the plan count and the Updated stamp, and the cou
     screen.getByRole("checkbox", { name: /100% renewable only/i }),
   );
   expect(
-    screen.getByText("Showing 2 of 4 plans at 1,000 kWh"),
+    screen.getByText("Showing 1 of 4 plans at 1,000 kWh"), // A only
   ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("checkbox", { name: /13[+] months/i }));
+  fireEvent.click(screen.getByRole("radio", { name: /13[+] months/i }));
   expect(
-    screen.getByText("Showing 1 of 4 plans at 1,000 kWh"),
+    screen.getByText("Showing 1 of 4 plans at 1,000 kWh"), // C only
+  ).toBeInTheDocument();
+  expect(screen.getByText("C")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("radio", { name: /1–6 months/i }));
+  expect(
+    screen.getByText("Showing 0 of 4 plans at 1,000 kWh"), // D is only 5% renewable
   ).toBeInTheDocument();
 });
 
 // ---- Sort: Best match / Lowest bill
 
-// Best match (the v2 score) at 1,000 kWh is B, C, A: C has the lowest bill but a
-// 1-month term and a $700 fee. D has no 2,000 kWh price, so it is not scored and
-// not listed. Bills at 500 / 1000 / 2000 kWh:
+// All 12 months (the page opens on 12 months). Lowest total cost at 1,000 kWh is
+// C, B, A. Best match (score v3) is B, C, A: C has the lowest bill but a $700 fee
+// and 0% renewable, B is 100% renewable. By hand at 1,000 kWh, S_cost from
+// CE = E + sigma- (A 142.4, B 123.5, C 116.6 dollars): score x 12 = 8 S_cost +
+// 3 S_flex + S_green gives B 98.8, C 95, A 31. D has no 2,000 kWh price, so it is
+// not scored and not listed. Bills at 500 / 1000 / 2000 kWh:
 //   A Flat      60 / 120 / 240
 //   B Credit   100 / 100 / 200
 //   C Unstable  50 /  90 / 220   (V-Trap: rate at 1,000 kWh below the rate at 2,000)
@@ -648,12 +685,13 @@ const sortFile: TduDataFile = {
     mk({
       id: 2,
       planName: "B Credit",
+      renewableDescription: "100% renewable",
       pricePerKwh: { at500: 0.2, at1000: 0.1, at2000: 0.1 },
     }),
     mk({
       id: 3,
       planName: "C Unstable",
-      termMonths: 1,
+      renewableDescription: "0% renewable",
       pricingDetails: "Cancellation fee: $700.",
       pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 },
     }),
@@ -675,39 +713,45 @@ function renderSortable() {
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 }
 
-test("sort control: Best match is the default and keeps the ranked order, with its description", async () => {
+test("sort control: Lowest total cost is the default, cheapest first, with its description", async () => {
   renderSortable();
   await screen.findByText("A Flat");
 
-  expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
-  expect(screen.getByRole("radio", { name: "Lowest bill" })).not.toBeChecked();
-  expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
-  // Best match has no description line any more
-  expect(screen.queryByText(/sorted by our score/i)).toBeNull();
-});
-
-test("Lowest bill puts the cheapest estimated bill first, with the new description", async () => {
-  renderSortable();
-  await screen.findByText("A Flat");
-
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
-
-  // usage defaults to 1,000 kWh: C 90, B 100, A 120, and D (no estimate) last
+  expect(
+    screen.getByRole("radio", { name: "Lowest total cost" }),
+  ).toBeChecked();
+  expect(screen.getByRole("radio", { name: "Best match" })).not.toBeChecked();
+  // usage is 1,000 kWh: C 90, B 100, A 120, and D (no estimate) is not listed
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  expect(within(first).getByText("$90")).toBeInTheDocument();
+  // total = 12 x C(1000) = 12 x $90.00 = $1,080.00
+  expect(within(first).getByText("$1,080.00")).toBeInTheDocument();
+  expect(
+    within(first).getByText("over 12 months · $90.00/mo"),
+  ).toBeInTheDocument();
   expect(
     screen.getByText(
-      "Sorted by estimated monthly bill at your usage level. Cheapest first.",
+      "Sorted by what the contract costs at your usage level. Cheapest first.",
     ),
   ).toBeInTheDocument();
-  expect(screen.queryByText(/sorted by our score/i)).not.toBeInTheDocument();
 });
 
-test("in Lowest bill mode, changing the usage re-sorts the list", async () => {
+test("Best match follows the score, not the bill, and has no description", async () => {
   renderSortable();
   await screen.findByText("A Flat");
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
+  expect(screen.queryByText(/sorted by what the contract costs/i)).toBeNull();
+  expect(screen.queryByText(/sorted by our score/i)).toBeNull();
+  // and back
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest total cost" }));
+  expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
+});
+
+test("in Lowest total cost mode, changing the usage re-sorts the list", async () => {
+  renderSortable();
+  await screen.findByText("A Flat");
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
 
   const usage = screen.getByLabelText(/monthly usage in kWh/i);
@@ -718,12 +762,13 @@ test("in Lowest bill mode, changing the usage re-sorts the list", async () => {
   enterUsage(usage, "2000"); // B 200, C 220, A 240
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  expect(within(first).getByText("$200")).toBeInTheDocument();
+  // B at 2,000 kWh: C2000 = 20 x 10c = $200.00; total = 12 x 200.00 = $2,400.00
+  expect(within(first).getByText("$2,400.00")).toBeInTheDocument();
 
-  // and back to Best match at 1,000 kWh: the score order again (the score
-  // moves with the usage, so this is checked at the usage it was written for)
+  // and Best match at 1,000 kWh: the score order (it moves with the usage, so
+  // this is checked at the usage it was worked out for)
   enterUsage(usage, "1000");
-  fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
 });
 
@@ -738,10 +783,11 @@ test("the unstable-price badge shows in both modes; the sort order never pushes 
       .map((card) => within(card).getByRole("heading").textContent);
 
   expect(badgeOwners()).toEqual(["C Unstable"]);
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
-  expect(badgeOwners()).toEqual(["C Unstable"]);
   // ...and it is first, even though it is the plan with the warning
   expect(cardNames()[0]).toBe("C Unstable");
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  expect(badgeOwners()).toEqual(["C Unstable"]);
+  expect(cardNames()[1]).toBe("C Unstable");
 });
 
 test("changing the sort goes back to page 1; filters still apply before sorting", async () => {
@@ -750,13 +796,13 @@ test("changing the sort goes back to page 1; filters still apply before sorting"
   fireEvent.click(next());
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 
   // a filter narrows the set; the sort is applied to what is left
   pickProvider("bet", "Beta");
   expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
-  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+  expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
 });
 
 // ---- Sort control lives in the filter sidebar / drawer
@@ -770,10 +816,10 @@ test("desktop: SORT BY is the first section of the left sidebar, styled like the
 
   // both options are in the sidebar, none above the plan list
   expect(
-    within(sidebar).getByRole("radio", { name: /^Best match/ }),
+    within(sidebar).getByRole("radio", { name: "Best match" }),
   ).toBeInTheDocument();
   expect(
-    within(sidebar).getByRole("radio", { name: "Lowest bill" }),
+    within(sidebar).getByRole("radio", { name: "Lowest total cost" }),
   ).toBeInTheDocument();
   expect(within(main).queryByRole("radio")).not.toBeInTheDocument();
 
@@ -793,15 +839,18 @@ test("desktop: SORT BY is the first section of the left sidebar, styled like the
   expect(sortHeading.className).toBe(contractHeading.className);
 });
 
-test("desktop: the sort in the sidebar still sorts by bill and follows the usage", async () => {
+test("desktop: the sort in the sidebar sorts by cost and follows the usage", async () => {
   renderSortable();
   await screen.findByText("A Flat");
   const sidebar = screen.getByRole("complementary", { name: "Filters" });
 
-  fireEvent.click(within(sidebar).getByRole("radio", { name: "Lowest bill" }));
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
   enterUsage(screen.getByLabelText(/monthly usage in kWh/i), "2000");
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
+  fireEvent.click(within(sidebar).getByRole("radio", { name: "Best match" }));
+  expect(
+    within(sidebar).getByRole("radio", { name: "Best match" }),
+  ).toBeChecked();
 });
 
 test("phone: the drawer opens on Sort by, and Apply applies the sort choice with the filters", async () => {
@@ -823,22 +872,24 @@ test("phone: the drawer opens on Sort by, and Apply applies the sort choice with
     .map((h) => h.textContent);
   expect(headings[0]).toBe("SORT BY");
   expect(within(drawer).getAllByRole("radio")[0]).toHaveAccessibleName(
-    "Best match (recommended)",
+    "Lowest total cost",
   );
+  expect(within(drawer).getAllByRole("radio")[0]).toBeChecked();
+  expect(within(drawer).queryByText(/recommended/i)).toBeNull();
 
-  fireEvent.click(within(drawer).getByRole("radio", { name: "Lowest bill" }));
+  fireEvent.click(within(drawer).getByRole("radio", { name: "Best match" }));
   // a draft until Apply: the list behind is unchanged
-  expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
+  expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
 
   fireEvent.click(within(drawer).getByRole("button", { name: "Apply" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
+  expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   // the sort is not a filter, so it is not counted on the button
   expect(screen.getByRole("button", { name: "Filters" })).toBeInTheDocument();
 
   // reopening shows the applied choice
   fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+  expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
 });
 
 test("phone: closing the drawer discards a sort change; Clear empties filters but keeps the chosen sort", async () => {
@@ -848,21 +899,26 @@ test("phone: closing the drawer discards a sort change; Clear empties filters bu
 
   // ✕ discards
   fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
   fireEvent.click(screen.getByRole("button", { name: "Close filters" }));
-  expect(cardNames()[0]).toBe("B Credit");
+  expect(cardNames()[0]).toBe("C Unstable");
 
-  // Clear leaves the sort alone
+  // Clear empties the filters but leaves the sort alone
   fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+  pickProvider("sam", "Sample Co");
+  expect(
+    screen.getByRole("button", { name: "Remove Sample Co" }),
+  ).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Clear" }));
   expect(
-    screen.getByRole("checkbox", { name: /^12 months/i }),
-  ).not.toBeChecked();
-  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
+    screen.queryByRole("button", { name: "Remove Sample Co" }),
+  ).not.toBeInTheDocument();
+  // Clear goes back to what the page opens on: 12 months
+  expect(screen.getByRole("radio", { name: /^12 months/i })).toBeChecked();
+  expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-  expect(cardNames()[0]).toBe("C Unstable");
+  expect(cardNames()[0]).toBe("B Credit");
 });
 
 // ---- Usage block and the slim bar
@@ -870,7 +926,6 @@ test("phone: closing the drawer discards a sort change; Clear empties filters bu
 test("typing a usage re-prices and re-sorts the list live", async () => {
   renderSortable();
   await screen.findByText("A Flat");
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]); // at 1,000 kWh
 
   const box = screen.getByLabelText(/monthly usage in kWh/i);
@@ -878,7 +933,8 @@ test("typing a usage re-prices and re-sorts the list live", async () => {
   expect(box).toHaveValue("2,000");
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  expect(within(first).getByText("$200")).toBeInTheDocument();
+  // B at 2,000 kWh: C2000 = 20 x 10c = $200.00; total = 12 x 200.00 = $2,400.00
+  expect(within(first).getByText("$2,400.00")).toBeInTheDocument();
   expect(within(first).getAllByText("at 2,000 kWh").length).toBeGreaterThan(0);
 
   enterUsage(box, "500");
@@ -981,7 +1037,6 @@ const touCross = mk({
   planName: "Cross",
   companyName: "Alpha",
   isTimeOfUse: true,
-  termMonths: 3,
   pricePerKwh: { at500: 0.3, at1000: 0.08, at2000: 0.08 },
 });
 
@@ -1057,10 +1112,10 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
   enterUsage(usage, "500"); // 50, 75, 150
   expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
 
-  // Lowest bill re-sorts the ranked list only; the section is always cheapest first
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+  // the sort re-orders the ranked list only; the section is always cheapest first
+  fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
   expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
-  fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
+  fireEvent.click(screen.getByRole("radio", { name: "Lowest total cost" }));
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
 });
 
@@ -1215,10 +1270,15 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
     ),
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
-  await screen.findByText("Term 3 #1");
+  await screen.findByText("Term 12 #4");
   const sidebar = screen.getByRole("complementary", { name: "Filters" });
   const row = (name: RegExp) =>
-    within(sidebar).getByRole("checkbox", { name }).closest("label")!;
+    within(sidebar).getByRole("radio", { name }).closest("label")!;
+  // the page opens on 12 months: three of the seven
+  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
+  expect(
+    within(sidebar).getByRole("radio", { name: /^12 months/ }),
+  ).toBeChecked();
 
   expect(row(/^1–6 months/)).toHaveTextContent("1–6 months (2)");
   expect(row(/^7–11 months/)).toHaveTextContent("7–11 months (1)");
@@ -1231,14 +1291,24 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
   expect(within(sidebar).queryByText(/^12\+ months/)).not.toBeInTheDocument();
   expect(within(sidebar).queryByText(/7–12 months/)).not.toBeInTheDocument();
 
-  // someone looking for a 12-month plan ticks "12 months" and gets exactly those
-  fireEvent.click(
-    within(sidebar).getByRole("checkbox", { name: /^12 months/ }),
-  );
-  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
   expect(
     screen.getByText("Showing 3 of 7 plans at 1,000 kWh"),
   ).toBeInTheDocument();
+
+  // each other length shows exactly its own plans when it is picked (one at a time)
+  const pick = (name: RegExp) =>
+    fireEvent.click(within(sidebar).getByRole("radio", { name }));
+  pick(/^1–6 months/);
+  expect(cardNamesOnPage()).toEqual(["Term 3 #1", "Term 3 #2"]);
+  expect(
+    within(sidebar).getByRole("radio", { name: /^12 months/ }),
+  ).not.toBeChecked();
+  pick(/^7–11 months/);
+  expect(cardNamesOnPage()).toEqual(["Term 9 #3"]);
+  pick(/^13\+ months/);
+  expect(cardNamesOnPage()).toEqual(["Term 24 #7"]);
+  pick(/^12 months/);
+  expect(cardNamesOnPage()).toEqual(["Term 12 #4", "Term 12 #5", "Term 12 #6"]);
 });
 
 const cardNamesOnPage = () =>
@@ -1469,23 +1539,24 @@ test("with prefers-reduced-motion the scroll is instant", async () => {
   expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
 });
 
-test("the first sort option reads 'Best match (recommended)' in one label, so clicking the word selects it", async () => {
+test("the sort options are 'Lowest total cost' then 'Best match', neither is tagged, and clicking the word selects it", async () => {
   renderSortable();
   await screen.findByText("A Flat");
-  fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
-  expect(screen.getByRole("radio", { name: "Lowest bill" })).toBeChecked();
 
-  const tag = screen.getByText("(recommended)");
-  expect(tag).toHaveClass("text-xs", "text-ink-faint");
-  // inside the same <label> as the radio and "Best match", not a second line
-  const label = tag.closest("label")!;
-  expect(label).toHaveTextContent("Best match (recommended)");
-  expect(label.querySelector("input[type=radio]")).toBe(
-    screen.getByRole("radio", { name: "Best match (recommended)" }),
-  );
-  fireEvent.click(tag);
-  expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
-  // only the first option carries it, and the spelling is "recommended"
-  expect(screen.getAllByText(/\(recommend/)).toHaveLength(1);
-  expect(screen.queryByText(/\(recommend\)/)).toBeNull();
+  const radios = within(screen.getByRole("complementary", { name: "Filters" }))
+    .getAllByRole("radio")
+    .slice(0, 2);
+  expect(radios.map((r) => r.closest("label")?.textContent)).toEqual([
+    "Lowest total cost",
+    "Best match",
+  ]);
+  expect(screen.queryByText(/recommend/i)).toBeNull();
+
+  // the label text is part of the same <label>, so clicking it picks the option
+  fireEvent.click(screen.getByText("Best match"));
+  expect(screen.getByRole("radio", { name: "Best match" })).toBeChecked();
+  fireEvent.click(screen.getByText("Lowest total cost"));
+  expect(
+    screen.getByRole("radio", { name: "Lowest total cost" }),
+  ).toBeChecked();
 });

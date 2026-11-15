@@ -24,22 +24,34 @@ const mk = (rate: number, over: Partial<Plan>): Plan =>
     ...over,
   }) as Plan;
 
-// At 1,000 kWh a flat rate gives a bill of rate x 1,000.
+// The page opens on 12 months, so the four plans of the main fixture are all 12
+// months. At 1,000 kWh a flat rate gives a bill of rate x 1,000. By hand, with
+// flat rates CE is proportional to the rate, so S_cost = 10 (0.20 - rate) / 0.11:
+//   Cheap Big Fee  $90   S_cost 10     fee $300 -> S_fee 0   S_flex 5    green 1
+//   Twelve Mid     $100  S_cost 9.09   fee $0   -> S_fee 10  S_flex 10   green 1
+//   Twelve Dear    $120  S_cost 7.27   fee $0                S_flex 10   green 1
+//   Green Dear     $200  S_cost 0      fee $300              S_flex 5    green 10
+// score x 12 = 8 S_cost + 3 S_flex + S_green:
+//   Twelve Mid 72.73 + 30 + 1 = 103.7,  Cheap Big Fee 80 + 15 + 1 = 96,
+//   Twelve Dear 58.18 + 30 + 1 = 89.2,  Green Dear 0 + 15 + 10 = 25.
 const data: TduDataFile = {
   tdu: "oncor",
   generatedAt: "2026-09-02T00:00:00.000Z",
   planCount: 4,
   plans: [
-    mk(0.09, { id: 1, planName: "Cheap Three", termMonths: 3 }),
-    mk(0.1, { id: 2, planName: "Twelve Mid", termMonths: 12 }),
+    mk(0.09, {
+      id: 1,
+      planName: "Cheap Big Fee",
+      pricingDetails: "Cancellation fee: $300.",
+    }),
+    mk(0.1, { id: 2, planName: "Twelve Mid" }),
     mk(0.2, {
       id: 3,
-      planName: "Thirty-six Dear",
-      termMonths: 36,
+      planName: "Green Dear",
       pricingDetails: "Cancellation fee: $300.",
       renewableDescription: "100% Renewable",
     }),
-    mk(0.12, { id: 4, planName: "Twelve Dear", termMonths: 12 }),
+    mk(0.12, { id: 4, planName: "Twelve Dear" }),
   ],
 };
 
@@ -66,30 +78,50 @@ afterEach(() => {
 });
 
 describe("score v2 in the list", () => {
-  it("Best match follows the score, not the bill: the 12-month plan beats a cheaper 3-month one", async () => {
+  it("opens on Lowest total cost: the cheapest contract first", async () => {
     mount();
     await ready();
-    // bills: Cheap Three $90 (S_cost 10, S_term 2.5), Twelve Mid $100 (S_cost
-    // 9.09, S_term 10); the 12-month plan's flexibility outweighs $10
-    expect(screen.getByRole("radio", { name: /^Best match/ })).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Lowest total cost" }),
+    ).toBeChecked();
     expect(cardNames()).toEqual([
+      "Cheap Big Fee",
       "Twelve Mid",
-      "Cheap Three",
       "Twelve Dear",
-      "Thirty-six Dear",
+      "Green Dear",
     ]);
   });
 
-  it("keeps the sort control: Lowest bill puts the cheapest first", async () => {
+  it("Best match follows the score, not the bill: a $0 fee outweighs $10 a month", async () => {
     mount();
     await ready();
-    fireEvent.click(screen.getByRole("radio", { name: "Lowest bill" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
     expect(cardNames()).toEqual([
-      "Cheap Three",
       "Twelve Mid",
+      "Cheap Big Fee",
       "Twelve Dear",
-      "Thirty-six Dear",
+      "Green Dear",
     ]);
+  });
+
+  it("a plan of another length is not in the list until its length is picked", async () => {
+    const withShort: TduDataFile = {
+      ...data,
+      planCount: 5,
+      plans: [
+        ...data.plans,
+        mk(0.08, { id: 5, planName: "Cheapest Three", termMonths: 3 }),
+      ],
+    };
+    mount(withShort);
+    await ready();
+    // 3 months and 12 months are not set side by side: the cheaper 3-month plan is not on the list
+    expect(cardNames()).not.toContain("Cheapest Three");
+    expect(
+      screen.getByText("Showing 4 of 5 plans at 1,000 kWh"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /^1–6 months/ }));
+    expect(cardNames()).toEqual(["Cheapest Three"]);
   });
 
   it("keeps Our picks: Best overall is the top-scored 12-month plan, Lowest bill the cheapest", async () => {
@@ -97,8 +129,11 @@ describe("score v2 in the list", () => {
     await ready();
     expect(screen.getByText("Our picks")).toBeInTheDocument();
     expect(screen.getByText("Best overall")).toBeInTheDocument();
-    // the sort option and the pick both say "Lowest bill"
-    expect(screen.getAllByText("Lowest bill").length).toBeGreaterThanOrEqual(2);
+    // the pick is still called "Lowest bill"; the sort option is "Lowest total cost"
+    expect(screen.getAllByText("Lowest bill")).toHaveLength(1);
+    expect(
+      screen.getByRole("radio", { name: "Lowest total cost" }),
+    ).toBeInTheDocument();
   });
 
   it("re-ranks when the usage changes", async () => {
@@ -125,7 +160,7 @@ describe("score v2 in the list", () => {
     fireEvent.click(
       screen.getByRole("checkbox", { name: /100% renewable only/i }),
     );
-    expect(cardNames()).toEqual(["Thirty-six Dear"]);
+    expect(cardNames()).toEqual(["Green Dear"]);
     expect(
       screen.getByText("Showing 1 of 4 plans at 1,000 kWh"),
     ).toBeInTheDocument();

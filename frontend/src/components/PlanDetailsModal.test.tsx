@@ -123,7 +123,7 @@ describe("PlanDetailsModal", () => {
     expect(screen.queryByText(/cancellation fee:/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the rest of the pricing text and says 'not available' when no fee is stated", () => {
+  it("keeps the rest of the pricing text and says 'Not listed' when no fee is stated", () => {
     render(
       <PlanDetailsModal
         plan={plan({ pricingDetails: "Free nights 9pm–6am." })}
@@ -131,7 +131,10 @@ describe("PlanDetailsModal", () => {
       />,
     );
     expect(screen.getByText("Free nights 9pm–6am.")).toBeInTheDocument();
-    expect(screen.getAllByText("not available")).toHaveLength(1);
+    // the fee box says so: not blank, not $0
+    expect(screen.getAllByText("Not listed")).toHaveLength(1);
+    expect(screen.queryByText("$0")).not.toBeInTheDocument();
+    expect(screen.queryByText("not available")).not.toBeInTheDocument();
   });
 
   it("links the EFL and Terms documents", () => {

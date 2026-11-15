@@ -5,9 +5,9 @@ import { parseCancellationFee } from "../lib/cancellationFee";
 import { PriceCurveBadge } from "./PriceCurveBadge";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import { httpUrl, telHref } from "../lib/links";
+import { costAt } from "../lib/contractCost";
 import {
   DEFAULT_USAGE_KWH,
-  estimatedMonthlyBill,
   pricePerKwhAtUsage,
 } from "../lib/usage";
 
@@ -37,14 +37,22 @@ function Stat({
   );
 }
 
-function Unavailable({ label, why }: { label: string; why: string }) {
+function Unavailable({
+  label,
+  why,
+  text = "not available",
+}: {
+  label: string;
+  why: string;
+  text?: string;
+}) {
   return (
     <div>
       <p className="rounded-full bg-brand-soft px-4 py-1 text-center text-sm font-bold tracking-wide text-brand">
         {label}
       </p>
       <p className="mt-1 text-center text-sm text-ink-soft" title={why}>
-        not available
+        {text}
       </p>
     </div>
   );
@@ -77,7 +85,7 @@ export function PlanDetailsModal({
   ];
 
   const rateAtUsage = pricePerKwhAtUsage(plan, usageKwh);
-  const bill = estimatedMonthlyBill(plan, usageKwh);
+  const bill = costAt(plan, usageKwh);
   const priceWhy =
     "A price cannot be estimated because one or more anchor rates are missing";
   // Where "Sign up" goes: the plan's own sign-up page, else the provider's site.
@@ -218,11 +226,12 @@ export function PlanDetailsModal({
             <Unavailable
               label="CANCELLATION FEE"
               why="No single flat fee found in the plan's pricing details"
+              text="Not listed"
             />
           )}
           <Stat
             label="PERCENTAGE OF RENEWABLE"
-            value={plan.renewableDescription ?? "not stated"}
+            value={plan.renewableDescription ?? "Not listed"}
           />
         </div>
 

@@ -1,9 +1,9 @@
 import type { Plan } from "../frontend/src/types/plan.js";
 import { rankPlans } from "../frontend/src/lib/ranking.js";
-import { sortPlans } from "../frontend/src/lib/sort.js";
+import { sortTimeOfUse } from "../frontend/src/lib/sort.js";
 
 export interface PipelineResult {
-  /** Scored and ranked, best first. */
+  /** Ranked by total cost at the default usage, cheapest first. */
   ranked: Plan[];
   /** Time-of-use plans, unranked, cheapest flat reference rate first. */
   timeOfUse: Plan[];
@@ -18,9 +18,8 @@ export interface PipelineResult {
 export function applyPipeline(plans: Plan[]): PipelineResult {
   return {
     ranked: rankPlans(plans.filter((plan) => !plan.isTimeOfUse)),
-    timeOfUse: sortPlans(
+    timeOfUse: sortTimeOfUse(
       plans.filter((plan) => plan.isTimeOfUse),
-      "lowestBill",
       1000,
     ),
   };

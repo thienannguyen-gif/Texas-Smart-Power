@@ -4,7 +4,7 @@ import {
   calculatePriceScore,
   priceCurveWarning,
   rankPlans,
-  scorePlans,
+  scorePlansLegacy as scorePlans,
 } from "./ranking";
 
 const base: Plan = {
@@ -140,7 +140,7 @@ describe("scorePlans", () => {
     expect(scored.every(({ breakdown }) => breakdown.fee === 10)).toBe(true);
   });
 
-  it("excludes plans with any missing required factor input", () => {
+  it("leaves out only time-of-use plans, plans missing an anchor price, and plans with no term", () => {
     const plans = [
       makePlan({ id: 1 }),
       makePlan({ id: 2, renewableDescription: null }),
@@ -152,7 +152,16 @@ describe("scorePlans", () => {
       makePlan({ id: 5, termMonths: null }),
     ];
 
-    expect(rankPlans(plans).map((plan) => plan.id)).toEqual([1]);
+    // 2 (no renewable %) and 3 (no cancellation fee) stay: they have a real price
+    expect(rankPlans(plans).map((plan) => plan.id)).toEqual([1, 2, 3]);
+  });
+
+  it("keeps a plan with no cancellation fee, behind an equal-priced plan that lists one", () => {
+    const listed = makePlan({ id: 7, pricingDetails: "Cancellation fee $300" });
+    const unlisted = makePlan({ id: 3, pricingDetails: null });
+    const ids = (ps: Plan[]) => rankPlans(ps).map((plan) => plan.id);
+    expect(ids([unlisted, listed])).toEqual([7, 3]);
+    expect(ids([listed, unlisted])).toEqual([7, 3]);
   });
 
   it("does not rank a plan above another that dominates every factor", () => {

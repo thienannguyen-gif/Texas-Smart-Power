@@ -1,16 +1,21 @@
 import type { Plan } from "../types/plan";
+import { DEFAULT_USAGE_KWH, pricePerKwhAtUsage } from "../lib/usage";
+import { costAt } from "../lib/contractCost";
 import {
-  DEFAULT_USAGE_KWH,
-  estimatedMonthlyBill,
-  pricePerKwhAtUsage,
-} from "../lib/usage";
-import { formatAmount, formatKwh, formatRate } from "../lib/money";
+  formatAmount,
+  formatAmountCents,
+  formatKwh,
+  formatRate,
+} from "../lib/money";
 import { renewablePct } from "../lib/filters";
 import { PriceCurveBadge } from "./PriceCurveBadge";
 import { ProviderLogo } from "./ProviderLogo";
 
 // Display-only. Ranking is computed by the ingestion pipeline; this card
 // renders plan details without showing the internal score.
+
+/** A contract shorter than this gets the "price after is not capped" warning. */
+const SHORT_CONTRACT_MONTHS = 12;
 
 export function PlanCard({
   plan,
@@ -25,6 +30,18 @@ export function PlanCard({
   unranked?: boolean;
 }) {
   const renewable = renewablePct(plan);
+  // What the contract costs at this usage: L x the monthly bill, both from
+  // costAt. A time-of-use card keeps the monthly figure (its price is only a
+  // reference rate), and so does a plan with no usable term.
+  const bill = costAt(plan, usageKwh);
+  const months = plan.termMonths;
+  const showTotal =
+    !unranked &&
+    bill !== null &&
+    months !== null &&
+    Number.isInteger(months) &&
+    months >= 1;
+  const endsSoon = showTotal && months < SHORT_CONTRACT_MONTHS;
 
   return (
     <article className="rounded-2xl border-2 border-line bg-surface p-4 sm:p-5">
@@ -62,17 +79,30 @@ export function PlanCard({
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-center sm:grid-cols-4 sm:gap-4">
-        <div className="rounded-xl bg-surface-alt px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
-          <dt className="text-sm font-semibold text-ink-soft">
-            Est. monthly bill
-          </dt>
-          <p className="text-xs text-ink-faint">
-            {unranked ? "at reference rate" : "per month"}
-          </p>
-          <dd className="mt-1 text-2xl font-extrabold">
-            {formatAmount(estimatedMonthlyBill(plan, usageKwh))}
-          </dd>
-        </div>
+        {showTotal ? (
+          <div className="rounded-xl bg-surface-alt px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
+            <dt className="text-sm font-semibold text-ink-soft">Total cost</dt>
+            <p className="text-xs text-ink-faint">
+              over {months} {months === 1 ? "month" : "months"} ·{" "}
+              {formatAmountCents(bill)}/mo
+            </p>
+            <dd className="mt-1 text-2xl font-extrabold">
+              {formatAmountCents(months * bill)}
+            </dd>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-surface-alt px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
+            <dt className="text-sm font-semibold text-ink-soft">
+              Est. monthly bill
+            </dt>
+            <p className="text-xs text-ink-faint">
+              {unranked ? "at reference rate" : "per month"}
+            </p>
+            <dd className="mt-1 text-2xl font-extrabold">
+              {formatAmount(bill)}
+            </dd>
+          </div>
+        )}
         <div className="rounded-xl bg-surface-alt px-2 py-3 sm:bg-transparent sm:px-0 sm:py-0">
           <dt className="text-sm font-semibold text-ink-soft">
             {unranked ? "Reference rate" : "Price per kWh"}
@@ -96,10 +126,16 @@ export function PlanCard({
               renewable === 100 ? "text-sage" : "text-ink-faint"
             }`}
           >
-            {renewable !== null ? `${renewable}%` : "—"}
+            {renewable !== null ? `${renewable}%` : "Not listed"}
           </dd>
         </div>
       </dl>
+      {endsSoon && (
+        <p className="mt-3 rounded-xl bg-surface-alt px-3 py-2 text-sm font-semibold text-ink">
+          ⚠ Ends in {months} {months === 1 ? "month" : "months"}. The price
+          after is not capped.
+        </p>
+      )}
     </article>
   );
 }

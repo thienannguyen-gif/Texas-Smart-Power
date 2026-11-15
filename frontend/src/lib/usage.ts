@@ -1,4 +1,5 @@
 import type { Plan } from "../types/plan.js";
+import { costAt } from "./contractCost.js";
 
 // The usage level the app prices plans at until the user enters their own: the
 // "Small home" preset below.
@@ -23,38 +24,41 @@ export function clampUsage(value: number): number {
 }
 
 /**
- * Price per kWh (in dollars) for a plan at a given monthly usage.
- *
- * The upstream data gives prices at 500 / 1000 / 2000 kWh. Prices between
- * anchors are linearly interpolated; outside the anchor range, the nearest
- * endpoint rate is held flat. Every anchor is required to estimate a price.
+ * Price per kWh (in dollars) at a given monthly usage: the bill from `costAt`
+ * (contractCost.ts) divided by the usage, so the rate shown always agrees with
+ * the bill shown. Null when an anchor price is missing.
  */
 export function pricePerKwhAtUsage(
+  plan: Plan,
+  usageKwh: number,
+): number | null {
+  if (!Number.isFinite(usageKwh) || usageKwh <= 0) return null;
+  const bill = costAt(plan, usageKwh);
+  return bill === null ? null : bill / usageKwh;
+}
+
+/**
+ * @deprecated WRONG between the anchors, kept only so a test can show it. It
+ * interpolates the unit price linearly and multiplies by usage, but the bill is
+ * linear in usage (F + c*u), not the unit price. Use `costAt` (contractCost.ts):
+ * it is exact, and it is what the cards, the picks and the ranking use. Nothing
+ * in the app calls this.
+ */
+export function estimatedMonthlyBill(
   plan: Plan,
   usageKwh: number,
 ): number | null {
   const { at500, at1000, at2000 } = plan.pricePerKwh;
   if (!Number.isFinite(usageKwh)) return null;
   if (at500 === null || at1000 === null || at2000 === null) return null;
-  if (usageKwh <= 500) return at500;
-  if (usageKwh <= 1000) {
-    return at500 + ((at1000 - at500) * (usageKwh - 500)) / 500;
-  }
-  if (usageKwh <= 2000) {
-    return at1000 + ((at2000 - at1000) * (usageKwh - 1000)) / 1000;
-  }
-  return at2000;
-}
-
-/**
- * Estimated monthly bill in dollars: rate (dollars/kWh) x usage.
- */
-export function estimatedMonthlyBill(
-  plan: Plan,
-  usageKwh: number,
-): number | null {
-  const rate = pricePerKwhAtUsage(plan, usageKwh);
-  return rate === null ? null : rate * usageKwh;
+  let rate: number;
+  if (usageKwh <= 500) rate = at500;
+  else if (usageKwh <= 1000)
+    rate = at500 + ((at1000 - at500) * (usageKwh - 500)) / 500;
+  else if (usageKwh <= 2000)
+    rate = at1000 + ((at2000 - at1000) * (usageKwh - 1000)) / 1000;
+  else rate = at2000;
+  return rate * usageKwh;
 }
 
 /** The preset whose kWh is exactly `kwh`, or null when it is the user's own number. */

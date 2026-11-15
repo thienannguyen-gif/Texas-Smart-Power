@@ -233,7 +233,10 @@ export function PlansView({
               <PlanList
                 plans={visiblePlans}
                 totalCount={scorablePlans(allPlans, usageKwh).length}
-                timeOfUsePlans={visibleTimeOfUse}
+                timeOfUsePlans={filters.onlyTimeOfUse ? visibleTimeOfUse : []}
+                timeOfUseHidden={
+                  filters.onlyTimeOfUse ? 0 : visibleTimeOfUse.length
+                }
                 picks={picks}
                 showRanked={!filters.onlyTimeOfUse}
                 generatedAt={state.data.generatedAt}

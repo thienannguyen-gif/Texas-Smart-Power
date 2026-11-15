@@ -1045,6 +1045,14 @@ function renderTou(data: TduDataFile = touFile) {
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 }
 
+// The time-of-use plans are not in the list when the page opens: they appear
+// when the visitor ticks "Only time-of-use plans".
+const touBox = () =>
+  screen.getByRole("checkbox", { name: /only time-of-use plans/i });
+const showTou = () => fireEvent.click(touBox());
+const touRegion = () =>
+  screen.queryByRole("region", { name: /time-of-use plans/i });
+
 const touSection = () =>
   screen.getByRole("region", { name: /time-of-use plans/i });
 const sectionNames = () =>
@@ -1054,25 +1062,25 @@ const sectionNames = () =>
 const rankedNames = () =>
   within(screen.getByRole("region", { name: "Plans" }))
     .getAllByRole("article")
-    .filter((card) => !touSection().contains(card))
+    .filter((card) => !touRegion()?.contains(card))
     .map((card) => within(card).getByRole("heading").textContent);
 
-test("time-of-use plans are in their own unranked section below the ranked list, not in it", async () => {
+test("time-of-use plans are not in the list when the page opens; ticking the filter shows them in their own unranked section", async () => {
   renderTou();
   await screen.findByText("Ranked A");
 
+  // opening the page: only the ranked plans, nothing time-of-use anywhere
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
-  expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]);
+  expect(touRegion()).toBeNull();
+  for (const name of ["Cross", "Night Owl", "Day Saver"]) {
+    expect(screen.queryByText(name)).not.toBeInTheDocument();
+  }
+  expect(document.body.textContent).not.toMatch(/unranked/i);
 
-  // the section comes after the ranked list and its pagination
+  showTou();
+  expect(screen.queryByText("Ranked A")).not.toBeInTheDocument();
+  expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]);
   const section = touSection();
-  const pagination = screen.getByRole("navigation", {
-    name: "Plan pagination",
-  });
-  expect(
-    pagination.compareDocumentPosition(section) &
-      Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
 
   // clearly marked, with the exact intro
   expect(
@@ -1086,18 +1094,17 @@ test("time-of-use plans are in their own unranked section below the ranked list,
   expect(within(section).getAllByText(/unranked · time-of-use/i)).toHaveLength(
     3,
   );
-  // and no ordinary card carries that mark
-  expect(
-    within(screen.getByRole("region", { name: "Plans" })).getAllByText(
-      /unranked · time-of-use/i,
-    ),
-  ).toHaveLength(3);
+  // and unticking brings the ranked list back and the section goes away
+  showTou();
+  expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
+  expect(touRegion()).toBeNull();
 });
 
 test("the section is ordered by reference rate, cheapest first, follows the usage, and ignores the sort choice", async () => {
   renderTou();
   await screen.findByText("Ranked A");
   const usage = screen.getByLabelText(/monthly usage in kWh/i);
+  showTou();
 
   expect(sectionNames()).toEqual(["Cross", "Night Owl", "Day Saver"]); // 80, 100, 150 at 1,000 kWh
 
@@ -1108,6 +1115,8 @@ test("the section is ordered by reference rate, cheapest first, follows the usag
   fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
   expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
   fireEvent.click(screen.getByRole("radio", { name: "Lowest total cost" }));
+  expect(sectionNames()).toEqual(["Night Owl", "Day Saver", "Cross"]);
+  showTou();
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
 });
 
@@ -1158,19 +1167,22 @@ test("the other filters apply to the time-of-use section too, and its count foll
   const sidebar = screen.getByRole("complementary", { name: "Filters" });
 
   pickProvider("night", "Night Co"); // Night Owl, Day Saver
-  expect(sectionNames()).toEqual(["Night Owl", "Day Saver"]);
   expect(
     within(sidebar)
       .getByRole("checkbox", { name: /only time-of-use plans/i })
       .closest("label"),
   ).toHaveTextContent("Only time-of-use plans (2)");
-  // that provider has no ranked plans, so the ranked list is empty but the section is not
+  // that provider has no ranked plans, so the ranked list is empty, and the
+  // time-of-use plans are still not shown until the filter is ticked
   expect(
     screen.getByText(/no ranked plans match these filters/i),
   ).toBeInTheDocument();
+  expect(touRegion()).toBeNull();
   expect(
     screen.getByText("Showing 0 of 2 plans at 1,000 kWh"),
   ).toBeInTheDocument();
+  showTou();
+  expect(sectionNames()).toEqual(["Night Owl", "Day Saver"]);
 });
 
 test("with no time-of-use plans in the area the filter is greyed out and says so, and there is no section", async () => {
@@ -1198,16 +1210,20 @@ test("data written before the split (time-of-use plans inside plans) is still sh
   });
   await screen.findByText("Ranked A");
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
-  expect(sectionNames()).toEqual(["Night Owl"]);
+  expect(touRegion()).toBeNull();
   expect(screen.getByText("2 plans at 1,000 kWh")).toBeInTheDocument();
+  showTou();
+  expect(sectionNames()).toEqual(["Night Owl"]);
 });
 
-test("a ZIP whose only plans are time-of-use still shows them", async () => {
+test("a ZIP whose only plans are time-of-use shows them once the filter is ticked", async () => {
   renderTou({ ...touFile, planCount: 0, plans: [] });
-  expect(await screen.findByText("Night Owl")).toBeInTheDocument();
   expect(
-    screen.getByText(/no ranked plans match these filters/i),
+    await screen.findByText(/no ranked plans match these filters/i),
   ).toBeInTheDocument();
+  expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
+  showTou();
+  expect(screen.getByText("Night Owl")).toBeInTheDocument();
 });
 
 test("phone: the drawer has the time-of-use filter; Apply switches the page, and it counts on the Filters button", async () => {
@@ -1450,29 +1466,20 @@ function renderManyWithTou() {
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 }
 
-test("the time-of-use section is in the page on page 1 only, not hidden or empty on later pages", async () => {
+test("the time-of-use section is on no page of the list: not on page 1, not on later pages", async () => {
   renderManyWithTou();
   await screen.findByText("Page 1 of 3");
-  expect(screen.getByText("Night Owl")).toBeInTheDocument();
-  expect(
-    screen.getByRole("region", { name: /time-of-use plans/i }),
-  ).toBeInTheDocument();
+  expect(screen.queryByText("Night Owl")).toBeNull();
+  expect(touRegion()).toBeNull();
 
   fireEvent.click(next());
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
-  expect(
-    screen.queryByRole("region", { name: /time-of-use plans/i }),
-  ).toBeNull();
+  expect(touRegion()).toBeNull();
   expect(document.getElementById("tou-heading")).toBeNull();
-  expect(screen.queryByText("Night Owl")).toBeNull();
   expect(document.body.textContent).not.toContain("Unranked");
 
   fireEvent.click(next());
   expect(document.getElementById("tou-heading")).toBeNull();
-
-  fireEvent.click(prev());
-  fireEvent.click(prev());
-  expect(screen.getByText("Night Owl")).toBeInTheDocument();
 });
 
 test("the time-of-use-only view still shows its section, whatever page the list was on", async () => {

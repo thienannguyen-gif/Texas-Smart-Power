@@ -23,12 +23,14 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 //
 // Time-of-use plans are not ranked (docs/BRIEF.md). They arrive separately, in
 // `timeOfUsePlans`, already ordered by reference rate, and are drawn in their
-// own section under the ranked list. With `showRanked` off (the sidebar's
-// "only time-of-use plans") only that section is drawn.
+// own section. They are only drawn when the visitor ticks the sidebar's "only
+// time-of-use plans" (`showRanked` off): they are not in the ranked list, and
+// `timeOfUseHidden` says how many are waiting behind that filter.
 export function PlanList({
   plans,
   totalCount,
   timeOfUsePlans = [],
+  timeOfUseHidden = 0,
   showRanked = true,
   picks = [],
   generatedAt,
@@ -39,6 +41,8 @@ export function PlanList({
   plans: Plan[];
   totalCount: number;
   timeOfUsePlans?: Plan[];
+  /** Time-of-use plans that exist for the area but are not shown right now. */
+  timeOfUseHidden?: number;
   showRanked?: boolean;
   /** The "Our picks" winners, from the ranked plans being shown. */
   picks?: AwardPick[];
@@ -131,9 +135,11 @@ export function PlanList({
       {showRanked &&
         (plans.length === 0 ? (
           <p className="text-ink-soft">
-            {touCount === 0
+            {touCount === 0 && timeOfUseHidden === 0
               ? "No plans match these filters."
               : "No ranked plans match these filters."}
+            {timeOfUseHidden > 0 &&
+              " Tick “Only time-of-use plans” to see the time-of-use plans."}
           </p>
         ) : (
           <>

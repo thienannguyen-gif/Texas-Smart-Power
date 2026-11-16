@@ -74,18 +74,21 @@ export function PlanSummary({
         ))}
       </div>
 
-      <hr className="mt-4 border-t border-line-soft" />
+      {/* pushed to the bottom, so cards side by side line up */}
+      <div className="mt-auto">
+        <hr className="mt-4 border-t border-line-soft" />
 
-      <div className="mt-3 flex items-baseline justify-between gap-3">
-        <span className="text-[15px] font-semibold text-ink">
-          {formatRate(pricePerKwhAtUsage(plan, usageKwh))}
-        </span>
-        <span>
-          <span className="text-[22px] leading-none font-semibold text-ink">
-            {formatAmount(bill)}
+        <div className="mt-3 flex items-baseline justify-between gap-3">
+          <span className="text-[15px] font-semibold text-ink">
+            {formatRate(pricePerKwhAtUsage(plan, usageKwh))}
           </span>
-          <span className="ml-0.5 text-[11px] text-ink-faint">/mo</span>
-        </span>
+          <span>
+            <span className="text-[22px] leading-none font-semibold text-ink">
+              {formatAmount(bill)}
+            </span>
+            <span className="ml-0.5 text-[11px] text-ink-faint">/mo</span>
+          </span>
+        </div>
       </div>
     </>
   );

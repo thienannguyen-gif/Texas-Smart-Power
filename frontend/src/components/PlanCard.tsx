@@ -14,9 +14,6 @@ import { ProviderLogo } from "./ProviderLogo";
 // Display-only. Ranking is computed by the ingestion pipeline; this card
 // renders plan details without showing the internal score.
 
-/** A contract shorter than this gets the "price after is not capped" warning. */
-const SHORT_CONTRACT_MONTHS = 12;
-
 export function PlanCard({
   plan,
   onMoreDetails,
@@ -41,7 +38,6 @@ export function PlanCard({
     months !== null &&
     Number.isInteger(months) &&
     months >= 1;
-  const endsSoon = showTotal && months < SHORT_CONTRACT_MONTHS;
 
   return (
     <article className="rounded-2xl border-2 border-line bg-surface p-4 sm:p-5">
@@ -130,12 +126,6 @@ export function PlanCard({
           </dd>
         </div>
       </dl>
-      {endsSoon && (
-        <p className="mt-3 rounded-xl bg-surface-alt px-3 py-2 text-sm font-semibold text-ink">
-          ⚠ Ends in {months} {months === 1 ? "month" : "months"}. The price
-          after is not capped.
-        </p>
-      )}
     </article>
   );
 }

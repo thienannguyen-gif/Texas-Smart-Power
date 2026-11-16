@@ -149,7 +149,7 @@ export function PlanList({
                   <PlanCard
                     plan={plan}
                     usageKwh={usageKwh}
-                    onMoreDetails={() => setSelected(plan)}
+                    onOpen={() => setSelected(plan)}
                   />
                 </li>
               ))}
@@ -202,8 +202,7 @@ export function PlanList({
                 <PlanCard
                   plan={plan}
                   usageKwh={usageKwh}
-                  unranked
-                  onMoreDetails={() => setSelected(plan)}
+                  onOpen={() => setSelected(plan)}
                 />
               </li>
             ))}

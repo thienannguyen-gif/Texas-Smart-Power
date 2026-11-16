@@ -87,25 +87,31 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
 
-  expect(await screen.findByText("at 1,000 kWh")).toBeInTheDocument();
+  expect(await screen.findByText("1 plan at 1,000 kWh")).toBeInTheDocument();
   const card = screen.getByRole("article");
   expect(within(card).getByText("12.3¢/kWh")).toBeInTheDocument();
+  // C1000 = 10 x 12.3 = $123.00 a month, shown on the card
+  expect(within(card).getByText("$123")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /more details/i }),
+  ).not.toBeInTheDocument();
   const box = screen.getByLabelText(/monthly usage in kWh/i);
   expect(box).toHaveValue("1,000");
   expect(
     screen.queryByRole("button", { name: /your usage/i }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+  fireEvent.click(card);
   const dialog = screen.getByRole("dialog", { name: /interpolated plan/i });
   expect(within(dialog).getByText("$123")).toBeInTheDocument();
   expect(within(dialog).getAllByText("12.3¢/kWh")).toHaveLength(2);
 
   fireEvent.click(within(dialog).getByRole("button", { name: /close/i }));
   enterUsage(box, "850");
-  expect(within(card).getByText("at 850 kWh")).toBeInTheDocument();
+  expect(screen.getByText("1 plan at 850 kWh")).toBeInTheDocument();
   expect(within(card).getByText("12.4¢/kWh")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+  expect(within(card).getByText("$105")).toBeInTheDocument(); // C(850) = $105.15
+  fireEvent.click(card);
   const updatedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
   });
@@ -124,7 +130,8 @@ test("updates card and bill/average prices immediately when usage changes", asyn
   // by hand: C2000 = 20 x 12.1 = $242.00, m2 = (242.00 - 123.00) / 1000 = 0.119;
   // C(5000) = 242.00 + 0.119 x 3000 = $599.00; rate = 599 / 5000 = 11.98 cents -> "12.0¢/kWh"
   expect(within(card).getByText("12.0¢/kWh")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /more details/i }));
+  expect(within(card).getByText("$599")).toBeInTheDocument();
+  fireEvent.click(card);
   const cappedDialog = screen.getByRole("dialog", {
     name: /interpolated plan/i,
   });
@@ -294,7 +301,7 @@ test("a usage change keeps the same page number", async () => {
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
 
   enterUsage(screen.getByLabelText(/monthly usage in kWh/i), "500");
-  expect(screen.getAllByText("at 500 kWh")).toHaveLength(6);
+  expect(screen.getByText("14 plans at 500 kWh")).toBeInTheDocument();
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
   expect(screen.getByText("Plan 7")).toBeInTheDocument();
 });
@@ -718,11 +725,9 @@ test("sort control: Lowest total cost is the default, cheapest first, with its d
   // usage is 1,000 kWh: C 90, B 100, A 120, and D (no estimate) is not listed
   expect(cardNames()).toEqual(["C Unstable", "B Credit", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  // total = 12 x C(1000) = 12 x $90.00 = $1,080.00
-  expect(within(first).getByText("$1,080.00")).toBeInTheDocument();
-  expect(
-    within(first).getByText("over 12 months · $90.00/mo"),
-  ).toBeInTheDocument();
+  // the monthly bill, C(1000) = 10 x 9c = $90, big on the right
+  expect(within(first).getByText("$90")).toBeInTheDocument();
+  expect(within(first).getByText("/mo")).toBeInTheDocument();
   expect(
     screen.getByText(
       "Sorted by what the contract costs at your usage level. Cheapest first.",
@@ -756,8 +761,8 @@ test("in Lowest total cost mode, changing the usage re-sorts the list", async ()
   enterUsage(usage, "2000"); // B 200, C 220, A 240
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  // B at 2,000 kWh: C2000 = 20 x 10c = $200.00; total = 12 x 200.00 = $2,400.00
-  expect(within(first).getByText("$2,400.00")).toBeInTheDocument();
+  // B at 2,000 kWh: C2000 = 20 x 10c = $200
+  expect(within(first).getByText("$200")).toBeInTheDocument();
 
   // and Best match at 1,000 kWh: the score order (it moves with the usage, so
   // this is checked at the usage it was worked out for)
@@ -766,21 +771,15 @@ test("in Lowest total cost mode, changing the usage re-sorts the list", async ()
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
 });
 
-test("the unstable-price badge shows in both modes; the sort order never pushes the plan down", async () => {
+test("a card carries no warning badge; an unstable-curve plan is still first when it is the cheapest, and not pushed down", async () => {
   renderSortable();
   await screen.findByText("A Flat");
 
-  const badgeOwners = () =>
-    screen
-      .getAllByRole("article")
-      .filter((card) => within(card).queryByText(/unstable price/i))
-      .map((card) => within(card).getByRole("heading").textContent);
-
-  expect(badgeOwners()).toEqual(["C Unstable"]);
-  // ...and it is first, even though it is the plan with the warning
+  // no "Unstable price" badge on any card any more (the details still explain it)
+  expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
   expect(cardNames()[0]).toBe("C Unstable");
   fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
-  expect(badgeOwners()).toEqual(["C Unstable"]);
+  expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
   expect(cardNames()[1]).toBe("C Unstable");
 });
 
@@ -925,9 +924,9 @@ test("typing a usage re-prices and re-sorts the list live", async () => {
   expect(box).toHaveValue("2,000");
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
   const first = screen.getAllByRole("article")[0];
-  // B at 2,000 kWh: C2000 = 20 x 10c = $200.00; total = 12 x 200.00 = $2,400.00
-  expect(within(first).getByText("$2,400.00")).toBeInTheDocument();
-  expect(within(first).getAllByText("at 2,000 kWh").length).toBeGreaterThan(0);
+  // B at 2,000 kWh: C2000 = 20 x 10c = $200
+  expect(within(first).getByText("$200")).toBeInTheDocument();
+  expect(screen.getByText("3 plans at 2,000 kWh")).toBeInTheDocument();
 
   enterUsage(box, "500");
   expect(cardNames()).toEqual(["C Unstable", "A Flat", "B Credit"]); // 50, 60, 100
@@ -1091,9 +1090,10 @@ test("time-of-use plans are not in the list when the page opens; ticking the fil
       "These plans charge different rates at different times of day. The price shown is Power to Choose's flat reference rate, not what you would actually pay — it depends on when you use electricity.",
     ),
   ).toBeInTheDocument();
-  expect(within(section).getAllByText(/unranked · time-of-use/i)).toHaveLength(
-    3,
-  );
+  // the cards themselves carry no badge: the heading says (unranked)
+  expect(
+    within(section).queryByText(/unranked · time-of-use/i),
+  ).not.toBeInTheDocument();
   // and unticking brings the ranked list back and the section goes away
   showTou();
   expect(rankedNames()).toEqual(["Ranked A", "Ranked B"]);
@@ -1247,7 +1247,7 @@ test("phone: the drawer has the time-of-use filter; Apply switches the page, and
   ).toBeInTheDocument();
 });
 
-test("the existing-customers badge marks only the plans with new_customer false, not the rest", async () => {
+test("a card has no 'Open to existing customers' badge, whatever new_customer says", async () => {
   mockPlans({
     ...file,
     planCount: 3,
@@ -1259,12 +1259,10 @@ test("the existing-customers badge marks only the plans with new_customer false,
   });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("Promo A");
-
-  const withBadge = screen
-    .getAllByRole("article")
-    .filter((card) => within(card).queryByText("Open to existing customers"))
-    .map((card) => within(card).getByRole("heading").textContent);
-  expect(withBadge).toEqual(["Open B"]);
+  expect(cardNamesOnPage()).toHaveLength(3);
+  expect(
+    screen.queryByText("Open to existing customers"),
+  ).not.toBeInTheDocument();
 });
 
 // ---- Contract length buckets: 1–6 | 7–11 | 12 | 13+
@@ -1445,15 +1443,19 @@ test("a card whose logo fails to load shows the provider's initials in a circle 
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   await screen.findByText("With logo");
 
-  fireEvent.error(screen.getByRole("img", { name: "GEXA ENERGY" }));
-  expect(
-    screen.queryByRole("img", { name: "GEXA ENERGY" }),
-  ).not.toBeInTheDocument();
+  // the logo is decorative (empty alt); the company name stays in the card for a screen reader
+  const images = () =>
+    Array.from(document.querySelectorAll("img")).filter(
+      (img) => img.getAttribute("src") === "https://example.com/blocked.png",
+    );
+  expect(images()).toHaveLength(1);
+  fireEvent.error(images()[0]);
+  expect(images()).toHaveLength(0);
   expect(screen.getByText("GE")).toBeInTheDocument();
   // the other card keeps its working logo
   expect(
-    screen.getByRole("img", { name: "Octopus Energy" }),
-  ).toBeInTheDocument();
+    document.querySelector('img[src="https://example.com/ok.png"]'),
+  ).not.toBeNull();
 });
 
 // ---- Pagination: the time-of-use section, and scrolling on a page change

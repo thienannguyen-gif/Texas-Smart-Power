@@ -24,282 +24,170 @@ const base: Plan = {
 
 const plan = (over: Partial<Plan> = {}): Plan => ({ ...base, ...over });
 
+// Worked by hand from r500 = 15.1c, r1000 = 13.9c, r2000 = 14.5c:
+//   C500 = 5 x 15.1 = $75.50   C1000 = 10 x 13.9 = $139.00   C2000 = 20 x 14.5 = $290.00
+//   m1 = (139.00 - 75.50) / 500 = 0.127   m2 = (290.00 - 139.00) / 1000 = 0.151
+
 describe("PlanCard", () => {
-  it("shows the plan name, company and the three headline stats", () => {
+  it("shows the plan name, the facts as chips, the rate and the monthly bill", () => {
     render(<PlanCard plan={plan()} usageKwh={1000} />);
     expect(
       screen.getByRole("heading", { name: "Steady 12" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Example Energy")).toBeInTheDocument();
-    expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 0.139 * 100, 1dp
-    // total cost = L x C(1000) = 12 x (10 x 13.9c = $139.00) = $1,668.00
-    expect(screen.getByText("$1,668.00")).toBeInTheDocument();
-    expect(screen.getByText("over 12 months · $139.00/mo")).toBeInTheDocument();
-    expect(screen.getByText("12 mos")).toBeInTheDocument();
-    expect(screen.getByText("6%")).toBeInTheDocument();
+    expect(screen.getByText("12-month term")).toBeInTheDocument();
+    expect(screen.getByText("6% renewable")).toBeInTheDocument();
+    expect(screen.getByText("$150 cancellation fee")).toBeInTheDocument();
+    expect(screen.getByText("13.9¢/kWh")).toBeInTheDocument(); // 139 / 1000
+    expect(screen.getByText("$139")).toBeInTheDocument(); // C(1000)
+    expect(screen.getByText("/mo")).toBeInTheDocument();
   });
 
-  it("shows an em dash for missing term / price / bill, and 'Not listed' for a missing renewable %", () => {
+  it("keeps the company name for a screen reader", () => {
+    render(<PlanCard plan={plan()} />);
+    expect(screen.getByText("Example Energy")).toBeInTheDocument();
+  });
+
+  it("says 'Not listed' for a missing fee or renewable %, and a dash for a missing price; no term chip without a term", () => {
     render(
       <PlanCard
         plan={plan({
           termMonths: null,
           renewableDescription: null,
+          pricingDetails: null,
           pricePerKwh: { at500: null, at1000: null, at2000: null },
         })}
       />,
     );
-    expect(screen.getAllByText("—")).toHaveLength(3);
-    // never a blank and never 0%
-    expect(screen.getByText("Not listed")).toBeInTheDocument();
-    expect(screen.queryByText("0%")).not.toBeInTheDocument();
-  });
-
-  it("uses the logo (with company alt) instead of the company text when present", () => {
-    render(
-      <PlanCard plan={plan({ companyLogo: "https://example.com/l.png" })} />,
-    );
+    expect(screen.getByText("Renewable: Not listed")).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: "Example Energy" }),
+      screen.getByText("Cancellation fee: Not listed"),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Example Energy")).not.toBeInTheDocument();
+    expect(screen.queryByText(/-month term/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("—")).toHaveLength(2); // rate and bill
+    expect(screen.queryByText("0% renewable")).not.toBeInTheDocument();
+    expect(screen.queryByText("$0 cancellation fee")).not.toBeInTheDocument();
   });
 
-  it("has no star rating: there is no rating data behind one", () => {
-    render(<PlanCard plan={plan()} />);
-    expect(screen.queryByLabelText(/not rated yet/i)).not.toBeInTheDocument();
-    expect(document.body.textContent).not.toContain("★");
-  });
-
-  it("fires onMoreDetails from the button, and hides it without a handler", () => {
-    const onMoreDetails = vi.fn();
+  it("a $0 fee says 'No cancellation fee'; an unreadable one never does", () => {
     const { rerender } = render(
-      <PlanCard plan={plan()} onMoreDetails={onMoreDetails} />,
+      <PlanCard plan={plan({ pricingDetails: "Cancellation fee: $0" })} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /more details/i }));
-    expect(onMoreDetails).toHaveBeenCalledOnce();
+    expect(screen.getByText("No cancellation fee")).toBeInTheDocument();
+    rerender(
+      <PlanCard plan={plan({ pricingDetails: "See the fact sheet" })} />,
+    );
+    expect(screen.queryByText("No cancellation fee")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Cancellation fee: Not listed"),
+    ).toBeInTheDocument();
+  });
 
-    rerender(<PlanCard plan={plan()} />);
+  it("prices at the given usage from the exact bill, in every segment", () => {
+    const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
+    // C500 = $75.50 -> "$76"; rate 75.50 / 500 = 15.1 cents
+    expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("$76")).toBeInTheDocument();
+
+    // C(1500) = 139.00 + 0.151 x (1500 - 1000) = $214.50 -> "$215"; rate = 214.50 / 1500 = 14.3 cents
+    rerender(<PlanCard plan={plan()} usageKwh={1500} />);
+    expect(screen.getByText("14.3¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("$215")).toBeInTheDocument();
+
+    // C(300) = max(0, 75.50 - 0.127 x 200) = $50.10; rate = 50.10 / 300 = 16.7 cents
+    rerender(<PlanCard plan={plan()} usageKwh={300} />);
+    expect(screen.getByText("16.7¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("$50")).toBeInTheDocument();
+
+    // C(3000) = 290.00 + 0.151 x 1000 = $441.00; rate = 441 / 3000 = 14.7 cents
+    rerender(<PlanCard plan={plan()} usageKwh={3000} />);
+    expect(screen.getByText("14.7¢/kWh")).toBeInTheDocument();
+    expect(screen.getByText("$441")).toBeInTheDocument();
+  });
+
+  it("shows only the monthly bill: no total, no short-contract warning, no 'More details' button", () => {
+    render(
+      <PlanCard
+        plan={plan({ termMonths: 3 })}
+        usageKwh={1000}
+        onOpen={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("$139")).toBeInTheDocument(); // not 3 x 139
+    expect(screen.queryByText(/over \d+ months?/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /more details/i }),
     ).not.toBeInTheDocument();
   });
 
-  it("prices at the given usage using an anchor or interpolated value", () => {
-    const { rerender } = render(<PlanCard plan={plan()} usageKwh={500} />);
-    expect(screen.getByText("at 500 kWh")).toBeInTheDocument();
-    expect(screen.getByText("15.1¢/kWh")).toBeInTheDocument(); // 0.151 -> anchor
-    // C500 = 5 x 15.1 = $75.50; total = 12 x 75.50 = $906.00
-    expect(screen.getByText("$906.00")).toBeInTheDocument();
-    expect(screen.getByText("over 12 months · $75.50/mo")).toBeInTheDocument();
-
-    rerender(<PlanCard plan={plan()} usageKwh={1500} />);
-    expect(screen.getByText("at 1,500 kWh")).toBeInTheDocument();
-    // by hand, r500 = 15.1c, r1000 = 13.9c, r2000 = 14.5c:
-    //   C1000 = 10 x 13.9 = $139.00, C2000 = 20 x 14.5 = $290.00
-    //   m2 = (290.00 - 139.00) / 1000 = 0.151 $/kWh
-    //   C(1500) = 139.00 + 0.151 x (1500 - 1000) = $214.50
-    //   total = 12 x 214.50 = $2,574.00
-    //   rate = 214.50 / 1500 = 0.143 -> "14.3¢/kWh"
-    expect(screen.getByText("14.3¢/kWh")).toBeInTheDocument();
-    expect(screen.getByText("$2,574.00")).toBeInTheDocument();
-    expect(screen.getByText("over 12 months · $214.50/mo")).toBeInTheDocument();
-  });
-
-  it("has no hide-provider action", () => {
-    render(<PlanCard plan={plan()} />);
-    expect(
-      screen.queryByRole("button", { name: /hide .*provider/i }),
-    ).not.toBeInTheDocument();
-  });
-});
-
-describe("PlanCard price-curve warning", () => {
-  it("shows an Unstable price badge for a V-Trap or a Hump, and not for a stable curve", () => {
-    const { rerender } = render(
-      <PlanCard
-        plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 } })}
-      />,
-    );
-    expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
-
-    rerender(
-      <PlanCard
-        plan={plan({ pricePerKwh: { at500: 0.1, at1000: 0.12, at2000: 0.11 } })}
-      />,
-    );
-    expect(screen.getByText(/unstable price/i)).toBeInTheDocument();
-
-    rerender(
+  it("carries no badge: no price warning, no existing-customers mark, no 'unranked' label", () => {
+    render(
       <PlanCard
         plan={plan({
-          pricePerKwh: { at500: 0.13, at1000: 0.12, at2000: 0.11 },
+          pricePerKwh: { at500: 0.1, at1000: 0.09, at2000: 0.11 },
+          newCustomer: false,
+          isTimeOfUse: true,
         })}
       />,
     );
     expect(screen.queryByText(/unstable price/i)).not.toBeInTheDocument();
-  });
-});
-
-describe("PlanCard for an unranked time-of-use plan", () => {
-  it("is marked unranked and calls its price a reference rate", () => {
-    render(<PlanCard plan={plan({ isTimeOfUse: true })} unranked />);
-    expect(screen.getByText(/unranked · time-of-use/i)).toBeInTheDocument();
-    expect(screen.getByText("Reference rate")).toBeInTheDocument();
-    expect(screen.getByText("at reference rate")).toBeInTheDocument();
-    expect(screen.queryByText("Price per kWh")).not.toBeInTheDocument();
-  });
-
-  it("an ordinary card has none of that", () => {
-    render(<PlanCard plan={plan()} />);
+    expect(
+      screen.queryByText("Open to existing customers"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/unranked/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Price per kWh")).toBeInTheDocument();
-    // an ordinary card shows the total cost of the contract, not a monthly bill
-    expect(screen.getByText("Total cost")).toBeInTheDocument();
-    expect(screen.queryByText("per month")).not.toBeInTheDocument();
-  });
-
-  it("keeps the monthly bill on a time-of-use card, whose price is only a reference rate", () => {
-    render(<PlanCard plan={plan({ isTimeOfUse: true })} unranked />);
-    expect(screen.getByText("Est. monthly bill")).toBeInTheDocument();
-    expect(screen.getByText("at reference rate")).toBeInTheDocument();
-    expect(screen.queryByText("Total cost")).not.toBeInTheDocument();
   });
 });
 
-describe("PlanCard total cost and the short-contract warning", () => {
-  const warn = (months: number) =>
-    `Ends in ${months} ${months === 1 ? "month" : "months"}. The price after is not capped.`;
-
-  it("a 3-month plan shows its own total, per-month figure and the exact warning", () => {
-    // C(1000) = 10 x 13.9c = $139.00; 3 x 139.00 = $417.00
-    render(<PlanCard plan={plan({ termMonths: 3 })} usageKwh={1000} />);
-    expect(screen.getByText("$417.00")).toBeInTheDocument();
-    expect(screen.getByText("over 3 months · $139.00/mo")).toBeInTheDocument();
-    expect(screen.getByText(`⚠ ${warn(3)}`)).toBeInTheDocument();
+describe("PlanCard opens the details", () => {
+  it("a click on the card calls onOpen", () => {
+    const onOpen = vi.fn();
+    render(<PlanCard plan={plan()} onOpen={onOpen} />);
+    fireEvent.click(screen.getByRole("article"));
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("a 1-month plan says '1 month', not '1 months', in both lines", () => {
-    // C(1000) = $139.00; 1 x 139.00 = $139.00
-    render(<PlanCard plan={plan({ termMonths: 1 })} usageKwh={1000} />);
-    expect(screen.getByText("over 1 month · $139.00/mo")).toBeInTheDocument();
-    expect(
-      screen.getByText("⚠ Ends in 1 month. The price after is not capped."),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/1 months/)).not.toBeInTheDocument();
+  it("Enter and Space on the focused card open it; other keys do not", () => {
+    const onOpen = vi.fn();
+    render(<PlanCard plan={plan()} onOpen={onOpen} />);
+    const card = screen.getByRole("article");
+    expect(card).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(card, { key: "Enter" });
+    fireEvent.keyDown(card, { key: " " });
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    fireEvent.keyDown(card, { key: "a" });
+    expect(onOpen).toHaveBeenCalledTimes(2);
   });
 
-  it("11 months warns; 12, 13 and 24 months do not", () => {
-    const { rerender } = render(
-      <PlanCard plan={plan({ termMonths: 11 })} usageKwh={1000} />,
-    );
-    expect(screen.getByText(`⚠ ${warn(11)}`)).toBeInTheDocument();
-    for (const termMonths of [12, 13, 24]) {
-      rerender(<PlanCard plan={plan({ termMonths })} usageKwh={1000} />);
-      expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument();
-    }
-    // 24 months of $139.00 = $3,336.00
-    expect(screen.getByText("$3,336.00")).toBeInTheDocument();
-  });
-
-  it("a plan with no usable term keeps the monthly bill and no warning", () => {
-    render(<PlanCard plan={plan({ termMonths: null })} usageKwh={1000} />);
-    expect(screen.getByText("Est. monthly bill")).toBeInTheDocument();
-    expect(screen.getByText("$139")).toBeInTheDocument();
-    expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument();
+  it("is a plain card, not focusable, without a handler", () => {
+    render(<PlanCard plan={plan()} />);
+    expect(screen.getByRole("article")).not.toHaveAttribute("tabindex");
   });
 });
 
-describe("PlanCard customer-eligibility badge", () => {
-  it("shows 'Open to existing customers' only when new_customer is false", () => {
-    render(<PlanCard plan={plan({ newCustomer: false })} />);
-    expect(screen.getByText("Open to existing customers")).toBeInTheDocument();
-  });
-
-  it("shows nothing for new-customer-only plans (nearly every plan), unknown, or old data", () => {
-    const { rerender } = render(
-      <PlanCard plan={plan({ newCustomer: true })} />,
+describe("PlanCard provider mark", () => {
+  it("shows the logo (decorative, empty alt) while it loads fine", () => {
+    const { container } = render(
+      <PlanCard plan={plan({ companyLogo: "https://example.com/l.png" })} />,
     );
-    expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/new customers/i)).not.toBeInTheDocument();
-
-    rerender(<PlanCard plan={plan({ newCustomer: null })} />);
-    expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
-
-    rerender(<PlanCard plan={plan()} />); // stored before the field existed
-    expect(screen.queryByText(/existing customers/i)).not.toBeInTheDocument();
-  });
-});
-
-describe("PlanCard provider logo", () => {
-  const withLogo = plan({
-    companyName: "SMARTENERGY HOLDINGS LLC",
-    companyLogo: "https://example.com/logo.svg",
+    const img = container.querySelector("img")!;
+    expect(img).toHaveAttribute("src", "https://example.com/l.png");
+    expect(img).toHaveAttribute("alt", "");
+    expect(screen.queryByTestId("provider-initials")).not.toBeInTheDocument();
   });
 
-  it("shows the logo while it loads fine", () => {
-    render(<PlanCard plan={withLogo} />);
-    expect(
-      screen.getByRole("img", { name: "SMARTENERGY HOLDINGS LLC" }),
-    ).toHaveAttribute("src", "https://example.com/logo.svg");
-    expect(screen.queryByText("SM")).not.toBeInTheDocument();
-  });
-
-  it("swaps a logo that fails to load for the provider's initials and name, with no broken image left", () => {
-    render(<PlanCard plan={withLogo} />);
-    fireEvent.error(
-      screen.getByRole("img", { name: "SMARTENERGY HOLDINGS LLC" }),
-    );
-
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.getByText("SM")).toBeInTheDocument(); // initials in the circle
-    expect(screen.getByText("SMARTENERGY HOLDINGS LLC")).toBeInTheDocument();
-    expect(screen.getByText("SM")).toHaveClass("rounded-full");
-  });
-
-  it("uses the same initials-and-name look when the plan has no logo at all", () => {
-    render(
+  it("swaps a logo that fails to load for the provider's initials, leaving no broken image", () => {
+    const { container } = render(
       <PlanCard
-        plan={plan({ companyName: "Gexa Energy", companyLogo: null })}
+        plan={plan({ companyLogo: "https://example.com/blocked.png" })}
       />,
     );
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.getByText("GE")).toBeInTheDocument();
-    expect(screen.getByText("Gexa Energy")).toBeInTheDocument();
-  });
-});
-
-describe("PlanCard renewable cell", () => {
-  it("shows the number alone, with the word only in the % Renewable label", () => {
-    const { rerender } = render(<PlanCard plan={plan()} />);
-    expect(screen.getByText("% Renewable")).toBeInTheDocument();
-    expect(screen.getByText("6%")).toBeInTheDocument();
-    expect(screen.queryByText(/6% renewable/i)).not.toBeInTheDocument();
-
-    for (const [description, shown] of [
-      ["100% Renewable", "100%"],
-      ["15% Renewable", "15%"],
-      ["6% renewable", "6%"],
-    ]) {
-      rerender(<PlanCard plan={plan({ renewableDescription: description })} />);
-      expect(screen.getByText(shown)).toBeInTheDocument();
-      expect(screen.getByText(shown).textContent).toBe(shown);
-    }
+    fireEvent.error(container.querySelector("img")!);
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByTestId("provider-initials")).toHaveTextContent("EE");
   });
 
-  it("is sage at 100% and muted below it, and 'Not listed' when unknown", () => {
-    const { rerender } = render(
-      <PlanCard plan={plan({ renewableDescription: "100% Renewable" })} />,
-    );
-    expect(screen.getByText("100%")).toHaveClass("text-sage");
-    rerender(
-      <PlanCard plan={plan({ renewableDescription: "15% Renewable" })} />,
-    );
-    expect(screen.getByText("15%")).toHaveClass("text-ink-faint");
-    expect(screen.getByText("15%")).not.toHaveClass("text-sage");
-    rerender(<PlanCard plan={plan({ renewableDescription: null })} />);
-    expect(screen.getByText("Not listed", { selector: "dd" })).toHaveClass(
-      "text-ink-faint",
-    );
+  it("uses the same initials when the plan has no logo at all", () => {
+    render(<PlanCard plan={plan({ companyLogo: null })} />);
+    expect(screen.getByTestId("provider-initials")).toHaveTextContent("EE");
   });
 });

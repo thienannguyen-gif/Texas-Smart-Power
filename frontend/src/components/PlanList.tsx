@@ -143,13 +143,13 @@ export function PlanList({
           </p>
         ) : (
           <>
-            <ul className="space-y-4">
+            <ul className="grid grid-cols-1 gap-3 min-[760px]:grid-cols-2">
               {visible.map((plan) => (
-                <li key={plan.id}>
+                <li key={plan.id} className="min-w-0">
                   <PlanCard
                     plan={plan}
                     usageKwh={usageKwh}
-                    onMoreDetails={() => setSelected(plan)}
+                    onOpen={() => setSelected(plan)}
                   />
                 </li>
               ))}
@@ -196,14 +196,13 @@ export function PlanList({
             </span>
           </h2>
           <p className="mt-2 text-sm text-ink-soft">{TOU_SECTION_INTRO}</p>
-          <ul className="mt-4 space-y-4">
+          <ul className="mt-4 grid grid-cols-1 gap-3 min-[760px]:grid-cols-2">
             {timeOfUsePlans.map((plan) => (
-              <li key={plan.id}>
+              <li key={plan.id} className="min-w-0">
                 <PlanCard
                   plan={plan}
                   usageKwh={usageKwh}
-                  unranked
-                  onMoreDetails={() => setSelected(plan)}
+                  onOpen={() => setSelected(plan)}
                 />
               </li>
             ))}

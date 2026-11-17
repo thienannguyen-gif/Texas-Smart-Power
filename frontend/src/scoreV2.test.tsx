@@ -131,7 +131,7 @@ describe("score v2 in the list", () => {
   it("keeps Our picks: Best overall is the top-scored 12-month plan, Lowest bill the cheapest", async () => {
     mount();
     await ready();
-    expect(screen.getByText("Our picks")).toBeInTheDocument();
+    expect(screen.getByText("Our picks for you")).toBeInTheDocument();
     expect(screen.getByText("Best overall")).toBeInTheDocument();
     // the pick is still called "Lowest bill"; the sort option is "Lowest total cost"
     expect(screen.getAllByText("Lowest bill")).toHaveLength(1);

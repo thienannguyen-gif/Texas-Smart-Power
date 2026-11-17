@@ -6,10 +6,7 @@ import { PriceCurveBadge } from "./PriceCurveBadge";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import { httpUrl, telHref } from "../lib/links";
 import { costAt } from "../lib/contractCost";
-import {
-  DEFAULT_USAGE_KWH,
-  pricePerKwhAtUsage,
-} from "../lib/usage";
+import { DEFAULT_USAGE_KWH, pricePerKwhAtUsage } from "../lib/usage";
 
 // The "More Details" modal from the mockup. Every box is filled from `Plan`;
 // "not available" is shown only when the plan is missing one or more of its

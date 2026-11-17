@@ -1,4 +1,4 @@
-// The hexagon logo mark from the mockup. Decorative; paired with the wordmark.
+// The logo mark: a bolt on an amber rounded square. Paired with the wordmark.
 export function BrandMark({ className }: { className?: string }) {
   return (
     <svg
@@ -7,14 +7,14 @@ export function BrandMark({ className }: { className?: string }) {
       role="img"
       aria-label="Texas Smart Power"
     >
+      <rect width="32" height="32" rx="8" className="fill-gold" />
       <path
-        d="M16 2 28 9v14L16 30 4 23V9z"
+        d="M17.5 6 9 18h6l-1.5 8L22 14h-6z"
         fill="none"
-        stroke="currentColor"
+        className="stroke-bar"
         strokeWidth="2"
         strokeLinejoin="round"
       />
-      <path d="M17 8 10 18h5l-1 6 8-11h-5z" fill="currentColor" />
     </svg>
   );
 }

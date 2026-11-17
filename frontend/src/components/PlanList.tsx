@@ -7,7 +7,7 @@ import { OurPicks } from "./OurPicks";
 import { PlanCard } from "./PlanCard";
 import { PlanDetailsModal } from "./PlanDetailsModal";
 
-export const PLANS_PER_PAGE = 6;
+export const PLANS_PER_PAGE = 20;
 
 const PAGE_BUTTON =
   "min-h-11 rounded-full bg-brand-soft px-4 py-2 text-sm font-bold text-ink hover:bg-surface-alt disabled:opacity-40 disabled:hover:bg-brand-soft";

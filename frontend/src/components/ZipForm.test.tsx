@@ -10,7 +10,7 @@ describe("ZipForm validation", () => {
     fireEvent.change(screen.getByLabelText(/zip code/i), {
       target: { value: "123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^go$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /compare plans/i }));
 
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByText(/enter a 5-digit zip/i)).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe("ZipForm validation", () => {
     fireEvent.change(screen.getByLabelText(/zip code/i), {
       target: { value: "7a5b2c0d1e" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^go$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /compare plans/i }));
 
     expect(onSubmit).toHaveBeenCalledWith("75201");
   });

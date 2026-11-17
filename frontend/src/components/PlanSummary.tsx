@@ -14,14 +14,15 @@ const CHIP =
   "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium";
 const CHIP_PLAIN = `${CHIP} border-line bg-surface-alt text-ink-soft`;
 const CHIP_GREEN = `${CHIP} border-brand-soft bg-brand-soft text-brand`;
+const CHIP_FEE = `${CHIP} border-warn-soft bg-warn-soft text-warn`;
 
 // The plan facts as chips, in this order. A fact that is not known says
 // "Not listed": never a blank, never $0 or 0% (an unreadable cancellation fee is
 // not "no fee").
 export function attributeChips(
   plan: Plan,
-): { text: string; green?: boolean }[] {
-  const chips: { text: string; green?: boolean }[] = [];
+): { text: string; green?: boolean; fee?: boolean }[] {
+  const chips: { text: string; green?: boolean; fee?: boolean }[] = [];
   if (plan.termMonths !== null) {
     chips.push({ text: `${plan.termMonths}-month term` });
   }
@@ -38,6 +39,7 @@ export function attributeChips(
         fee.amount === 0
           ? "No cancellation fee"
           : `${formatAmount(fee.amount)} cancellation fee`,
+      fee: fee.amount > 0,
     });
   } else {
     chips.push({ text: "Cancellation fee: Not listed" });
@@ -53,26 +55,36 @@ export function PlanSummary({
   usageKwh: number;
 }) {
   const bill = costAt(plan, usageKwh);
+  const chips = attributeChips(plan);
   return (
     <>
       <div className="mt-3 flex items-center gap-2">
         <ProviderMark name={plan.companyName} src={plan.companyLogo} />
         <span className="sr-only">{plan.companyName}</span>
-        <h3 className="min-w-0 font-display text-[17px] leading-snug font-semibold break-words text-ink">
+        <h3 className="min-w-0 text-[17px] leading-snug font-semibold break-words text-ink">
           {plan.planName}
         </h3>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {attributeChips(plan).map((chip) => (
-          <span
-            key={chip.text}
-            className={chip.green ? CHIP_GREEN : CHIP_PLAIN}
-          >
-            {chip.text}
-          </span>
-        ))}
-      </div>
+      {/* term and renewable on the first line, the cancellation fee (always
+          the last chip) on its own line, so every card reads the same */}
+      {[chips.slice(0, -1), chips.slice(-1)].map((line, i) => (
+        <div
+          key={i}
+          className={`${i === 0 ? "mt-3" : "mt-1.5"} flex flex-wrap gap-1.5`}
+        >
+          {line.map((chip) => (
+            <span
+              key={chip.text}
+              className={
+                chip.green ? CHIP_GREEN : chip.fee ? CHIP_FEE : CHIP_PLAIN
+              }
+            >
+              {chip.text}
+            </span>
+          ))}
+        </div>
+      ))}
 
       {/* pushed to the bottom, so cards side by side line up */}
       <div className="mt-auto">

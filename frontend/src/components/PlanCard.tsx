@@ -28,7 +28,7 @@ export function PlanCard({
       onClick={onOpen}
       onKeyDown={onKeyDown}
       aria-haspopup={onOpen ? "dialog" : undefined}
-      className={`flex h-full flex-col rounded-lg border border-brand bg-surface px-3 pt-0 pb-3 text-left ${
+      className={`flex h-full flex-col rounded-xl border-2 border-bar bg-surface px-4 pt-1 pb-4 text-left shadow-sm ${
         onOpen
           ? "cursor-pointer hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           : ""

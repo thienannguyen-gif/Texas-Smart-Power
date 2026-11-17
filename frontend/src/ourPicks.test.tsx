@@ -41,7 +41,9 @@ function renderPicks(plans: Plan[], usage = 1000) {
 describe("OurPicks cards", () => {
   it("shows the Our picks header and no explanatory line under it", () => {
     renderPicks([mk({ id: 1 })], 2334);
-    expect(screen.getByText("Our picks")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Our picks for you" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/picked from these plans/i)).toBeNull();
     expect(screen.queryByText(/tap one for details/i)).toBeNull();
   });
@@ -81,8 +83,10 @@ describe("OurPicks cards", () => {
       "bg-brand-soft",
       "text-brand",
     );
+    // a fee that is charged is an orange chip
     expect(screen.getByText("$300 cancellation fee")).toHaveClass(
-      "bg-surface-alt",
+      "bg-warn-soft",
+      "text-warn",
     );
     expect(screen.queryByText(/\/mo fee/)).toBeNull();
   });

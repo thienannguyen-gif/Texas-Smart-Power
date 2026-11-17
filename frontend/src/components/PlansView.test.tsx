@@ -59,15 +59,15 @@ function mockPlans(data: TduDataFile = file) {
   );
 }
 
-// 14 plans -> 3 pages of 6 / 6 / 2. "Alpha" owns plans 1-6, "Beta" owns 7-14.
+// 44 plans -> 3 pages of 20 / 20 / 4. "Alpha" owns plans 1-20, "Beta" owns 21-44.
 const many: TduDataFile = {
   ...file,
-  planCount: 14,
-  plans: Array.from({ length: 14 }, (_, i) =>
+  planCount: 44,
+  plans: Array.from({ length: 44 }, (_, i) =>
     mk({
       id: i + 1,
       planName: `Plan ${i + 1}`,
-      companyName: i < 6 ? "Alpha" : "Beta",
+      companyName: i < 20 ? "Alpha" : "Beta",
     }),
   ),
 };
@@ -210,24 +210,24 @@ function renderMany() {
 const next = () => screen.getByRole("button", { name: /next/i });
 const prev = () => screen.getByRole("button", { name: /previous/i });
 
-test("shows 6 plans per page with the page position below", async () => {
+test("shows 20 plans per page with the page position below", async () => {
   renderMany();
   expect(await screen.findByText("Page 1 of 3")).toBeInTheDocument();
-  expect(screen.getAllByRole("article")).toHaveLength(6);
+  expect(screen.getAllByRole("article")).toHaveLength(20);
   expect(screen.getByText("Plan 1")).toBeInTheDocument();
-  expect(screen.getByText("Plan 6")).toBeInTheDocument();
-  expect(screen.queryByText("Plan 7")).not.toBeInTheDocument();
+  expect(screen.getByText("Plan 20")).toBeInTheDocument();
+  expect(screen.queryByText("Plan 21")).not.toBeInTheDocument();
 
   fireEvent.click(next());
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
-  expect(screen.getByText("Plan 7")).toBeInTheDocument();
-  expect(screen.getByText("Plan 12")).toBeInTheDocument();
-  expect(screen.queryByText("Plan 6")).not.toBeInTheDocument();
+  expect(screen.getByText("Plan 21")).toBeInTheDocument();
+  expect(screen.getByText("Plan 40")).toBeInTheDocument();
+  expect(screen.queryByText("Plan 20")).not.toBeInTheDocument();
 
   fireEvent.click(next());
   expect(screen.getByText("Page 3 of 3")).toBeInTheDocument();
-  expect(screen.getAllByRole("article")).toHaveLength(2); // 14 = 6 + 6 + 2
-  expect(screen.getByText("Plan 14")).toBeInTheDocument();
+  expect(screen.getAllByRole("article")).toHaveLength(4); // 44 = 20 + 20 + 4
+  expect(screen.getByText("Plan 44")).toBeInTheDocument();
 });
 
 test("Previous is disabled on page 1, Next on the last page", async () => {
@@ -247,8 +247,8 @@ test("Previous is disabled on page 1, Next on the last page", async () => {
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
 });
 
-test("exactly 6 plans is one page with both buttons disabled", async () => {
-  mockPlans({ ...many, planCount: 6, plans: many.plans.slice(0, 6) });
+test("exactly 20 plans is one page with both buttons disabled", async () => {
+  mockPlans({ ...many, planCount: 20, plans: many.plans.slice(0, 20) });
   render(<PlansView tdu="oncor" zip="75201" onSubmitZip={() => {}} />);
   expect(await screen.findByText("Page 1 of 1")).toBeInTheDocument();
   expect(prev()).toBeDisabled();
@@ -291,7 +291,7 @@ test("a filter change goes back to page 1", async () => {
   // Beta has 8 plans -> 2 pages.
   pickProvider("bet", "Beta");
   expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
-  expect(screen.getByText("Plan 7")).toBeInTheDocument();
+  expect(screen.getByText("Plan 21")).toBeInTheDocument();
 });
 
 test("a usage change keeps the same page number", async () => {
@@ -301,9 +301,9 @@ test("a usage change keeps the same page number", async () => {
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
 
   enterUsage(screen.getByLabelText(/monthly usage in kWh/i), "500");
-  expect(screen.getByText("14 plans at 500 kWh")).toBeInTheDocument();
+  expect(screen.getByText("44 plans at 500 kWh")).toBeInTheDocument();
   expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
-  expect(screen.getByText("Plan 7")).toBeInTheDocument();
+  expect(screen.getByText("Plan 21")).toBeInTheDocument();
 });
 
 test("the sidebar has no PRODUCT TYPE section any more; the other sections are still there", async () => {
@@ -324,11 +324,11 @@ test("the sidebar has no PRODUCT TYPE section any more; the other sections are s
     .getAllByRole("heading", { level: 3 })
     .map((h) => h.textContent);
   expect(headings).toEqual([
-    "SORT BY",
-    "TIME-OF-USE PLANS",
-    "CONTRACT LENGTH",
-    "RENEWABLE ENERGY",
-    "PROVIDER",
+    "Sort by",
+    "Time-of-use plans",
+    "Contract length",
+    "Renewable energy",
+    "Provider",
   ]);
   // no product-type checkbox is left: time-of-use, the four contract lengths,
   // 100% renewable. The two sort options are radios.
@@ -402,12 +402,12 @@ test("the header's search box submits a new ZIP; invalid ones are refused; usage
   const input = screen.getByLabelText("ZIP code");
   expect(input).toHaveValue("75201");
   fireEvent.change(input, { target: { value: "770" } });
-  fireEvent.click(screen.getByRole("button", { name: "Find plans" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Update/ }));
   expect(onSubmitZip).not.toHaveBeenCalled();
   expect(screen.getByText("Enter a 5-digit ZIP code.")).toBeInTheDocument();
 
   fireEvent.change(input, { target: { value: "77002" } });
-  fireEvent.click(screen.getByRole("button", { name: "Find plans" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Update/ }));
   expect(onSubmitZip).toHaveBeenCalledWith("77002");
   expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("750");
   expect(screen.getByRole("button", { name: "Remove Beta" })).toBeVisible();
@@ -443,17 +443,17 @@ test("suggestions only come from providers in the loaded area", async () => {
 });
 
 test("every option shows its match count, reflecting the other active filters; empty ones are greyed, not hidden", async () => {
-  renderMany(); // Alpha: plans 1-6, Beta: plans 7-14, all 12 months, Fixed
+  renderMany(); // Alpha: plans 1-20, Beta: plans 21-44, all 12 months, Fixed
   await screen.findByText("Page 1 of 3");
 
   const row = (name: RegExp) =>
     screen.getByRole("checkbox", { name }).closest("label")!;
-  expect(row(/^12 months/i)).toHaveTextContent("12 months (14)");
+  expect(row(/^12 months/i)).toHaveTextContent("12 months (44)");
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
 
   // choosing a provider narrows every count
   pickProvider("alp", "Alpha");
-  expect(row(/^12 months/i)).toHaveTextContent("12 months (6)");
+  expect(row(/^12 months/i)).toHaveTextContent("12 months (20)");
 
   // zero-match options stay on screen, greyed
   expect(row(/13\+ months/i)).toHaveTextContent("13+ months (0)");
@@ -463,7 +463,7 @@ test("every option shows its match count, reflecting the other active filters; e
   // a contract length is counted against the provider, ignoring its own group
   fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/i }));
   expect(row(/1–6 months/i)).toHaveTextContent("1–6 months (0)");
-  expect(row(/^12 months/i)).toHaveTextContent("12 months (6)");
+  expect(row(/^12 months/i)).toHaveTextContent("12 months (20)");
 });
 
 test("provider suggestions show their counts", async () => {
@@ -475,8 +475,10 @@ test("provider suggestions show their counts", async () => {
       target: { value: "a" },
     },
   );
-  expect(screen.getByRole("option", { name: "Alpha (6)" })).toBeInTheDocument();
-  expect(screen.getByRole("option", { name: "Beta (8)" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("option", { name: "Alpha (20)" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Beta (24)" })).toBeInTheDocument();
 });
 
 // jsdom has no matchMedia, so tests run as "desktop" unless they stub a phone.
@@ -500,7 +502,7 @@ test("the header holds the search, with the usage block under it, in normal flow
   const header = screen.getByRole("region", { name: "Your search" });
   expect(header).toContainElement(screen.getByLabelText("ZIP code"));
   expect(header).toContainElement(
-    screen.getByRole("button", { name: "Find plans" }),
+    screen.getByRole("button", { name: /^Update/ }),
   );
   // the usage block is its own band right under the search, not a slider in it
   expect(screen.queryByLabelText("Monthly usage slider")).toBeNull();
@@ -554,7 +556,7 @@ test("phone: a Filters button under the header opens a drawer; Apply commits, an
   fireEvent.click(
     within(drawer).getByRole("checkbox", { name: /100% renewable only/i }),
   );
-  expect(within(drawer).getByText("6 plans match")).toBeInTheDocument();
+  expect(within(drawer).getByText("20 plans match")).toBeInTheDocument();
   // nothing applied until Apply: the list behind is unchanged
   expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 
@@ -728,11 +730,17 @@ test("sort control: Lowest total cost is the default, cheapest first, with its d
   // the monthly bill, C(1000) = 10 x 9c = $90, big on the right
   expect(within(first).getByText("$90")).toBeInTheDocument();
   expect(within(first).getByText("/mo")).toBeInTheDocument();
+  // each option has its description under its name, tied to the radio
   expect(
-    screen.getByText(
-      "Sorted by what the contract costs at your usage level. Cheapest first.",
-    ),
-  ).toBeInTheDocument();
+    screen.getByRole("radio", { name: "Lowest total cost" }),
+  ).toHaveAccessibleDescription(
+    "What the contract costs at your usage. Cheapest first.",
+  );
+  expect(
+    screen.getByRole("radio", { name: "Best match" }),
+  ).toHaveAccessibleDescription(
+    "Balances price, contract length, fees and renewable share.",
+  );
 });
 
 test("Best match follows the score, not the bill, and has no description", async () => {
@@ -741,7 +749,6 @@ test("Best match follows the score, not the bill, and has no description", async
 
   fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
   expect(cardNames()).toEqual(["B Credit", "C Unstable", "A Flat"]);
-  expect(screen.queryByText(/sorted by what the contract costs/i)).toBeNull();
   expect(screen.queryByText(/sorted by our score/i)).toBeNull();
   // and back
   fireEvent.click(screen.getByRole("radio", { name: "Lowest total cost" }));
@@ -816,18 +823,18 @@ test("desktop: SORT BY is the first section of the left sidebar, styled like the
   ).toBeInTheDocument();
   expect(within(main).queryByRole("radio")).not.toBeInTheDocument();
 
-  // SORT BY is the first section, with the same heading look as the others
+  // Sort by is the first section, with the same heading look as the others
   const headings = within(sidebar)
     .getAllByRole("heading", { level: 3 })
     .map((h) => h.textContent);
   expect(headings.slice(0, 3)).toEqual([
-    "SORT BY",
-    "TIME-OF-USE PLANS",
-    "CONTRACT LENGTH",
+    "Sort by",
+    "Time-of-use plans",
+    "Contract length",
   ]);
-  const sortHeading = within(sidebar).getByRole("heading", { name: "SORT BY" });
+  const sortHeading = within(sidebar).getByRole("heading", { name: "Sort by" });
   const contractHeading = within(sidebar).getByRole("heading", {
-    name: "CONTRACT LENGTH",
+    name: "Contract length",
   });
   expect(sortHeading.className).toBe(contractHeading.className);
 });
@@ -863,7 +870,7 @@ test("phone: the drawer opens on Sort by, and Apply applies the sort choice with
   const headings = within(drawer)
     .getAllByRole("heading", { level: 3 })
     .map((h) => h.textContent);
-  expect(headings[0]).toBe("SORT BY");
+  expect(headings[0]).toBe("Sort by");
   expect(within(drawer).getAllByRole("radio")[0]).toHaveAccessibleName(
     "Lowest total cost",
   );
@@ -1292,8 +1299,8 @@ test("contract length is 1–6, 7–11, 12 and 13+ months, with counts, and 12-m
   expect(within(sidebar).queryByText(/^12\+ months/)).not.toBeInTheDocument();
   expect(within(sidebar).queryByText(/7–12 months/)).not.toBeInTheDocument();
 
-  // nothing ticked: all seven, six to a page
-  expect(cardNamesOnPage()).toHaveLength(6);
+  // nothing ticked: all seven, on one page
+  expect(cardNamesOnPage()).toHaveLength(7);
 
   // each length shows exactly its own plans when it is ticked, on its own
   const tick = (name: RegExp) =>
@@ -1371,7 +1378,7 @@ test("renewable is a single '100% renewable only' toggle with a count; there is 
     within(sidebar).queryByText(/at least \d+% renewable/i),
   ).not.toBeInTheDocument();
   expect(
-    within(sidebar).getByRole("heading", { name: "RENEWABLE ENERGY" }),
+    within(sidebar).getByRole("heading", { name: "Renewable energy" }),
   ).toBeInTheDocument();
 
   const toggle = within(sidebar).getByRole("checkbox", {
@@ -1497,14 +1504,14 @@ test("the time-of-use-only view still shows its section, whatever page the list 
 test("changing page scrolls to the top smoothly, after the new rows are in, and focuses the results line", async () => {
   renderManyWithTou();
   await screen.findByText("Page 1 of 3");
-  const summary = screen.getByText("14 plans at 1,000 kWh");
+  const summary = screen.getByText("44 plans at 1,000 kWh");
   expect(summary).toHaveAttribute("tabindex", "-1");
   expect(window.scrollTo).not.toHaveBeenCalled();
 
   let rowsWhenScrolled = "";
   (window.scrollTo as ReturnType<typeof vi.fn>).mockImplementation(() => {
     rowsWhenScrolled = screen.getByText("Page 2 of 3") ? "new" : "old";
-    expect(screen.getByText("Plan 7")).toBeInTheDocument();
+    expect(screen.getByText("Plan 21")).toBeInTheDocument();
   });
   fireEvent.click(next());
   expect(window.scrollTo).toHaveBeenCalledTimes(1);
@@ -1552,10 +1559,9 @@ test("the sort options are 'Lowest total cost' then 'Best match', neither is tag
   const radios = within(screen.getByRole("complementary", { name: "Filters" }))
     .getAllByRole("radio")
     .slice(0, 2);
-  expect(radios.map((r) => r.closest("label")?.textContent)).toEqual([
-    "Lowest total cost",
-    "Best match",
-  ]);
+  expect(
+    radios.map((r) => (r as HTMLInputElement).labels?.[0]?.textContent),
+  ).toEqual(["Lowest total cost", "Best match"]);
   expect(screen.queryByText(/recommend/i)).toBeNull();
 
   // the label text is part of the same <label>, so clicking it picks the option

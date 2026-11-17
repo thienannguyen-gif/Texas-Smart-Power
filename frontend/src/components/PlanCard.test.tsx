@@ -68,6 +68,24 @@ describe("PlanCard", () => {
     expect(screen.queryByText("$0 cancellation fee")).not.toBeInTheDocument();
   });
 
+  it("puts the cancellation fee on its own line, under the term and renewable chips", () => {
+    for (const pricingDetails of [
+      "Cancellation fee $150.",
+      "Cancellation fee: $0",
+      null,
+    ]) {
+      const { unmount } = render(<PlanCard plan={plan({ pricingDetails })} />);
+      const term = screen.getByText("12-month term");
+      const fee = screen.getByText(/cancellation fee/i);
+      expect(term.parentElement).toContainElement(
+        screen.getByText("6% renewable"),
+      );
+      expect(term.parentElement).not.toContainElement(fee);
+      expect(fee.parentElement?.children).toHaveLength(1);
+      unmount();
+    }
+  });
+
   it("a $0 fee says 'No cancellation fee'; an unreadable one never does", () => {
     const { rerender } = render(
       <PlanCard plan={plan({ pricingDetails: "Cancellation fee: $0" })} />,

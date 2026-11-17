@@ -501,55 +501,62 @@ describe("disclaimer page", () => {
     ).toHaveAttribute("href", "#disclaimer");
   });
 
-  test("the logo is a link that scrolls to the top without reloading or clearing results", async () => {
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
+  test("the logo goes back to the landing page as on first opening: no ZIP, no plans, no usage in the address", async () => {
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     stubSplitZips();
     render(<App />);
     submitZip("75201");
     await screen.findByText("Oncor Plan");
-    const logo = screen.getByRole("link", {
-      name: "Texas Smart Power — back to top",
-    });
-    expect(logo).toHaveClass("hover:underline", "focus-visible:underline");
+    const box = screen.getByLabelText(/monthly usage in kWh/i);
+    fireEvent.change(box, { target: { value: "1680" } });
+    fireEvent.blur(box);
+    expect(window.location.search).toContain("usage=1680");
 
+    const logo = screen.getByRole("link", { name: "Texas Smart Power — home" });
+    expect(logo).toHaveAttribute("href", "/");
     fireEvent.click(logo);
-    expect(scrollIntoView).toHaveBeenCalledWith({
-      behavior: "smooth",
-      block: "start",
-    });
-    expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
-    expect(screen.getByLabelText("ZIP code")).toHaveValue("75201");
+
+    // the landing page, empty, as when the site is first opened
+    expect(
+      screen.getByRole("heading", { level: 1, name: /your power/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Oncor Plan")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/zip code/i)).toHaveValue("");
+    expect(window.location.search).toBe("");
+    expect(window.location.pathname).toBe("/");
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0 });
+
+    // and the same ZIP can be looked up again
+    submitZip("75201");
+    expect(await screen.findByText("Oncor Plan")).toBeInTheDocument();
+    // the usage starts again from the default
+    expect(screen.getByLabelText(/monthly usage in kWh/i)).toHaveValue("1,150");
   });
 
-  test("the logo scrolls without animation when the user prefers reduced motion", () => {
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    vi.stubGlobal("fetch", vi.fn());
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query.includes("prefers-reduced-motion"),
-    }));
+  test("a ctrl-click on the logo is left to the browser (new tab), the page stays", async () => {
+    stubSplitZips();
     render(<App />);
+    submitZip("75201");
+    await screen.findByText("Oncor Plan");
     fireEvent.click(
-      screen.getByRole("link", { name: "Texas Smart Power — back to top" }),
+      screen.getByRole("link", { name: "Texas Smart Power — home" }),
+      { ctrlKey: true },
     );
-    expect(scrollIntoView).toHaveBeenCalledWith({
-      behavior: "auto",
-      block: "start",
-    });
+    expect(screen.getByText("Oncor Plan")).toBeInTheDocument();
   });
 
-  test("the logo closes the disclaimer and returns to the app", async () => {
-    Element.prototype.scrollIntoView = vi.fn();
+  test("the logo closes the disclaimer and goes to the landing page", async () => {
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     vi.stubGlobal("fetch", vi.fn());
     render(<App />);
     const zipBox = screen.getByLabelText(/zip code/i);
     goToHash("#disclaimer");
     await screen.findByRole("article");
     fireEvent.click(
-      screen.getByRole("link", { name: "Texas Smart Power — back to top" }),
+      screen.getByRole("link", { name: "Texas Smart Power — home" }),
     );
     await waitFor(() => expect(zipBox).toBeVisible());
+    expect(window.location.hash).toBe("");
   });
 
   test("#disclaimer shows the page, still with the footer; leaving it brings the app back", async () => {

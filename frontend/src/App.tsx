@@ -32,6 +32,20 @@ export default function App() {
     ? activeAreas.find((area) => area.code === tdu)?.name
     : undefined;
 
+  // The logo: back to the landing page as on first opening the site. The ZIP,
+  // the area and the plans are cleared, the usage and the disclaimer leave the
+  // address, and the page goes back to the top.
+  function goHome() {
+    setSubmittedZip(null);
+    setTdu(null);
+    setActiveZip("");
+    setActiveAreas([]);
+    window.history.replaceState(window.history.state, "", "/");
+    // the hash route listens for this; replaceState alone does not fire it
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    window.scrollTo?.({ top: 0 });
+  }
+
   function submitZip(zip: string) {
     if (zip !== submittedZip) setSubmittedZip(zip);
   }
@@ -149,7 +163,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      <SiteHeader onHome={goHome} />
 
       {onDisclaimer && <DisclaimerPage />}
 

@@ -70,18 +70,24 @@ describe("font", () => {
 });
 
 describe("the search band", () => {
-  it("shows the service-area line under the ZIP box", () => {
+  it("says 'Plans for <ZIP>' with the area, the plan count and the update time under it", () => {
     render(
       <PlansHeader
         zip="79424"
         onSubmitZip={() => {}}
         zipBusy={false}
         serviceArea="Lubbock Power & Light"
+        planCount={77}
+        generatedAt="2026-11-17T22:42:00.000Z"
       />,
     );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Plans for 79424" }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("service-area")).toHaveTextContent(
-      "Service area Lubbock Power & Light",
+      /^Lubbock Power & Light · 77 plans from Power to Choose · Updated /,
     );
+    expect(screen.getByRole("button", { name: /^Update/ })).toBeInTheDocument();
     // the usage block is not part of the search band any more (UsageInput)
     expect(screen.queryByRole("slider")).toBeNull();
     expect(screen.queryByText("Average Home")).toBeNull();

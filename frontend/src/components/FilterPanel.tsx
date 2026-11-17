@@ -19,18 +19,19 @@ import { ProviderPicker } from "./ProviderPicker";
 const SORT_OPTIONS: {
   value: SortMode;
   label: string;
-  /** Shown under the options while this one is chosen; none for Best match. */
-  description?: string;
+  /** Shown under the option's name. */
+  description: string;
 }[] = [
   {
     value: "lowestCost",
     label: "Lowest total cost",
-    description:
-      "Sorted by what the contract costs at your usage level. Cheapest first.",
+    description: "What the contract costs at your usage. Cheapest first.",
   },
   {
     value: "best",
     label: "Best match",
+    // the score's parts: price (8/12), contract length and fee (3/12), renewable share (1/12)
+    description: "Balances price, contract length, fees and renewable share.",
   },
 ];
 
@@ -86,15 +87,11 @@ function OptionRow({
 }
 
 function GroupHeading({ children }: { children: string }) {
-  return (
-    <h3 className="text-center text-sm font-bold tracking-wide text-brand">
-      {children}
-    </h3>
-  );
+  return <h3 className="text-sm font-semibold text-ink">{children}</h3>;
 }
 
-// Two clean modes, drawn like the other sections: radio rows (native inputs, so
-// the arrow keys work) and the chosen mode's description underneath.
+// Two modes, each a row with its description under the name; the chosen one is
+// tinted. Native radio inputs, so the arrow keys work.
 function SortSection({
   value,
   onChange,
@@ -102,33 +99,44 @@ function SortSection({
   value: SortMode;
   onChange: (next: SortMode) => void;
 }) {
-  const current =
-    SORT_OPTIONS.find((option) => option.value === value) ?? SORT_OPTIONS[0];
   return (
     <fieldset className="space-y-2">
       <legend className="sr-only">Sort plans</legend>
-      <GroupHeading>SORT BY</GroupHeading>
-      {SORT_OPTIONS.map((option) => (
-        <label
-          key={option.value}
-          className="flex items-center gap-2 py-1.5 text-sm text-ink-soft md:py-0"
-        >
-          <input
-            type="radio"
-            name="sort-plans"
-            value={option.value}
-            checked={option.value === value}
-            onChange={() => onChange(option.value)}
-            className="h-5 w-5 border-line accent-brand md:h-4 md:w-4"
-          />
-          {option.label}
-        </label>
-      ))}
-      {current.description && (
-        <p className="text-center text-xs text-ink-soft">
-          {current.description}
-        </p>
-      )}
+      <GroupHeading>Sort by</GroupHeading>
+      {SORT_OPTIONS.map((option) => {
+        const on = option.value === value;
+        const descId = `sort-desc-${option.value}`;
+        return (
+          <div
+            key={option.value}
+            className={`flex gap-3 rounded-xl border px-3 py-2.5 ${
+              on ? "border-brand-soft bg-brand-soft/60" : "border-transparent"
+            }`}
+          >
+            <input
+              id={`sort-${option.value}`}
+              type="radio"
+              name="sort-plans"
+              value={option.value}
+              checked={on}
+              onChange={() => onChange(option.value)}
+              aria-describedby={descId}
+              className="mt-0.5 h-4 w-4 shrink-0 border-line accent-brand"
+            />
+            <div>
+              <label
+                htmlFor={`sort-${option.value}`}
+                className="block cursor-pointer text-sm font-semibold text-ink"
+              >
+                {option.label}
+              </label>
+              <p id={descId} className="mt-0.5 text-xs text-ink-soft">
+                {option.description}
+              </p>
+            </div>
+          </div>
+        );
+      })}
     </fieldset>
   );
 }
@@ -163,7 +171,7 @@ export function FilterPanel({
       <SortSection value={sort} onChange={onSortChange} />
 
       <div className="space-y-2">
-        <GroupHeading>TIME-OF-USE PLANS</GroupHeading>
+        <GroupHeading>Time-of-use plans</GroupHeading>
         <OptionRow
           label="Only time-of-use plans"
           count={hasPlans ? countTimeOfUse(timeOfUsePlans, value) : null}
@@ -177,7 +185,7 @@ export function FilterPanel({
       </div>
 
       <div className="space-y-2">
-        <GroupHeading>CONTRACT LENGTH</GroupHeading>
+        <GroupHeading>Contract length</GroupHeading>
         {CONTRACT_BUCKETS.map(({ key, label }) => (
           <OptionRow
             key={key}
@@ -198,7 +206,7 @@ export function FilterPanel({
       </div>
 
       <div className="space-y-2">
-        <GroupHeading>RENEWABLE ENERGY</GroupHeading>
+        <GroupHeading>Renewable energy</GroupHeading>
         <OptionRow
           label="100% renewable only"
           count={hasPlans ? countRenewable100(scope, value) : null}
@@ -214,7 +222,7 @@ export function FilterPanel({
 
       {providers.length > 0 && (
         <div className="space-y-2">
-          <GroupHeading>PROVIDER</GroupHeading>
+          <GroupHeading>Provider</GroupHeading>
           <ProviderPicker
             providers={providers}
             countFor={(name) => countForProvider(scope, value, name)}

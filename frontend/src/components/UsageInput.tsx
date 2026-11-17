@@ -12,11 +12,6 @@ import {
 // How long typing has to pause before the plans are ranked again.
 export const USAGE_DEBOUNCE_MS = 250;
 
-const BUTTON_BASE =
-  "flex h-[52px] min-w-0 flex-col items-center justify-center rounded-lg px-1 text-center whitespace-nowrap sm:px-[14px] transition-colors sm:h-[54px] sm:w-[152px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176b57]";
-const BUTTON_ON = "border border-[#11443a] bg-[#11443a]";
-const BUTTON_OFF = "border border-[#d9dedb] bg-white hover:border-[#176b57]";
-
 // The usage block at the top of the results: three home types and a number box.
 // A home type writes its kWh into the box; typing a number of one's own turns
 // the buttons off and says "Your number". The box shows 1,680, takes 1680 or
@@ -33,7 +28,6 @@ export function UsageInput({
   onChange: (kwh: number) => void;
 }) {
   const inputId = useId();
-  const helperId = useId();
   const noteId = useId();
   const [text, setText] = useState(() => formatUsageText(value));
   const [clamped, setClamped] = useState(false);
@@ -97,90 +91,72 @@ export function UsageInput({
   return (
     <section
       aria-label="Your usage"
-      className="border-b border-[#e7ebe8] bg-[#fbfcfb] font-sans"
+      className="flex flex-col gap-4 md:flex-row md:items-end"
     >
-      <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <p className="text-[10px] font-semibold tracking-[0.13em] text-[#7d9a90] uppercase">
-            Your usage
-          </p>
-          <p className="text-[13px] text-[#466b61]">
-            Not sure? Start from your home type.
-          </p>
-        </div>
-
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
-          <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-[10px]">
-            {USAGE_PRESETS.map((p) => {
-              const on = preset?.id === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => pick(p.kwh)}
-                  className={`${BUTTON_BASE} ${on ? BUTTON_ON : BUTTON_OFF}`}
-                >
-                  <span
-                    className={`text-[13px] font-semibold ${on ? "text-[#eef6f2]" : "text-[#0d2b25]"}`}
-                  >
-                    {p.label}
-                  </span>
-                  <span
-                    className={`text-[11px] font-medium ${on ? "text-[#9fd4c2]" : "text-[#7d9a90]"}`}
-                  >
-                    {formatUsageText(p.kwh)}
-                    <span className="hidden sm:inline"> kWh</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <label htmlFor={inputId} className="sr-only">
-              Monthly usage in kWh
-            </label>
-            <div className="relative w-full sm:w-[196px]">
-              <input
-                id={inputId}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={text}
-                onChange={(e) => type(e.target.value)}
-                onBlur={blur}
-                aria-describedby={`${helperId}${clamped ? ` ${noteId}` : ""}`}
-                className={`h-12 w-full rounded-lg bg-white pr-[88px] pl-3 text-[21px] font-semibold text-[#0d2b25] focus:outline-none sm:pr-14 ${
-                  ownNumber
-                    ? "border-2 border-[#176b57] shadow-[0_0_0_3px_rgba(23,107,87,0.13)]"
-                    : "border border-[#d9dedb] focus:border-[#176b57]"
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-bar-fg-soft">Home size</p>
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-white/10 p-1 md:flex">
+          {USAGE_PRESETS.map((p) => {
+            const on = preset?.id === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={on}
+                aria-label={`${p.label}, ${formatUsageText(p.kwh)} kWh`}
+                onClick={() => pick(p.kwh)}
+                className={`flex min-h-10 flex-col items-center justify-center rounded-lg px-2 py-1 text-[13px] leading-tight font-semibold whitespace-nowrap transition-colors md:flex-row md:px-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+                  on ? "bg-white text-ink" : "text-bar-fg hover:bg-white/10"
                 }`}
-              />
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[13px] text-[#7d9a90]"
               >
-                <span className="sm:hidden">kWh / month</span>
-                <span className="hidden sm:inline">kWh</span>
-              </span>
-            </div>
-            <span className="hidden text-[13px] text-[#466b61] sm:inline">
-              per month
-            </span>
-            {ownNumber && (
-              <span className="inline-flex w-fit rounded bg-[#d8ece4] px-[9px] py-1 text-xs font-semibold text-[#11443a]">
-                Your number
-              </span>
-            )}
-          </div>
+                <span>{p.label}</span>
+                <span className="hidden md:inline">{" · "}</span>
+                <span className="text-[12px] font-medium md:text-[13px] md:font-semibold">
+                  {formatUsageText(p.kwh)}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        <p id={helperId} className="mt-2 text-xs text-[#466b61]">
-          Use your 12-month average if you have it; a summer bill runs high.
-        </p>
+      <div>
+        <div className="mb-1.5 flex items-center gap-2">
+          <label
+            htmlFor={inputId}
+            className="text-xs font-medium text-bar-fg-soft"
+          >
+            Monthly usage<span className="sr-only"> in kWh</span>
+          </label>
+          {ownNumber && (
+            <span className="rounded bg-gold px-1.5 py-0.5 text-[10px] font-semibold text-gold-ink">
+              Your number
+            </span>
+          )}
+        </div>
+        <div className="relative md:w-44">
+          <input
+            id={inputId}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={text}
+            onChange={(e) => type(e.target.value)}
+            onBlur={blur}
+            aria-describedby={clamped ? noteId : undefined}
+            className={`h-12 w-full rounded-lg bg-white pr-12 pl-4 text-base font-semibold text-ink focus:outline-none ${
+              ownNumber ? "ring-2 ring-gold" : "focus:ring-2 focus:ring-gold"
+            }`}
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-ink-faint"
+          >
+            kWh
+          </span>
+        </div>
         {clamped && (
-          <p id={noteId} role="status" className="mt-1 text-xs text-[#466b61]">
+          <p id={noteId} role="status" className="mt-1 text-xs text-bar-fg">
             We price plans between {formatUsageText(USAGE_MIN)} and{" "}
             {formatUsageText(USAGE_MAX)} kWh.
           </p>

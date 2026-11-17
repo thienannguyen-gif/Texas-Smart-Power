@@ -77,11 +77,9 @@ export function OurPicks({
   if (picks.length === 0) return null;
   return (
     <section aria-label="Our picks" className="mb-6">
-      <p className="mb-3 flex flex-wrap items-baseline gap-x-2">
-        <span className="text-xs font-bold tracking-wide text-ink uppercase">
-          Our picks
-        </span>
-      </p>
+      <h2 className="mb-3 text-2xl font-bold tracking-tight text-ink">
+        Our picks for you
+      </h2>
       <div className={`grid grid-cols-1 gap-3 ${COLUMNS[picks.length]}`}>
         {picks.map((pick) => (
           <PickCard

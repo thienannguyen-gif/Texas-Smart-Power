@@ -162,8 +162,16 @@ export function PlansView({
           zipBusy={zipBusy}
           areaChoice={areaChoice}
           serviceArea={serviceArea}
+          planCount={
+            state.status === "success"
+              ? scorablePlans(allPlans, usageKwh).length
+              : undefined
+          }
+          generatedAt={
+            state.status === "success" ? state.data.generatedAt : undefined
+          }
+          usage={<UsageInput value={usageKwh} onChange={setUsageKwh} />}
         />
-        <UsageInput value={usageKwh} onChange={setUsageKwh} />
       </div>
 
       {showCompact && (
@@ -176,8 +184,8 @@ export function PlansView({
         />
       )}
 
-      <div className="bg-surface-alt">
-        <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
+      <div className="flow-root bg-surface-alt">
+        <div className="mx-auto max-w-6xl px-4 pt-4 pb-6 sm:px-6 md:pt-0">
           {!isDesktop && (
             <div className="mx-auto mb-4 max-w-xl">
               {filtersButton("w-full")}
@@ -193,7 +201,7 @@ export function PlansView({
               // provider search at the bottom stays reachable.
               <aside
                 aria-label="Filters"
-                className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl bg-brand-soft p-5"
+                className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-sm"
               >
                 <FilterPanel
                   plans={allPlans}

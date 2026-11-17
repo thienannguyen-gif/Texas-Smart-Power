@@ -63,31 +63,21 @@ afterEach(() => {
 });
 
 describe("usage block: what it shows", () => {
-  it("has the label, the hint, three real buttons, the box with 'per month' and the helper", async () => {
+  it("has 'Home size' with three real buttons and 'Monthly usage' with the kWh box", async () => {
     mount();
     await screen.findAllByRole("article");
-    expect(screen.getByText("Your usage")).toBeInTheDocument();
-    expect(
-      screen.getByText("Not sure? Start from your home type."),
-    ).toBeInTheDocument();
+    const block = screen.getByRole("region", { name: "Your usage" });
+    expect(within(block).getByText("Home size")).toBeInTheDocument();
     for (const name of [/^Apartment/, /^Small home/, /^Large home/]) {
       const b = preset(name);
       expect(b.tagName).toBe("BUTTON");
       expect(b).toHaveAttribute("type", "button");
     }
-    expect(preset(/^Apartment/)).toHaveTextContent("850");
-    expect(preset(/^Small home/)).toHaveTextContent("1,150");
-    expect(preset(/^Large home/)).toHaveTextContent("1,450");
-    expect(
-      within(screen.getByRole("region", { name: "Your usage" })).getByText(
-        "per month",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Use your 12-month average if you have it; a summer bill runs high.",
-      ),
-    ).toBeInTheDocument();
+    expect(preset(/^Apartment/)).toHaveTextContent("Apartment · 850");
+    expect(preset(/^Small home/)).toHaveTextContent("Small home · 1,150");
+    expect(preset(/^Large home/)).toHaveTextContent("Large home · 1,450");
+    expect(within(block).getByText("Monthly usage")).toBeInTheDocument();
+    expect(within(block).getByText("kWh")).toBeInTheDocument();
   });
 
   it("starts at 1,150 with Small home pressed and nothing else", async () => {

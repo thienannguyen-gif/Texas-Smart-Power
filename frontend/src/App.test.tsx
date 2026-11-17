@@ -241,7 +241,7 @@ function changeZip(zip: string) {
   fireEvent.change(screen.getByLabelText("ZIP code"), {
     target: { value: zip },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Find plans" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Update/ }));
 }
 
 test("75067 returns two companies and the area picker renders, with no plans loaded yet", async () => {

@@ -1595,3 +1595,12 @@ test("the plan count and the update time are said once, in the header, not again
     within(header).getByText("Showing 20 of 44 plans"),
   ).toBeInTheDocument();
 });
+
+test("with no Our picks the list is headed 'All plans'", async () => {
+  renderMany();
+  await screen.findByText("Page 1 of 3");
+  expect(
+    screen.getByRole("heading", { name: "All plans" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "All other plans" })).toBeNull();
+});

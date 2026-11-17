@@ -130,13 +130,13 @@ describe("score v2 in the list", () => {
     mount(withShort);
     await ready();
     // nothing is ticked, so the 3-month plan is there; by the monthly bill ($80) it is first
-    expect(screen.getByText("5 plans from Power to Choose")).toBeInTheDocument();
+    expect(
+      screen.getByText("5 plans from Power to Choose"),
+    ).toBeInTheDocument();
     expect(cardNames()[0]).toBe("Cheapest Three");
     fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/ }));
     expect(cardNames()).not.toContain("Cheapest Three");
-    expect(
-      screen.getByText("Showing 4 of 5 plans"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Showing 4 of 5 plans")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: /^12 months/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /^1–6 months/ }));
     expect(cardNames()).toEqual(["Cheapest Three"]);
@@ -180,9 +180,7 @@ describe("score v2 in the list", () => {
       screen.getByRole("checkbox", { name: /100% renewable only/i }),
     );
     expect(cardNames()).toEqual(["Green Dear"]);
-    expect(
-      screen.getByText("Showing 1 of 4 plans"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 4 plans")).toBeInTheDocument();
   });
 
   it("a plan shown in Our picks is not repeated in the list below; the count still includes it", async () => {
@@ -195,6 +193,15 @@ describe("score v2 in the list", () => {
     // Lowest bill: Cheap Big Fee ($90); Best overall: Twelve Mid (top score, 12 months)
     expect(picks.sort()).toEqual(["Cheap Big Fee", "Twelve Mid"]);
     expect(cardNames()).toEqual(["Twelve Dear", "Green Dear"]);
-    expect(screen.getByText("4 plans from Power to Choose")).toBeInTheDocument();
+    // the list below the picks is headed "All other plans", after Our picks
+    const other = screen.getByRole("heading", { name: "All other plans" });
+    expect(
+      screen
+        .getByRole("heading", { name: "Our picks for you" })
+        .compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen.getByText("4 plans from Power to Choose"),
+    ).toBeInTheDocument();
   });
 });

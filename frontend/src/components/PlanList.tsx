@@ -122,6 +122,10 @@ export function PlanList({
           </p>
         ) : (
           <>
+            {/* "other" when Our picks has plans of its own on this list */}
+            <h2 className="mb-3 text-2xl font-bold tracking-tight text-ink">
+              {pickIds.size > 0 ? "All other plans" : "All plans"}
+            </h2>
             <ul className="grid grid-cols-1 gap-3 min-[760px]:grid-cols-2">
               {visible.map((plan) => (
                 <li key={plan.id} className="min-w-0">

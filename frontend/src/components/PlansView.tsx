@@ -77,7 +77,7 @@ export function PlansView({
       `${window.location.pathname}${search}${window.location.hash}`,
     );
   }, [usageKwh]);
-  const [sortMode, setSortMode] = useState<SortMode>("lowestCost");
+  const [sortMode, setSortMode] = useState<SortMode>("best");
   // Current page (1-based) of the filtered, rank-ordered list. A filter
   // change goes back to page 1; a usage change leaves it alone.
   const [page, setPage] = useState(1);

@@ -92,12 +92,19 @@ afterEach(() => {
 });
 
 describe("score v2 in the list", () => {
-  it("opens on Lowest total cost: the cheapest contract first", async () => {
+  it("opens on Best match (recommended); Lowest total cost puts the cheapest contract first", async () => {
     mount();
     await ready();
     expect(
-      screen.getByRole("radio", { name: "Lowest total cost" }),
+      screen.getByRole("radio", { name: "Best match (recommended)" }),
     ).toBeChecked();
+    expect(cardNames()).toEqual([
+      "Twelve Mid",
+      "Cheap Big Fee",
+      "Twelve Dear",
+      "Green Dear",
+    ]);
+    fireEvent.click(screen.getByRole("radio", { name: "Lowest total cost" }));
     expect(cardNames()).toEqual([
       "Cheap Big Fee",
       "Twelve Mid",
@@ -109,7 +116,7 @@ describe("score v2 in the list", () => {
   it("Best match follows the score, not the bill: a $0 fee outweighs $10 a month", async () => {
     mount();
     await ready();
-    fireEvent.click(screen.getByRole("radio", { name: "Best match" }));
+    fireEvent.click(screen.getByRole("radio", { name: /^Best match/ }));
     expect(cardNames()).toEqual([
       "Twelve Mid",
       "Cheap Big Fee",

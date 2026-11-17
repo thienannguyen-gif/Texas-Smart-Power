@@ -55,6 +55,7 @@ export function PlanSummary({
   usageKwh: number;
 }) {
   const bill = costAt(plan, usageKwh);
+  const chips = attributeChips(plan);
   return (
     <>
       <div className="mt-3 flex items-center gap-2">
@@ -65,18 +66,25 @@ export function PlanSummary({
         </h3>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {attributeChips(plan).map((chip) => (
-          <span
-            key={chip.text}
-            className={
-              chip.green ? CHIP_GREEN : chip.fee ? CHIP_FEE : CHIP_PLAIN
-            }
-          >
-            {chip.text}
-          </span>
-        ))}
-      </div>
+      {/* term and renewable on the first line, the cancellation fee (always
+          the last chip) on its own line, so every card reads the same */}
+      {[chips.slice(0, -1), chips.slice(-1)].map((line, i) => (
+        <div
+          key={i}
+          className={`${i === 0 ? "mt-3" : "mt-1.5"} flex flex-wrap gap-1.5`}
+        >
+          {line.map((chip) => (
+            <span
+              key={chip.text}
+              className={
+                chip.green ? CHIP_GREEN : chip.fee ? CHIP_FEE : CHIP_PLAIN
+              }
+            >
+              {chip.text}
+            </span>
+          ))}
+        </div>
+      ))}
 
       {/* pushed to the bottom, so cards side by side line up */}
       <div className="mt-auto">

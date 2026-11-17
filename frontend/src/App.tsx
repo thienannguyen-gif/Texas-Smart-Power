@@ -155,7 +155,7 @@ export default function App() {
 
       {/* Hidden, not unmounted, while the disclaimer is open, so the ZIP,
           usage and filters are all still there when the user comes back. */}
-      <div hidden={onDisclaimer} className="flex-1">
+      <div hidden={onDisclaimer} className={`flex-1 ${tdu ? "" : "bg-bar"}`}>
         {tdu ? (
           <PlansView
             tdu={tdu}
@@ -178,7 +178,7 @@ export default function App() {
         )}
       </div>
 
-      <SiteFooter />
+      <SiteFooter dark={!tdu && !onDisclaimer} />
     </div>
   );
 }

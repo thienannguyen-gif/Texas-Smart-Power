@@ -36,24 +36,24 @@ export function ZipForm({
           inputMode="numeric"
           autoComplete="postal-code"
           maxLength={5}
-          placeholder="Enter your ZIPCODE"
+          placeholder="ZIP code, e.g. 75201"
           value={value}
           onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))}
           onBlur={() => setTouched(true)}
           aria-invalid={showError}
           aria-describedby={showError ? errorId : undefined}
-          className="min-w-0 flex-1 rounded-2xl bg-bar px-5 py-4 text-base text-bar-fg placeholder:text-bar-fg/60 focus:outline-none focus:ring-2 focus:ring-brand sm:px-6 sm:text-lg"
+          className="min-w-0 flex-1 rounded-lg bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-gold"
         />
         <button
           type="submit"
           disabled={busy}
-          className="rounded-2xl bg-brand px-8 py-4 text-base font-bold text-brand-ink shadow hover:bg-brand/90 disabled:opacity-50 sm:text-lg"
+          className="rounded-lg bg-gold px-5 py-3 text-base font-semibold text-gold-ink hover:brightness-105 disabled:opacity-50"
         >
-          {busy ? "…" : "GO"}
+          {busy ? "…" : "Compare plans →"}
         </button>
       </div>
       {showError && (
-        <p id={errorId} className="mt-2 text-sm font-medium text-brand">
+        <p id={errorId} className="mt-2 text-sm font-medium text-gold">
           Enter a 5-digit ZIP code.
         </p>
       )}

@@ -68,7 +68,7 @@ function submitZip(zip: string) {
   fireEvent.change(screen.getByLabelText(/zip code/i), {
     target: { value: zip },
   });
-  fireEvent.click(screen.getByRole("button", { name: /^go$/i }));
+  fireEvent.click(screen.getByRole("button", { name: /compare plans/i }));
 }
 
 test("starts on the ZIP form and does not fetch on mount", () => {
@@ -78,7 +78,10 @@ test("starts on the ZIP form and does not fetch on mount", () => {
   render(<App />);
 
   expect(
-    screen.getByRole("heading", { name: /texas smart power/i }),
+    screen.getByRole("heading", {
+      level: 1,
+      name: /your power. your choice. your savings./i,
+    }),
   ).toBeInTheDocument();
   expect(screen.getByLabelText(/zip code/i)).toBeInTheDocument();
   expect(fetchMock).not.toHaveBeenCalled();

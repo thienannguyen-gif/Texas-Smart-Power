@@ -41,14 +41,14 @@ export function SiteHeader() {
           className="flex min-w-0 items-center gap-2 hover:underline focus-visible:underline"
         >
           <BrandMark className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
-          <span className="whitespace-nowrap text-[13px] font-bold tracking-wide sm:text-base">
-            TEXAS SMART POWER
+          <span className="whitespace-nowrap text-[13px] font-bold sm:text-base">
+            Texas Smart Power
           </span>
         </a>
         <nav aria-label="Primary">
           <a
             href="#disclaimer"
-            className="text-[13px] font-bold tracking-wide hover:text-bar-fg-soft sm:text-sm sm:uppercase"
+            className="text-[13px] font-semibold hover:text-bar-fg-soft sm:text-sm"
           >
             Disclaimer
           </a>

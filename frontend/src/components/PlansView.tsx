@@ -127,6 +127,17 @@ export function PlansView({
   const visibleTimeOfUse = sortTimeOfUse(view.timeOfUse, usageKwh);
   const activeCount = activeFilterCount(filters);
 
+  // How many plans there are, said once, in the header: every ranked plan of the
+  // area, or how many of them the filters leave, or the time-of-use count in
+  // that view.
+  const plural = (n: number) => (n === 1 ? "plan" : "plans");
+  const totalCount = scorablePlans(allPlans, usageKwh).length;
+  const countText = filters.onlyTimeOfUse
+    ? `${visibleTimeOfUse.length} time-of-use ${plural(visibleTimeOfUse.length)}`
+    : visiblePlans.length !== totalCount
+      ? `Showing ${visiblePlans.length} of ${totalCount} ${plural(totalCount)}`
+      : `${totalCount} ${plural(totalCount)} from Power to Choose`;
+
   function changeSort(next: SortMode) {
     setSortMode(next);
     setPage(1);
@@ -162,11 +173,7 @@ export function PlansView({
           zipBusy={zipBusy}
           areaChoice={areaChoice}
           serviceArea={serviceArea}
-          planCount={
-            state.status === "success"
-              ? scorablePlans(allPlans, usageKwh).length
-              : undefined
-          }
+          countText={state.status === "success" ? countText : undefined}
           generatedAt={
             state.status === "success" ? state.data.generatedAt : undefined
           }
@@ -243,14 +250,12 @@ export function PlansView({
               {state.status === "success" && (
                 <PlanList
                   plans={visiblePlans}
-                  totalCount={scorablePlans(allPlans, usageKwh).length}
                   timeOfUsePlans={filters.onlyTimeOfUse ? visibleTimeOfUse : []}
                   timeOfUseHidden={
                     filters.onlyTimeOfUse ? 0 : visibleTimeOfUse.length
                   }
                   picks={picks}
                   showRanked={!filters.onlyTimeOfUse}
-                  generatedAt={state.data.generatedAt}
                   page={page}
                   onPageChange={setPage}
                   usageKwh={usageKwh}

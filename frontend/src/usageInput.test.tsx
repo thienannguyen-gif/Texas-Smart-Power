@@ -96,7 +96,7 @@ describe("usage block: what it shows", () => {
     expect(pressed()).toEqual(["Small home"]);
     expect(screen.queryByText("Your number")).toBeNull();
     // the plans are ranked and listed already: nobody has to type first
-    expect(screen.getByText("3 plans at 1,150 kWh")).toBeInTheDocument();
+    expect(screen.getByText("3 plans from Power to Choose")).toBeInTheDocument();
   });
 
   it("is a labelled number box, with no slider and no band names anywhere", async () => {
@@ -117,7 +117,7 @@ describe("usage block: buttons and typing", () => {
     fireEvent.click(preset(/^Large home/));
     expect(box()).toHaveValue("1,450");
     expect(pressed()).toEqual(["Large home"]);
-    expect(screen.getByText("3 plans at 1,450 kWh")).toBeInTheDocument();
+    expect(screen.getByText("3 plans from Power to Choose")).toBeInTheDocument();
     fireEvent.click(preset(/^Apartment/));
     expect(box()).toHaveValue("850");
     expect(pressed()).toEqual(["Apartment"]);
@@ -152,7 +152,7 @@ describe("usage block: buttons and typing", () => {
     expect(box()).toHaveValue("1,680");
     typeAndLeave("2,100");
     expect(box()).toHaveValue("2,100");
-    expect(screen.getByText("3 plans at 2,100 kWh")).toBeInTheDocument();
+    expect(screen.getByText("3 plans from Power to Choose")).toBeInTheDocument();
   });
 });
 
@@ -169,7 +169,7 @@ describe("usage block: out-of-range and empty input", () => {
     expect(
       screen.getByText("We price plans between 100 and 5,000 kWh."),
     ).toBeInTheDocument();
-    expect(screen.getByText("3 plans at 100 kWh")).toBeInTheDocument();
+    expect(screen.getByText("3 plans from Power to Choose")).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(3);
   });
 
@@ -192,7 +192,7 @@ describe("usage block: out-of-range and empty input", () => {
     expect(box()).toHaveValue("1,680");
     typeAndLeave("abc");
     expect(box()).toHaveValue("1,680");
-    expect(screen.getByText("3 plans at 1,680 kWh")).toBeInTheDocument();
+    expect(screen.getByText("3 plans from Power to Choose")).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(3);
   });
 

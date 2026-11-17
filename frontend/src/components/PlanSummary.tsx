@@ -60,7 +60,7 @@ export function PlanSummary({
       <div className="mt-3 flex items-center gap-2">
         <ProviderMark name={plan.companyName} src={plan.companyLogo} />
         <span className="sr-only">{plan.companyName}</span>
-        <h3 className="min-w-0 font-display text-[17px] leading-snug font-semibold break-words text-ink">
+        <h3 className="min-w-0 text-[17px] leading-snug font-semibold break-words text-ink">
           {plan.planName}
         </h3>
       </div>

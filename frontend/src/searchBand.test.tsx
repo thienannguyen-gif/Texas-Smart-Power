@@ -48,16 +48,16 @@ describe("palette", () => {
 });
 
 describe("font", () => {
-  it("loads Montserrat 400-700 from Google Fonts with display=swap", () => {
-    expect(html).toContain("family=Montserrat:wght@400;500;600;700");
+  it("loads Inter 400-700 from Google Fonts with display=swap", () => {
+    expect(html).toContain("family=Inter:wght@400;500;600;700");
     expect(html).toContain("display=swap");
     expect(html).toContain("https://fonts.gstatic.com");
     expect(html).not.toMatch(/IBM\+Plex|Archivo/);
   });
 
-  it("points all three font tokens at Montserrat, and the body uses the body token", () => {
+  it("points all three font tokens at Inter, and the body uses the body token", () => {
     for (const name of ["display", "body", "mono"]) {
-      expect(root).toContain(`--font-${name}: "Montserrat"`);
+      expect(root).toContain(`--font-${name}: "Inter"`);
     }
     expect(css).toMatch(/body\s*\{[^}]*font-family:\s*var\(--font-body\)/);
   });

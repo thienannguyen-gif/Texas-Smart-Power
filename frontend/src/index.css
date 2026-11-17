@@ -47,9 +47,9 @@
   --danger-line: #e0a3a3;
   --scrim: rgb(0 0 0 / 0.4);
 
-  --font-display: "Montserrat", "Helvetica Neue", Arial, sans-serif;
-  --font-body: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: "Montserrat", -apple-system, sans-serif;
+  --font-display: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Inter", -apple-system, sans-serif;
 }
 
 /* Tailwind names for the tokens ("inline": utilities read the live variable). */
@@ -86,7 +86,7 @@
   --color-bar-line: var(--bar-line);
 }
 
-/* Montserrat's digits are proportional by default; ask for tabular ones so
+/* Inter's digits are proportional by default; ask for tabular ones so
    columns of figures (bill, rate, term, renewable %, kWh, slider labels, the
    timestamp, sidebar counts) line up. Inherited by everything, inputs included. */
 body,

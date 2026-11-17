@@ -20,6 +20,8 @@ function PickCard({
   onOpen: (plan: Plan) => void;
 }) {
   const { plan } = pick;
+  // a card that is only "Lowest bill" is amber; "Best overall" (alone or with it) is green
+  const gold = !pick.awards.includes("best-overall");
   const open = () => onOpen(plan);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -37,13 +39,19 @@ function PickCard({
       aria-label={`${plan.planName} by ${plan.companyName}: ${pick.awards
         .map((award) => AWARD_LABELS[award])
         .join(", ")}. Details`}
-      className="flex cursor-pointer flex-col rounded-[10px] border-2 border-brand bg-surface p-4 text-left hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className={`flex cursor-pointer flex-col rounded-xl border-2 p-4 text-left shadow-sm ${
+        gold ? "border-gold bg-gold-soft" : "border-bar bg-surface"
+      } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
     >
       <div className="flex flex-wrap gap-1.5">
         {pick.awards.map((award) => (
           <span
             key={award}
-            className="inline-flex items-center rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-brand-ink uppercase"
+            className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase ${
+              award === "lowest-bill" && gold
+                ? "bg-gold text-gold-ink"
+                : "bg-bar text-bar-fg"
+            }`}
           >
             {AWARD_LABELS[award]}
           </span>

@@ -14,14 +14,15 @@ const CHIP =
   "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium";
 const CHIP_PLAIN = `${CHIP} border-line bg-surface-alt text-ink-soft`;
 const CHIP_GREEN = `${CHIP} border-brand-soft bg-brand-soft text-brand`;
+const CHIP_FEE = `${CHIP} border-warn-soft bg-warn-soft text-warn`;
 
 // The plan facts as chips, in this order. A fact that is not known says
 // "Not listed": never a blank, never $0 or 0% (an unreadable cancellation fee is
 // not "no fee").
 export function attributeChips(
   plan: Plan,
-): { text: string; green?: boolean }[] {
-  const chips: { text: string; green?: boolean }[] = [];
+): { text: string; green?: boolean; fee?: boolean }[] {
+  const chips: { text: string; green?: boolean; fee?: boolean }[] = [];
   if (plan.termMonths !== null) {
     chips.push({ text: `${plan.termMonths}-month term` });
   }
@@ -38,6 +39,7 @@ export function attributeChips(
         fee.amount === 0
           ? "No cancellation fee"
           : `${formatAmount(fee.amount)} cancellation fee`,
+      fee: fee.amount > 0,
     });
   } else {
     chips.push({ text: "Cancellation fee: Not listed" });
@@ -67,7 +69,9 @@ export function PlanSummary({
         {attributeChips(plan).map((chip) => (
           <span
             key={chip.text}
-            className={chip.green ? CHIP_GREEN : CHIP_PLAIN}
+            className={
+              chip.green ? CHIP_GREEN : chip.fee ? CHIP_FEE : CHIP_PLAIN
+            }
           >
             {chip.text}
           </span>

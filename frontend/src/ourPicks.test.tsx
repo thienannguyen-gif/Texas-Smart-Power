@@ -81,8 +81,10 @@ describe("OurPicks cards", () => {
       "bg-brand-soft",
       "text-brand",
     );
+    // a fee that is charged is an orange chip
     expect(screen.getByText("$300 cancellation fee")).toHaveClass(
-      "bg-surface-alt",
+      "bg-warn-soft",
+      "text-warn",
     );
     expect(screen.queryByText(/\/mo fee/)).toBeNull();
   });

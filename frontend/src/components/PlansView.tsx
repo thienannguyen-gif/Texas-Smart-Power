@@ -176,76 +176,80 @@ export function PlansView({
         />
       )}
 
-      <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
-        {!isDesktop && (
-          <div className="mx-auto mb-4 max-w-xl">{filtersButton("w-full")}</div>
-        )}
-
-        {zipStatus && <div className="space-y-3">{zipStatus}</div>}
-
-        <div className="mt-4 grid gap-6 md:grid-cols-[260px_1fr]">
-          {isDesktop && (
-            // Sticks below the slim bar (about 3.25rem tall) with a small gap,
-            // and scrolls inside itself when taller than the screen, so the
-            // provider search at the bottom stays reachable.
-            <aside
-              aria-label="Filters"
-              className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl bg-brand-soft p-5"
-            >
-              <FilterPanel
-                plans={allPlans}
-                timeOfUsePlans={timeOfUsePlans}
-                providers={providers}
-                value={filters}
-                onChange={changeFilters}
-                sort={sortMode}
-                onSortChange={changeSort}
-              />
-            </aside>
+      <div className="bg-surface-alt">
+        <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
+          {!isDesktop && (
+            <div className="mx-auto mb-4 max-w-xl">
+              {filtersButton("w-full")}
+            </div>
           )}
 
-          <main>
-            {state.status === "loading" && (
-              <p role="status" className="text-ink-soft">
-                Loading plans…
-              </p>
-            )}
+          {zipStatus && <div className="space-y-3">{zipStatus}</div>}
 
-            {state.status === "error" && (
-              <div
-                role="alert"
-                className="rounded-2xl border-2 border-danger-line bg-danger-soft p-4 text-danger"
+          <div className="mt-4 grid gap-6 md:grid-cols-[260px_1fr]">
+            {isDesktop && (
+              // Sticks below the slim bar (about 3.25rem tall) with a small gap,
+              // and scrolls inside itself when taller than the screen, so the
+              // provider search at the bottom stays reachable.
+              <aside
+                aria-label="Filters"
+                className="sticky top-20 max-h-[calc(100dvh-6rem)] self-start overflow-y-auto rounded-2xl bg-brand-soft p-5"
               >
-                <p className="font-bold">Couldn’t load plans.</p>
-                <p className="mt-1 text-sm">{state.error}</p>
-              </div>
+                <FilterPanel
+                  plans={allPlans}
+                  timeOfUsePlans={timeOfUsePlans}
+                  providers={providers}
+                  value={filters}
+                  onChange={changeFilters}
+                  sort={sortMode}
+                  onSortChange={changeSort}
+                />
+              </aside>
             )}
 
-            {state.status === "empty" && (
-              <p className="text-ink-soft">
-                No plans available for{" "}
-                <span className="font-semibold">{state.tdu}</span> right now.
-                Check back after the next data refresh.
-              </p>
-            )}
+            <main>
+              {state.status === "loading" && (
+                <p role="status" className="text-ink-soft">
+                  Loading plans…
+                </p>
+              )}
 
-            {state.status === "success" && (
-              <PlanList
-                plans={visiblePlans}
-                totalCount={scorablePlans(allPlans, usageKwh).length}
-                timeOfUsePlans={filters.onlyTimeOfUse ? visibleTimeOfUse : []}
-                timeOfUseHidden={
-                  filters.onlyTimeOfUse ? 0 : visibleTimeOfUse.length
-                }
-                picks={picks}
-                showRanked={!filters.onlyTimeOfUse}
-                generatedAt={state.data.generatedAt}
-                page={page}
-                onPageChange={setPage}
-                usageKwh={usageKwh}
-              />
-            )}
-          </main>
+              {state.status === "error" && (
+                <div
+                  role="alert"
+                  className="rounded-2xl border-2 border-danger-line bg-danger-soft p-4 text-danger"
+                >
+                  <p className="font-bold">Couldn’t load plans.</p>
+                  <p className="mt-1 text-sm">{state.error}</p>
+                </div>
+              )}
+
+              {state.status === "empty" && (
+                <p className="text-ink-soft">
+                  No plans available for{" "}
+                  <span className="font-semibold">{state.tdu}</span> right now.
+                  Check back after the next data refresh.
+                </p>
+              )}
+
+              {state.status === "success" && (
+                <PlanList
+                  plans={visiblePlans}
+                  totalCount={scorablePlans(allPlans, usageKwh).length}
+                  timeOfUsePlans={filters.onlyTimeOfUse ? visibleTimeOfUse : []}
+                  timeOfUseHidden={
+                    filters.onlyTimeOfUse ? 0 : visibleTimeOfUse.length
+                  }
+                  picks={picks}
+                  showRanked={!filters.onlyTimeOfUse}
+                  generatedAt={state.data.generatedAt}
+                  page={page}
+                  onPageChange={setPage}
+                  usageKwh={usageKwh}
+                />
+              )}
+            </main>
+          </div>
         </div>
       </div>
 

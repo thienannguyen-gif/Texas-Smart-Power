@@ -97,7 +97,7 @@ export default function App() {
         lookup.status === "ready" &&
         lookup.areas.length > 1 &&
         lookup.zip !== activeZip && (
-          <div className="rounded-2xl bg-surface/80 p-4">
+          <div>
             <AreaPicker
               areas={lookup.areas}
               onSelect={(code) => {

@@ -5,6 +5,15 @@ import { PlansView } from "./components/PlansView";
 import { UsageInput, USAGE_DEBOUNCE_MS } from "./components/UsageInput";
 import type { Plan, TduDataFile } from "./types/plan";
 
+// These tests are about the plan list. A plan picked for Our picks is not
+// repeated in the list, so with real picks the list would lose its first plans;
+// the picks are switched off here and covered in ourPicks.test.tsx and
+// scoreV2.test.tsx.
+vi.mock("./lib/awards", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./lib/awards")>()),
+  computeAwards: () => [],
+}));
+
 const mk = (id: number, rate: number): Plan =>
   ({
     id,

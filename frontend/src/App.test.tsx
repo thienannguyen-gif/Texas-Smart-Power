@@ -18,6 +18,14 @@ afterEach(() => {
 // These tests are about the plan list; the Our picks cards repeat plan names, so
 // they are switched off here and covered in ourPicks.test.tsx.
 vi.mock("./components/OurPicks", () => ({ OurPicks: () => null }));
+// These tests are about the plan list. A plan picked for Our picks is not
+// repeated in the list, so with real picks the list would lose its first plans;
+// the picks are switched off here and covered in ourPicks.test.tsx and
+// scoreV2.test.tsx.
+vi.mock("./lib/awards", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./lib/awards")>()),
+  computeAwards: () => [],
+}));
 
 const ok = (body: unknown): Partial<Response> => ({
   ok: true,

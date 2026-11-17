@@ -54,10 +54,14 @@ export function PlanList({
   const [selected, setSelected] = useState<Plan | null>(null);
   const filtered = plans.length !== totalCount;
 
-  const pageCount = Math.max(1, Math.ceil(plans.length / PLANS_PER_PAGE));
+  // A plan already shown in Our picks is not repeated in the list below. The
+  // count line still counts it (it is one of the plans that match).
+  const pickIds = new Set(picks.map((pick) => pick.plan.id));
+  const listed = plans.filter((plan) => !pickIds.has(plan.id));
+  const pageCount = Math.max(1, Math.ceil(listed.length / PLANS_PER_PAGE));
   const current = Math.min(Math.max(page, 1), pageCount);
   const start = (current - 1) * PLANS_PER_PAGE;
-  const visible = plans.slice(start, start + PLANS_PER_PAGE);
+  const visible = listed.slice(start, start + PLANS_PER_PAGE);
   const canPrev = current > 1;
   const canNext = current < pageCount;
   const modalOpen = selected !== null;

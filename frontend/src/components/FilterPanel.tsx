@@ -29,7 +29,7 @@ const SORT_OPTIONS: {
   },
   {
     value: "best",
-    label: "Best match",
+    label: "Best match (recommended)",
     // the score's parts: price (8/12), contract length and fee (3/12), renewable share (1/12)
     description: "Balances price, contract length, fees and renewable share.",
   },

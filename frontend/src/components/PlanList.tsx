@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Plan } from "../types/plan";
-import { DEFAULT_USAGE_KWH, formatUsageText } from "../lib/usage";
+import { DEFAULT_USAGE_KWH } from "../lib/usage";
 import { TOU_SECTION_INTRO } from "../lib/timeOfUse";
 import type { AwardPick } from "../lib/awards";
 import { OurPicks } from "./OurPicks";
@@ -11,8 +11,6 @@ export const PLANS_PER_PAGE = 20;
 
 const PAGE_BUTTON =
   "min-h-11 rounded-full bg-brand-soft px-4 py-2 text-sm font-bold text-ink hover:bg-surface-alt disabled:opacity-40 disabled:hover:bg-brand-soft";
-
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 // Plans arrive in rank order; the sidebar's preference filters have already
 // been applied by the time they reach this component.
@@ -28,36 +26,35 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 // `timeOfUseHidden` says how many are waiting behind that filter.
 export function PlanList({
   plans,
-  totalCount,
   timeOfUsePlans = [],
   timeOfUseHidden = 0,
   showRanked = true,
   picks = [],
-  generatedAt,
   page,
   onPageChange,
   usageKwh = DEFAULT_USAGE_KWH,
 }: {
   plans: Plan[];
-  totalCount: number;
   timeOfUsePlans?: Plan[];
   /** Time-of-use plans that exist for the area but are not shown right now. */
   timeOfUseHidden?: number;
   showRanked?: boolean;
   /** The "Our picks" winners, from the ranked plans being shown. */
   picks?: AwardPick[];
-  generatedAt: string;
   page: number;
   onPageChange: (next: number) => void;
   usageKwh?: number;
 }) {
   const [selected, setSelected] = useState<Plan | null>(null);
-  const filtered = plans.length !== totalCount;
 
-  const pageCount = Math.max(1, Math.ceil(plans.length / PLANS_PER_PAGE));
+  // A plan already shown in Our picks is not repeated in the list below. The
+  // count line still counts it (it is one of the plans that match).
+  const pickIds = new Set(picks.map((pick) => pick.plan.id));
+  const listed = plans.filter((plan) => !pickIds.has(plan.id));
+  const pageCount = Math.max(1, Math.ceil(listed.length / PLANS_PER_PAGE));
   const current = Math.min(Math.max(page, 1), pageCount);
   const start = (current - 1) * PLANS_PER_PAGE;
-  const visible = plans.slice(start, start + PLANS_PER_PAGE);
+  const visible = listed.slice(start, start + PLANS_PER_PAGE);
   const canPrev = current > 1;
   const canNext = current < pageCount;
   const modalOpen = selected !== null;
@@ -66,7 +63,7 @@ export function PlanList({
   // A page change made by the user (buttons or arrow keys) scrolls back to the
   // top and moves focus to the results line, once the new rows are on screen.
   // Filter changes also reset the page, but those must not scroll.
-  const summaryRef = useRef<HTMLParagraphElement>(null);
+  const listRef = useRef<HTMLElement>(null);
   const scrollAfterPageChange = useRef(false);
   function goToPage(next: number) {
     scrollAfterPageChange.current = true;
@@ -80,18 +77,8 @@ export function PlanList({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     // preventScroll: the smooth scroll above must not be cut short by a jump
-    summaryRef.current?.focus({ preventScroll: true });
+    listRef.current?.focus({ preventScroll: true });
   }, [current]);
-
-  // The plan count and the usage it is priced at: "20 plans at 1,150 kWh", or
-  // "Showing N of M plans at ..." under a filter. In the time-of-use-only view
-  // the count is of those plans.
-  const atUsage = ` at ${formatUsageText(usageKwh)} kWh`;
-  const summaryLine = showRanked
-    ? filtered
-      ? `Showing ${plans.length} of ${totalCount} ${plural(totalCount, "plan", "plans")}${atUsage}`
-      : `${totalCount} ${plural(totalCount, "plan", "plans")}${atUsage}`
-    : `${touCount} time-of-use ${plural(touCount, "plan", "plans")}`;
 
   useEffect(() => {
     if (modalOpen || !showRanked) return;
@@ -113,24 +100,16 @@ export function PlanList({
   }, [modalOpen, showRanked, canPrev, canNext, current]);
 
   return (
-    <section aria-label="Plans">
+    <section
+      ref={listRef}
+      tabIndex={-1}
+      aria-label="Plans"
+      className="outline-none"
+    >
       {/* Above the list, on its first page only, like the time-of-use section. */}
       {showRanked && current === 1 && (
         <OurPicks picks={picks} usageKwh={usageKwh} onOpen={setSelected} />
       )}
-
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <p
-          ref={summaryRef}
-          tabIndex={-1}
-          className="text-xs text-ink-soft outline-none sm:text-sm"
-        >
-          {summaryLine}
-        </p>
-        <p className="text-xs text-ink-faint">
-          Updated {new Date(generatedAt).toLocaleString("en-US")}
-        </p>
-      </div>
 
       {showRanked &&
         (plans.length === 0 ? (
@@ -143,6 +122,10 @@ export function PlanList({
           </p>
         ) : (
           <>
+            {/* "other" when Our picks has plans of its own on this list */}
+            <h2 className="mb-3 text-2xl font-bold tracking-tight text-ink">
+              {pickIds.size > 0 ? "All other plans" : "All plans"}
+            </h2>
             <ul className="grid grid-cols-1 gap-3 min-[760px]:grid-cols-2">
               {visible.map((plan) => (
                 <li key={plan.id} className="min-w-0">

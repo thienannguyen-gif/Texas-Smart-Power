@@ -11,7 +11,7 @@ export function PlansHeader({
   zipBusy,
   serviceArea,
   areaChoice,
-  planCount,
+  countText,
   generatedAt,
   usage,
 }: {
@@ -23,8 +23,8 @@ export function PlansHeader({
   serviceArea?: string;
   /** Set only when this ZIP returned several utilities. */
   areaChoice?: AreaChoice;
-  /** How many ranked plans the area has, once they have loaded. */
-  planCount?: number;
+  /** How many plans are showing, once they have loaded ("126 plans from Power to Choose"). */
+  countText?: string;
   /** When the plan data was fetched, once it has loaded. */
   generatedAt?: string;
   /** The usage controls (home size and monthly kWh), drawn in the same row. */
@@ -43,10 +43,9 @@ export function PlansHeader({
 
   const facts = [
     serviceArea,
-    planCount !== undefined &&
-      `${planCount} ${planCount === 1 ? "plan" : "plans"} from Power to Choose`,
+    countText,
     generatedAt && `Updated ${new Date(generatedAt).toLocaleString("en-US")}`,
-  ].filter(Boolean);
+  ].filter((fact): fact is string => Boolean(fact));
 
   return (
     <section aria-label="Your search" className="bg-bar font-sans text-bar-fg">
@@ -58,7 +57,12 @@ export function PlansHeader({
             </h1>
             {facts.length > 0 && (
               <p data-testid="service-area" className="mt-1 text-sm">
-                {facts.join(" · ")}
+                {facts.map((fact, i) => (
+                  <span key={fact}>
+                    {i > 0 && " · "}
+                    <span>{fact}</span>
+                  </span>
+                ))}
               </p>
             )}
           </div>

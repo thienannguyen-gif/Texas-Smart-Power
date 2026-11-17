@@ -77,7 +77,7 @@ describe("the search band", () => {
         onSubmitZip={() => {}}
         zipBusy={false}
         serviceArea="Lubbock Power & Light"
-        planCount={77}
+        countText="77 plans from Power to Choose"
         generatedAt="2026-11-17T22:42:00.000Z"
       />,
     );

@@ -489,16 +489,21 @@ describe("disclaimer page", () => {
   });
   afterEach(() => goToHash(""));
 
-  test("the header has one link, Disclaimer, and it opens the disclaimer", () => {
+  test("the top bar has only the logo; the disclaimer link is in the footer", () => {
     vi.stubGlobal("fetch", vi.fn());
     render(<App />);
-    const nav = screen.getByRole("navigation", { name: "Primary" });
-    const links = within(nav).getAllByRole("link");
-    expect(links.map((link) => link.textContent)).toEqual(["Disclaimer"]);
-    expect(links[0]).toHaveAttribute("href", "#disclaimer");
+    const header = screen.getByRole("banner");
+    expect(within(header).getAllByRole("link")).toHaveLength(1);
     expect(
-      screen.queryByRole("link", { name: /^(home|more|about)$/i }),
-    ).toBeNull();
+      within(header).getByRole("link", { name: "Texas Smart Power — home" }),
+    ).toBeInTheDocument();
+    expect(within(header).queryByText("Disclaimer")).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
+    expect(
+      within(screen.getByRole("contentinfo")).getByRole("link", {
+        name: "Disclaimer & Terms of Use",
+      }),
+    ).toHaveAttribute("href", "#disclaimer");
   });
 
   test("the footer also links to the disclaimer", () => {

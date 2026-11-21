@@ -1,7 +1,8 @@
 import type { MouseEvent } from "react";
 import { BrandMark } from "./BrandMark";
 
-// Navy top bar: logo + wordmark left, one link right.
+// Navy top bar: logo + wordmark. The disclaimer and terms are in the footer,
+// where people look for legal pages.
 // The logo goes home: back to the landing page as it is when the site is first
 // opened (no ZIP, no plans, no usage in the address), without a reload.
 export function SiteHeader({ onHome }: { onHome?: () => void }) {
@@ -34,14 +35,6 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
             Texas Smart Power
           </span>
         </a>
-        <nav aria-label="Primary">
-          <a
-            href="#disclaimer"
-            className="text-[13px] font-semibold hover:text-bar-fg-soft sm:text-sm"
-          >
-            Disclaimer
-          </a>
-        </nav>
       </div>
     </header>
   );

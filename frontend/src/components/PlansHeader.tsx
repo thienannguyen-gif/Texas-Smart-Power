@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { AreaCard, type AreaChoice } from "./AreaCard";
+import { EnergyTiles } from "./EnergyTiles";
 
 // The top of the results page: a dark green band with "Plans for <ZIP>", the
 // area, the plan count and the update time, then one row with the ZIP box, the
@@ -49,7 +50,12 @@ export function PlansHeader({
 
   return (
     <section aria-label="Your search" className="bg-bar font-sans text-bar-fg">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8">
+      <div className="relative mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8">
+        {/* the landing page graphic, small; only where it has room beside the form */}
+        <EnergyTiles
+          size="small"
+          className="absolute top-1/2 right-6 hidden -translate-y-1/2 xl:grid"
+        />
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
             <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
@@ -66,7 +72,6 @@ export function PlansHeader({
               </p>
             )}
           </div>
-          <HeaderTiles />
         </div>
 
         <form
@@ -123,25 +128,5 @@ export function PlansHeader({
         </div>
       )}
     </section>
-  );
-}
-
-// Small decorative tiles in the corner, like the landing page's (wide screens only).
-function HeaderTiles() {
-  const t = "h-12 w-12";
-  return (
-    <div
-      aria-hidden="true"
-      className="hidden shrink-0 grid-cols-4 gap-2 lg:grid"
-    >
-      <div className={`${t} rounded-xl bg-gold`} />
-      <div className={`${t} rounded-full bg-brand`} />
-      <div className={`${t} rounded-tr-[100%] bg-[#7fd1b0]`} />
-      <div className={`${t} rounded-xl bg-white/10`} />
-      <div className={`${t} rounded-xl bg-white/10`} />
-      <div className={`${t} rounded-xl bg-brand`} />
-      <div className={`${t} rounded-tl-[100%] bg-[#d4a43c]`} />
-      <div className={`${t} rounded-xl bg-white/90`} />
-    </div>
   );
 }

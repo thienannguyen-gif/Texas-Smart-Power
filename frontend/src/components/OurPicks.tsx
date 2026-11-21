@@ -20,8 +20,9 @@ function PickCard({
   onOpen: (plan: Plan) => void;
 }) {
   const { plan } = pick;
-  // a card that is only "Lowest bill" is amber; "Best overall" (alone or with it) is green
-  const gold = !pick.awards.includes("best-overall");
+  // the recommended pick (Best overall, alone or with Lowest bill) is the one
+  // that stands out: amber; a Lowest bill pick looks like the plans below it
+  const gold = pick.awards.includes("best-overall");
   const open = () => onOpen(plan);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -48,7 +49,7 @@ function PickCard({
           <span
             key={award}
             className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase ${
-              award === "lowest-bill" && gold
+              award === "best-overall"
                 ? "bg-gold text-gold-ink"
                 : "bg-bar text-bar-fg"
             }`}

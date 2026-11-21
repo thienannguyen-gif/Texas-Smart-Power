@@ -175,3 +175,26 @@ describe("OurPicks cards", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+describe("OurPicks: which card stands out", () => {
+  it("the Best overall (recommended) card is the amber one; a Lowest bill card looks like the plans below", () => {
+    const bestPlan = mk({ id: 1, planName: "Best One" });
+    const cheapPlan = mk({ id: 2, planName: "Cheap One" });
+    render(
+      <OurPicks
+        picks={[
+          { plan: bestPlan, awards: ["best-overall"] },
+          { plan: cheapPlan, awards: ["lowest-bill"] },
+        ]}
+        usageKwh={1000}
+        onOpen={() => {}}
+      />,
+    );
+    const [best, cheap] = screen.getAllByRole("button");
+    expect(best).toHaveClass("border-gold", "bg-gold-soft");
+    expect(cheap).toHaveClass("border-bar", "bg-surface");
+    expect(cheap).not.toHaveClass("border-gold");
+    expect(screen.getByText("Best overall")).toHaveClass("bg-gold");
+    expect(screen.getByText("Lowest bill")).toHaveClass("bg-bar");
+  });
+});
